@@ -1,0 +1,245 @@
+\documentclass{Styles/llncs}
+%\documentclass[12pt,letterpaper]{article}
+\usepackage{times}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{boxedminipage}
+\usepackage{xspace}
+\usepackage{listings}
+\usepackage{listingsutf8}
+\usepackage{verbatim}
+\usepackage{parcolumns}
+\usepackage{color}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+%Prevents floating item to "jump" between sections
+\usepackage[section]{placeins}
+\usepackage{booktabs}
+\newcommand{\arevoir}[1]{#1}
+
+\newcommand{\kaapi}{\textsc{\mbox{kaapi}}\xspace}
+
+\newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
+
+\usepackage{xcolor}
+\usepackage{todonotes}
+\usepackage[color,leftbars]{changebar}
+
+\newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
+\newcommand{\cfsectpage}[1]{(\textit{cf.} section~\ref{#1}, page~\pageref{#1})}
+\providecommand{\figureref}[1]{\figname~\ref{#1}}
+\providecommand{\cftab}[1]{(\textit{cf.} tableau~\ref{#1})}
+\newcommand{\cmd}[1]{{\upshape\texttt{\symbol{"5C}#1}}}
+
+\newenvironment{remarque}
+{\description \item[Remarque:] \ \slshape}
+{\enddescription}
+
+\makeatletter
+\newbox\sf@box
+\newenvironment{SubFloat}[2][]%
+  {\def\sf@one{#1}%
+   \def\sf@two{#2}%
+   \setbox\sf@box\hbox
+     \bgroup}%
+  { \egroup
+   \ifx\@empty\sf@two\@empty\relax
+     \def\sf@two{\@empty}
+   \fi
+   \ifx\@empty\sf@one\@empty\relax
+     \subfloat[\sf@two]{\box\sf@box}%
+   \else
+     \subfloat[\sf@one][\sf@two]{\box\sf@box}%
+   \fi}
+\makeatother
+\renewcommand\floatpagefraction{.9}
+\renewcommand\topfraction{.9}
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+\renewcommand{\ttdefault}{pcr}
+\lstset{
+	tabsize=4,
+%	frame=single,
+	breaklines=true,
+	basicstyle=\ttfamily,
+	frame=tb,
+	framerule=0.2pt,
+%	frameround={tttt},
+	showstringspaces=false,
+	language=c,
+%	linewidth=0.95\textwidth,
+	keywordstyle=\color{black}\bfseries,
+%	keywordstyle=\color{blue},
+	commentstyle=\color{OliveGreen},
+	stringstyle=\color{red}\itshape,
+	inputencoding=utf8/latin1,
+	numbers=left,
+	numberstyle=\tiny,
+	numbersep=5pt,
+% OMP define
+emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
+emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
+emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
+emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
+    %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
+}
+\lstdefinestyle{smaller}{basicstyle=\scriptsize\ttfamily}
+\lstMakeShortInline|
+
+\newcommand{\benchs}{KASTORS }
+
+\sloppy
+
+\begin{document}
+
+\title{Using data dependencies to improve task based scheduling strategies on NUMA architectures}
+\author{
+Philippe Virouleau$^1$ \and François Broquedis$^2$ \and Thierry Gautier$^1$
+ \vspace*{-1ex}}
+\institute{
+   $^1$INRIA, $^2$Grenoble Institure of Technology\\
+   CORSE and AVALON Teams, Computer Science Laboratories of Grenoble
+   and Lyon, France\\
+   \email{philippe.virouleau@inria.fr}\\
+   \email{francois.broquedis@imag.fr}\\
+   \email{thierry.gautier@inrialpes.fr}\\
+}
+\date{}
+\maketitle
+
+\begin{abstract}
+  \vspace*{-5ex} The OpenMP 4.0 specifications extended the task parallelism
+  constructs by providing the user a more flexible way to synchronize tasks :
+  data dependencies between tasks.
+  Using such an approach allows both the compiler and the runtime system
+  to know exactly which data are read or written by a given task, and how these
+  data will be used through the program lifetime.  Data placement and scheduling
+  strategies have a significant impact on performances when considering
+  NUMA architectures.  Numerous papers focus on these topics, however none
+  has made extensive use of the information available through dependencies.
+  One can use these information to modify the behaviour of the application at
+  several levels : during initialization to control data placement,
+  and during the application runtime to dynamically control both the preferred
+  task placement and stealing strategy, depending on the topology.
+  This paper introduces several heuristics for these strategies and their
+  implementations in our OpenMP runtime XKaapi.
+  We also evaluate their performances by using several linear algebra
+  applications, executed on a 192 cores NUMA machine. We finally
+  compare them to strategies presented previously by related works.
+
+\smallskip
+  \noindent\textbf{Keywords:}
+  \emph{
+    OpenMP, task dependencies, benchmark, runtime systems, NUMA, Kaapi, scheduling, workstealing
+  }
+\end{abstract}
+
+
+\section{Introduction}
+
+TODO
+
+task dependencies enable full knowledge about data
+
+Different approaches for dealing with NUMA :
+
+Initial data distribution/placement (set affinity)
+
+Initial task placement (pushinit)
+
+Dynamic ready-task placement (push)
+
+Work-stealing strategies (select)
+
+Contribution : new heuristic for these approaches, evaluation and comparison against previous one on a large NUMA machine.
+
+
+
+%HPC architectures evolved so rapidly that it is now common to build
+%shared-memory configurations with several dozens of cores.  The recent
+%appearance of technologies such as the Intel Xeon Phi co-processor makes
+%affordable configurations with thousands of cores a not-so-far
+%reality.  Efficiently programming such large-scale platforms requires
+%to express more and more fine-grain parallelism.
+
+%Standard parallel programming environments such as OpenMP have evolved
+%to address this requirement, introducing new ways of designing highly
+%parallel programs. Extending OpenMP to support task parallelism stands
+%as a first step to improve the scalability of OpenMP applications on
+%large-scale platforms. Indeed, task parallelism usually comes with lower
+%runtime-related overhead than thread-based approaches, allowing OpenMP
+%programmers to create a large amount of tasks at low cost. Task
+%parallelism also promotes the runtime system to a central role, as
+%having more units of work to execute requires smarter scheduling
+%decisions and load balancing capabilities.
+
+%OpenMP was recently extended to support task dependencies. Instead of
+%explicitly synchronizing all the tasks of a parallel region at once, the
+%application programmer can now specify a list of variables a task will
+%read as input or write as output instead. This information is
+%transmitted to the task scheduling runtime system. The runtime then marks
+%a task as ready for execution only once all its dependencies have been
+%resolved. Dependencies therefore provide a way to define finer
+%synchronizations between tasks, able to scale better than global
+%synchronizations on large-scale platforms. Dependencies also give the
+%runtime system more options to efficiently schedule tasks, as these
+%become ready for execution as soon as the data they access has been
+%updated.
+
+%As promising as it looks however, any new feature needs proper
+%evaluation to encourage application programmers to embrace it. While
+%several compilers and runtime systems are now beginning to support
+%OpenMP~4.0 task dependencies, no benchmark suite currently exists to
+%evaluate their respective benefits and compare them to traditional task
+%parallelism.
+
+%This paper highlights two major contributions. We first introduce a
+%new benchmark suite to experiment with OpenMP~4.0 task dependencies. We
+%present performance results for both the GCC/libGOMP and the
+%CLANG\footnote{Intel branch with support for OpenMP:
+%\url{http://clang-omp.github.io/}}/libIOMP compilers and their runtime
+%systems, comparing kernels
+%involving either dependent or independent tasks. Secondly, we
+%comment on the issues we met while implementing these benchmarks along
+%the lines of current 4.0 revision of the OpenMP specification. Building
+%on this experience, we contribute some extension proposals to the
+%existing OpenMP specification, to improve the expressiveness of the
+%task dependency support.
+
+%The remainder of this paper is organized as follows. Section
+%\ref{sec:omp-deps} describes the task dependency programming model in
+%OpenMP~4.0. It then analyzes the strategies adopted by GCC/libGOMP and
+%CLANG/libIOMP to implement this model. Section \ref{sec:benchs}
+%introduces the \benchs benchmark suite we have designed to evaluate
+%OpenMP~4.0's task model implementations. Section \ref{sec:perfs}
+%presents the performance results of \benchs using two different hardware
+%configurations. We identify and discuss practical issues with the
+%current OpenMP specification, and we propose extensions in section
+%\ref{sec:extensions} to address these issues. We finally present some
+%related works in section \ref{sec:related-work} before concluding.
+
+\section{TODO}
+%\label{sec:omp-deps}
+
+\section*{Acknowledgments}
+
+This work has been partially supported by the ANR-11-BS02-013 HPAC Project and the IRSES2011-295217
+HPC-GA Project.
+
+  \small \bibliographystyle{Styles/iplain}
+%\nocite{*}
+\bibliography{Bib/paper}
+
+\end{document}
