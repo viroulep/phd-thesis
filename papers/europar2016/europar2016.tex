@@ -233,6 +233,94 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 \section{TODO}
 %\label{sec:omp-deps}
 
+
+\section{Plan (bof! idées quoi...)}
+
+\subsection{Le modèle d'exécution par vol de tâches}
+\subsubsection{Inside kaapi}
+\begin{itemize}
+\item des trucs très simples sur le fonctionnement interne d'un
+  runtime data-flow.
+\end{itemize}
+\subsubsection{notre façon de voir la machine}
+\begin{itemize}
+\item places (kproc, NUMA) ;
+\item impact du placement sur l'exécution / le vol (pop, steal, blabla)
+\end{itemize}
+
+\subsubsection{On pose le problème}
+\begin{itemize}
+  \item Modèle d'exécution très dynamique, équilibrage à la
+    volée... Tout ça semble peu compatible avec un respect strict des
+    affinités mémoire!
+  \item D'un autre côté, pour exploiter des machines NUMA à grande
+    échelle, on ne peut pas non plus renoncer à rééquilibrer la charge
+    de temps en temps.
+  \item Du coup, on cherche un (bon) compromis entre équilibrage de
+    charge et respect des affinités.
+  \item C'est le boulot du runtime (ça peut difficilement être celui
+    du programmeur seulement), puisqu'on va devoir contrôler le
+    placement des données, le placement initial des tâches et le
+    parcours de la topologie lors d'un vol.
+\end{itemize}
+
+\subsection{Placement initial des données}
+\begin{itemize}
+  \item Pour contrôler le placement des données, les gens font au
+    mieux numactl.
+  \item Nous, on agit là-dessus à deux niveaux différents :
+    \begin{itemize}
+      \item au niveau applicatif, où on fournit au programmeur une API
+        pour contrôler le placement mémoire de ses données
+        (omp\_set\_affinity) ;
+      \item un niveau du runtime, où on peut garantir la
+        répartition des données de manière indirecte, en plaçant les
+        tâches d'initialisation (famille WSpush\_init dans laquelle on
+        retrouve : WSpush, cyclicnuma, randnuma, rand). => blabla first-touch
+      \end{itemize}
+    \item Les stratégies de l'état de l'art (numactl etc) s'appliquent
+      pour la totalité d'une exécution. Notre approche est capable de
+      différencier les tâches d'initialisations des tâches de calcul,
+      de manière à adapter la politique de selection et de placement
+      de tâches.
+\end{itemize}
+
+\subsection{Placement initial d'une tâche prête}
+\begin{itemize}
+  \item Quand le runtime détecte que les dépendances d'une tâche sont
+    satisfaites, la tâche passe dans l'état prêt et le runtime doit
+    choisir une place où l'insérer.
+  \item Rappeler le fonctionnement du kproc qui mange des tâches chez
+    lui d'abord : d'où l'importance du placement initial d'une tâche
+  \item On définit plusieurs stratégies de placement de tâches prêtes
+    : local, numa, Wnuma, Whws qui s'appuient sur une vision hiérarchique de
+    la topologie de la machine pour placer les tâches au plus près de
+    leurs données.
+\end{itemize}
+
+\subsection{Equilibrage de charge dynamique}
+
+\subsubsection{loose vs strict}
+\begin{itemize}
+  \item pas d'impact significatif : le sortir des courbes, en parler
+    dans un paragraphe dédié où on présente les deux comportements et,
+    de manière synthétique, les perfs associées (tableau, voire
+    pourcentages de différence entre les deux dans le texte)
+\end{itemize}
+
+\subsection{Related work}
+\begin{itemize}
+\item Ce qu'on fait, c'est mieux que Bronis parce qu'on a la vision
+  (et le contrôle indirect) du placement des données. Encore faut-il
+  le démontrer! Une coucourbe hwsnumafirst.numa.* (TODO : à vérifier)
+  devrait suffire à montrer que ce qu'on fait va plus loin (en termes
+  de perfs) que ce qu'ils proposaient.
+\item La question qui tue : si on est capable de contrôler le
+  placement des tâches dans les kprocs, et de contrôler le placement
+  mémoire, pourquoi on ne fait pas de placement statique à la SCOTCH
+  ou autre?
+\end{itemize}
+
 \section*{Acknowledgments}
 
 This work has been partially supported by the ANR-11-BS02-013 HPAC Project and the IRSES2011-295217
