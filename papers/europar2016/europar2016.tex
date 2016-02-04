@@ -230,25 +230,36 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 %\ref{sec:extensions} to address these issues. We finally present some
 %related works in section \ref{sec:related-work} before concluding.
 
-\section{TODO}
-%\label{sec:omp-deps}
-
-
-\section{Plan (bof! idées quoi...)}
-
-\subsection{Le modèle d'exécution par vol de tâches}
-\subsubsection{Inside kaapi}
+\section{Background}
+\subsection{Hardware background}
+\begin{itemize}
+  \item Introduire les ccNUMA à grande échelle
+  \item Donner des détails sur l'archi d'idchire (topologie, bande
+    passante, latences, etc.)
+\end{itemize}
+\subsection{Software background}
+\begin{itemize}
+  \item shared memory + high level of parallelism => OpenMP tasks
+\end{itemize}
+\subsubsection{A glimpse at OpenMP task-based applications}
+\begin{itemize}
+  \item présentation du concept de tâches
+  \item dépendances de données
+  \item code d'exemple
+\end{itemize}
+\subsubsection{The way we execute task-based applications}
+\paragraph{Inside kaapi}
 \begin{itemize}
 \item des trucs très simples sur le fonctionnement interne d'un
   runtime data-flow.
 \end{itemize}
-\subsubsection{notre façon de voir la machine}
+\paragraph{notre façon de voir la machine}
 \begin{itemize}
 \item places (kproc, NUMA) ;
 \item impact du placement sur l'exécution / le vol (pop, steal, blabla)
 \end{itemize}
 
-\subsubsection{On pose le problème}
+\subsection{On pose le problème}
 \begin{itemize}
   \item Modèle d'exécution très dynamique, équilibrage à la
     volée... Tout ça semble peu compatible avec un respect strict des
@@ -264,6 +275,8 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
     parcours de la topologie lors d'un vol.
 \end{itemize}
 
+\section{Using OpenMP tasks dependencies to improve tasks and data
+  placement on NUMA machines (TODO : horrible :-) )}
 \subsection{Placement initial des données}
 \begin{itemize}
   \item Pour contrôler le placement des données, les gens font au
@@ -308,7 +321,9 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
     pourcentages de différence entre les deux dans le texte)
 \end{itemize}
 
-\subsection{Related work}
+\section{Evaluation}
+
+\section{Related work}
 \begin{itemize}
 \item Ce qu'on fait, c'est mieux que Bronis parce qu'on a la vision
   (et le contrôle indirect) du placement des données. Encore faut-il
