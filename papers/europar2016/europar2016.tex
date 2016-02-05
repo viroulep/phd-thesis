@@ -106,10 +106,10 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \title{Using data dependencies to improve task based scheduling strategies on NUMA architectures}
 \author{
-Philippe Virouleau$^1$ \and François Broquedis$^2$ \and Thierry Gautier$^1$
+  Philippe Virouleau$^1$ \and François Broquedis$^2$ \and Thierry Gautier$^{1,3}$
  \vspace*{-1ex}}
 \institute{
-   $^1$INRIA, $^2$Grenoble Institure of Technology\\
+   $^1$INRIA, $^2$Grenoble Institure of Technology, $^3$LIP\\
    CORSE and AVALON Teams, Computer Science Laboratories of Grenoble
    and Lyon, France\\
    \email{philippe.virouleau@inria.fr}\\
@@ -313,12 +313,54 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 
 \subsection{Equilibrage de charge dynamique}
 
+\subsubsection{Place selection strategies}
+Some basic ones :
+\begin{itemize}
+  \item \verb/rand/ : selection from a random kproc place.
+  \item \verb/numa/ : selection from a random numa place.
+  \item \verb/strict/ : selection only from our numa place.
+\end{itemize}
+
+"Hierarchical" ones
+
+\begin{itemize}
+  \item \verb/hws_P/ : select from kprocs from the local node, then from the local numa place, then from a random remote kproc.
+  \item \verb/hws_N/ : select from kprocs from the local node, then from the local numa place, then from a random remote numa place.
+  \item \verb/hws_N_P/ : for every node starting by ours : select from kprocs on this node, then from the numa place of this node.
+  \item \verb/hws_P_N/ : for every node starting by ours : select from the numa place of this node, then from the kprocs on this node.
+\end{itemize}
+
+Details for node iterations on the above strategy : linear iteration starting from a random index (e.g. given N nodes and an index i, loop from i to N, then from 0 to i).
+
+\subsubsection{Push strategies for a ready task}
+Some basic ones :
+\begin{itemize}
+  \item \verb/local/ : push to our kproc.
+  \item \verb/numa/ : push to our numa node's place
+\end{itemize}
+
+More elaborated :
+\begin{itemize}
+  \item \verb/Wnuma/ : push to the numa place where the data are.
+  \item \verb/Whws/ : push to the numa place where the data are, if it's ours, push to our kproc.
+\end{itemize}
+
+\subsubsection{Distribution strategies at initialization}
+\begin{itemize}
+  \item \verb/cyclicnumastrict/ : round robin on numa nodes
+  \item \verb/randnuma/ : each task to a random node.
+\end{itemize}
+
 \subsubsection{loose vs strict}
+
+Possibility to combine the above with KAAPI\_STRICT\_PUSH to prevent the task from being stolen by a non local kproc.
+
 \begin{itemize}
   \item pas d'impact significatif : le sortir des courbes, en parler
     dans un paragraphe dédié où on présente les deux comportements et,
     de manière synthétique, les perfs associées (tableau, voire
     pourcentages de différence entre les deux dans le texte)
+  \item {\color{red}Conclusion à revoir, maintenant que le wspush est strict pour tout !}
 \end{itemize}
 
 \section{Evaluation}
@@ -330,7 +372,7 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
   le démontrer! Une coucourbe hwsnumafirst.numa.* (TODO : à vérifier)
   devrait suffire à montrer que ce qu'on fait va plus loin (en termes
   de perfs) que ce qu'ils proposaient.
-\item La question qui tue : si on est capable de contrôler le
+\item La question qui tue (Thierry ?) : si on est capable de contrôler le
   placement des tâches dans les kprocs, et de contrôler le placement
   mémoire, pourquoi on ne fait pas de placement statique à la SCOTCH
   ou autre?
@@ -342,9 +384,10 @@ la bonne ref pour Bronis, OpenMP task-scheduling et
 NUMA~\cite{DBLP:journals/corr/Tahan14}, solution au niveau appli
 (terboven)~\cite{DBLP:conf/europar/TerbovenSCM12}, Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12}.
 
+
 \section*{Acknowledgments}
 
-This work has been partially supported by the ANR-11-BS02-013 HPAC Project and the IRSES2011-295217
+This work has been partially supported by the IRSES2011-295217
 HPC-GA Project.
 
   \small \bibliographystyle{Styles/iplain}
