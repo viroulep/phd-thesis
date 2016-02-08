@@ -277,7 +277,56 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 
 \section{Using OpenMP tasks dependencies to improve tasks and data
   placement on NUMA machines (TODO : horrible :-) )}
-\subsection{Placement initial des données}
+
+In this section we will describe how we can use affect the application execution
+by using information taken from data dependencies.
+We chose to adapt the behaviour of the runtime system both during initialization
+phase and actual calcul phasen, in ways described in the following sections.
+
+
+\subsection{Some technical details about XKaapi}
+
+Before digging into the strategies details, lets take a look at the XKaapi
+architecture and workflow.
+
+\subsubsection{Internal representation}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.8]{./figures/topology.pdf}
+\caption{Processors and Nodes representation}
+\label{fig:detail-topology}
+\end{figure}
+
+XKaapi uses a concept of \verb/place/.
+A \verb/place/ is simply a list of tasks associated with one hierarchical level
+of the machine.
+
+In this case we will use \verb/places/ at two differents levels, illustrated in
+Figure \ref{fig:detail-topology} : Processor and Node level.
+At the processor level one \verb/place/ is associated to each of the physical cores, and
+at the Node level one \verb/place/ is associated to each of the NUMA nodes.
+
+
+\subsubsection{Task execution workflow}
+
+When a processor has finished executing its task, it will need a place
+from which he will get more work. We call this processus the place selection,
+and we will also refer to strategies related to this using \verb/WSselect/ (for WorkStealing select)
+in the remaining of the paper.
+Once a place is selected, the processor will take a task from its queue.
+FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
+faire un steal mais il faudrait l'expliquer.
+
+
+Something else occurs when a task execution is finished : the processor will
+compute the list of tasks that are newly ready due to the current task completion.
+It will then push each one of these task to a place. Once again we need to
+carefully select the place we want to push to, and we will refer to strategies
+related to this processus using \verb/WSpush/ (for WorkStealing push).
+
+
+\subsection{Initial data distribution/placement}
 \begin{itemize}
   \item Pour contrôler le placement des données, les gens font au
     mieux numactl.
@@ -298,7 +347,14 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
       de tâches.
 \end{itemize}
 
-\subsection{Placement initial d'une tâche prête}
+TODO rework
+\subsubsection{Distribution strategies at initialization}
+\begin{itemize}
+  \item \verb/cyclicnumastrict/ : round robin on numa nodes
+  \item \verb/randnuma/ : each task to a random node.
+\end{itemize}
+
+\subsection{Initial task placement when ready : WSpush strategies}
 \begin{itemize}
   \item Quand le runtime détecte que les dépendances d'une tâche sont
     satisfaites, la tâche passe dans l'état prêt et le runtime doit
@@ -311,8 +367,20 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
     leurs données.
 \end{itemize}
 
-\subsection{Equilibrage de charge dynamique}
+\subsection{Dynamic load balancing using workstealing : WSselect strategies}
 
+Once the workload is initialized, we can change the load balancing dynamically
+at several level. This section will focus on work stealing strategies, and
+task placement when they are created.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.8]{figures/strategies.pdf}
+\caption{Strategy "P-N"}
+\label{fig:detail-strategy}
+\end{figure}
+
+TODO des explications
 \subsubsection{Place selection strategies}
 Some basic ones :
 \begin{itemize}
@@ -322,7 +390,7 @@ Some basic ones :
 \end{itemize}
 
 "Hierarchical" ones
-
+Example : Fig. \ref{fig:detail-strategy}.
 \begin{itemize}
   \item \verb/hws_P/ : select from kprocs from the local node, then from the local numa place, then from a random remote kproc.
   \item \verb/hws_N/ : select from kprocs from the local node, then from the local numa place, then from a random remote numa place.
@@ -345,11 +413,6 @@ More elaborated :
   \item \verb/Whws/ : push to the numa place where the data are, if it's ours, push to our kproc.
 \end{itemize}
 
-\subsubsection{Distribution strategies at initialization}
-\begin{itemize}
-  \item \verb/cyclicnumastrict/ : round robin on numa nodes
-  \item \verb/randnuma/ : each task to a random node.
-\end{itemize}
 
 \subsubsection{loose vs strict}
 
