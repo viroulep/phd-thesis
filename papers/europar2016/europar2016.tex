@@ -322,15 +322,80 @@ Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cit
 \end{table}
 
 \subsection{Software background}
-\begin{itemize}
-  \item shared memory + high level of parallelism => OpenMP tasks
-\end{itemize}
-\subsubsection{A glimpse at OpenMP task-based applications}
-\begin{itemize}
-  \item présentation du concept de tâches
-  \item dépendances de données
-  \item code d'exemple
-\end{itemize}
+
+To exploit such large-scale shared memory architectures, the application programmer needs :
+\begin{enumerate}
+\item to express massive fine grain parallelism to get the most out of the numerous processing units of the platform ;
+\item to control the execution of the application, especially the way computations and data are distributed over the platform, to prevent the NUMA design to have a negative impact on the overall application performance.
+\end{enumerate}
+
+Task-based parallel programming environments provide ways of expressing fine grain parallelism that can be dynamically assigned to processors at runtime.
+OpenMP~\cite{openmp40}, the de-facto standard for shared-memory parallel programming, supports task parallelism with dependencies since revision 4.0.
+
+\subsubsection{A glimpse at OpenMP tasking}
+
+An OpenMP \emph{task} can be seen as an independant \emph{unit of work} an OpenMP thread can execute.
+Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region. 
+As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were to fine grain to be parallelized using only threads.
+The application programmer is thus responsible for creating and synchronizing OpenMP tasks explicitly. 
+However, the runtime system is in charge of assigning tasks to threads during the application execution, considering the underlying system state.
+
+OpenMP 4.0 pushes the concept of task further introducing the |depend| keyword to specify the access mode of each shared variable a task will access during its execution. 
+Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task. 
+This information is then processed by the underlying runtime system to decide whether a task is ready for execution or should first wait for the completion of other ones.
+
+Listing 1.1 shows the implementation of a blocked matrix multiplication. It is
+taken from the official OpenMP 4.0 examples~\footnote{available at http://www.openmp.org}.
+TODO : blabla matrix multiplication
+
+%Instead of waiting for the
+%termination of \emph{all} previous tasks before executing |bmod| tasks,
+%we specify dependencies to make sure |bmod| tasks can
+%execute as soon as the data they access has been updated by the
+%corresponding |fwd| and |bdiv| tasks. Running this |depend| version of
+%the program leads to the creation of a dependency graph. When an OpenMP
+%thread turns idle, the runtime system browses this graph to decide which
+%task should be executed next, according to tasks' current state and
+%resolved dependencies.
+
+%Task dependency support comes with several benefits. First, task
+%dependencies involve decentralized, selective synchronization operations
+%that should scale better than the broad-range taskwait-based approaches.
+%In some situations, this way of programming unlocks more valid execution
+%scenarios than explicitly synchronized tasks, which provides the runtime
+%system with many more valid task schedules to choose from. For example,
+%many instances of the |fwd|, |bdiv| and |bmod| computations can legally
+%run concurrently with the version of the LU factorization expressing
+%task dependencies. On the contrary, this level of concurrence is not
+%possible with the |taskwait| version because the lack of accurate
+%dependency information leads to an over-conservative synchronization
+%scheme. As an added benefit, information about task dependencies also
+%enables the runtime system to optimize further, such as improving task
+%and data placement on NUMA systems.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption=Blocked matrix multiplication with OpenMP task dependencies,frame=tlrb,style=smaller,label=lst:MM-deps]{lst:MM-deps}
+// Assume BS divides N perfectly
+void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
+     int i, j, k, ii, jj, kk;
+     for (i = 0; i < N; i+=BS) {
+          for (j = 0; j < N; j+=BS) {
+               for (k = 0; k < N; k+=BS) {
+                    #pragma omp task depend (in: A[i:BS][k:BS], B[k:BS][j:BS]) \
+                         depend (inout: C[i:BS][j:BS])
+                    for (ii = i; ii < i+BS; ii++) {
+                         for (jj = j; jj < j+BS; jj++) {
+                              for (kk = k; kk < k+BS; kk++) {
+                                   C[ii][jj] = C[ii][jj] + A[ii][kk] * B[kk][jj];
+                              }
+                         }
+                    }
+               }
+          }
+     }
+}\end{lstlisting}
+\end{figure}
+
 \subsubsection{The way we execute task-based applications}
 \paragraph{Inside kaapi}
 \begin{itemize}
