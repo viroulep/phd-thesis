@@ -23,6 +23,7 @@
 %Prevents floating item to "jump" between sections
 \usepackage[section]{placeins}
 \usepackage{booktabs}
+\usepackage{tkz-graph}
 \newcommand{\arevoir}[1]{#1}
 
 \newcommand{\kaapi}{\textsc{\mbox{kaapi}}\xspace}
@@ -232,21 +233,169 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 
 \section{Background}
 \subsection{Hardware background}
+Most of parallel shared memory architectures are now built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
+Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
+However, exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
+
+The machine we experimented on is a SGI UV2000 platform made of 24 NUMA nodes.
+Each NUMA node holds a 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
+We refer to this machine as Xeon192 in the paper. 
+
+\begin{figure}
+\begin{center}
+\begin{tikzpicture}
+\tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
+
+\Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
+\Vertex[x=0, y=2, L=$n_{22,23}$]{n4}
+\Vertex[x=0, y=4, L=$n_{8,9}$]{n8}
+\Vertex[x=0, y=6, L=$n_{12,13}$]{n12}
+\Vertex[x=2, y=0, L=$n_{10,11}$]{n1}
+\Vertex[x=2, y=2, L=$n_{6,7}$]{n5}
+\Vertex[x=2, y=4, L=$n_{0,1}$]{n9}
+\Vertex[x=2, y=6, L=$n_{16,17}$]{n13}
+
+\Vertex[x=4, y=0, L=$n_{20,21}$]{n2}
+\Vertex[x=4, y=2, L=$n_{4,5}$]{n6}
+\Vertex[x=4, y=4, L=$n_{2,3}$]{n10}
+\Vertex[x=4, y=6, L=$n_{10,11}$]{n14}
+\Vertex[x=6, y=0, L=$n_{12,13}$]{n3}
+\Vertex[x=6, y=2, L=$n_{8,9}$]{n7}
+\Vertex[x=6, y=4, L=$n_{18,19}$]{n11}
+\Vertex[x=6, y=6, L=$n_{14,15}$]{n15}
+
+\Edge(n0)(n5)
+\Edge(n4)(n5)
+\Edge(n1)(n5)
+
+\Edge(n13)(n9)
+\Edge(n12)(n9)
+\Edge(n8)(n9)
+
+\Edge(n15)(n10)
+\Edge(n14)(n10)
+\Edge(n11)(n10)
+
+\Edge(n3)(n6)
+\Edge(n2)(n6)
+\Edge(n7)(n6)
+
+\Edge(n9)(n5)
+\Edge(n9)(n10)
+\Edge(n5)(n10)
+\Edge(n9)(n6)
+\Edge(n5)(n6)
+\Edge(n10)(n6)
+
+\end{tikzpicture}
+\end{center}
+\caption{Memory topology of the Xeon192 SGI UV2000 machine.}
+\label{fig:idchire}
+\end{figure}
+
+Figure \ref{fig:idchire} shows the Xeon192 machine memory topology.
+NUMA nodes are organized by pairs of nodes connected together through Intel QuickPath Interconnect.
+These pairs can communicate together through a proprietary fabric called NUMALink6, represented by the edges on the graph.
+In other words, taking as example node $n_0$ :
 \begin{itemize}
-  \item Introduire les ccNUMA à grande échelle
-  \item Donner des détails sur l'archi d'idchire (topologie, bande
-    passante, latences, etc.)
+\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
+\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
+\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
 \end{itemize}
+
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from node $n_0$ to any other node of the Xeon192 machine, wether the node is a peer (node $n_1$ in that case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, that have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
+
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\begin{table}
+\caption{NUMA distances from node 0 advertised by the hwloc library on Xeon192.}
+\begin{center}
+\begin{tabular}{C{2cm} C{2cm} C{2cm} C{2cm} C{2cm}}
+    \toprule[0.15em]
+		\emph{NUMA nodes location} & \emph{local} & \emph{peer} & \emph{one hop away} & \emph{two hops away} \\
+    \midrule[0.1em]
+	hwloc distances & 1.0 & 5.0 & 6.5 & 7.9 \\
+    \bottomrule[0.15em]
+\end{tabular}
+\end{center}
+\label{tab:idchire}
+\end{table}
+
 \subsection{Software background}
-\begin{itemize}
-  \item shared memory + high level of parallelism => OpenMP tasks
-\end{itemize}
-\subsubsection{A glimpse at OpenMP task-based applications}
-\begin{itemize}
-  \item présentation du concept de tâches
-  \item dépendances de données
-  \item code d'exemple
-\end{itemize}
+
+To exploit such large-scale shared memory architectures, the application programmer needs :
+\begin{enumerate}
+\item to express massive fine grain parallelism to get the most out of the numerous processing units of the platform ;
+\item to control the execution of the application, especially the way computations and data are distributed over the platform, to prevent the NUMA design to have a negative impact on the overall application performance.
+\end{enumerate}
+
+Task-based parallel programming environments provide ways of expressing fine grain parallelism that can be dynamically assigned to processors at runtime.
+OpenMP~\cite{openmp40}, the de-facto standard for shared-memory parallel programming, supports task parallelism with dependencies since revision 4.0.
+
+\subsubsection{A glimpse at OpenMP tasking}
+
+An OpenMP \emph{task} can be seen as an independant \emph{unit of work} an OpenMP thread can execute.
+Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region. 
+As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were to fine grain to be parallelized using only threads.
+The application programmer is thus responsible for creating and synchronizing OpenMP tasks explicitly. 
+However, the runtime system is in charge of assigning tasks to threads during the application execution, considering the underlying system state.
+
+OpenMP 4.0 pushes the concept of task further introducing the |depend| keyword to specify the access mode of each shared variable a task will access during its execution. 
+Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task. 
+This information is then processed by the underlying runtime system to decide whether a task is ready for execution or should first wait for the completion of other ones.
+
+Listing 1.1 shows the implementation of a blocked matrix multiplication. It is
+taken from the official OpenMP 4.0 examples~\footnote{available at http://www.openmp.org}.
+TODO : blabla matrix multiplication
+
+%Instead of waiting for the
+%termination of \emph{all} previous tasks before executing |bmod| tasks,
+%we specify dependencies to make sure |bmod| tasks can
+%execute as soon as the data they access has been updated by the
+%corresponding |fwd| and |bdiv| tasks. Running this |depend| version of
+%the program leads to the creation of a dependency graph. When an OpenMP
+%thread turns idle, the runtime system browses this graph to decide which
+%task should be executed next, according to tasks' current state and
+%resolved dependencies.
+
+%Task dependency support comes with several benefits. First, task
+%dependencies involve decentralized, selective synchronization operations
+%that should scale better than the broad-range taskwait-based approaches.
+%In some situations, this way of programming unlocks more valid execution
+%scenarios than explicitly synchronized tasks, which provides the runtime
+%system with many more valid task schedules to choose from. For example,
+%many instances of the |fwd|, |bdiv| and |bmod| computations can legally
+%run concurrently with the version of the LU factorization expressing
+%task dependencies. On the contrary, this level of concurrence is not
+%possible with the |taskwait| version because the lack of accurate
+%dependency information leads to an over-conservative synchronization
+%scheme. As an added benefit, information about task dependencies also
+%enables the runtime system to optimize further, such as improving task
+%and data placement on NUMA systems.
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption=Blocked matrix multiplication with OpenMP task dependencies,frame=tlrb,style=smaller,label=lst:MM-deps]{lst:MM-deps}
+// Assume BS divides N perfectly
+void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
+     int i, j, k, ii, jj, kk;
+     for (i = 0; i < N; i+=BS) {
+          for (j = 0; j < N; j+=BS) {
+               for (k = 0; k < N; k+=BS) {
+                    #pragma omp task depend (in: A[i:BS][k:BS], B[k:BS][j:BS]) \
+                         depend (inout: C[i:BS][j:BS])
+                    for (ii = i; ii < i+BS; ii++) {
+                         for (jj = j; jj < j+BS; jj++) {
+                              for (kk = k; kk < k+BS; kk++) {
+                                   C[ii][jj] = C[ii][jj] + A[ii][kk] * B[kk][jj];
+                              }
+                         }
+                    }
+               }
+          }
+     }
+}\end{lstlisting}
+\end{figure}
+
 \subsubsection{The way we execute task-based applications}
 \paragraph{Inside kaapi}
 \begin{itemize}
