@@ -233,7 +233,7 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 
 \section{Background}
 \subsection{Hardware background}
-Most of parallel shared memory architectures are now built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
+Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
 Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
 However, exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
 
@@ -243,7 +243,7 @@ We refer to this machine as Xeon192 in the paper.
 
 \begin{figure}
 \begin{center}
-\begin{tikzpicture}
+\begin{tikzpicture}[scale=0.6]
 \tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
 
 \Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
@@ -305,12 +305,14 @@ In other words, taking as example node $n_0$ :
 
 Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from node $n_0$ to any other node of the Xeon192 machine, wether the node is a peer (node $n_1$ in that case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, that have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
 
+\vspace{-0.5cm}
+
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
 \begin{table}
 \caption{NUMA distances from node 0 advertised by the hwloc library on Xeon192.}
 \begin{center}
-\begin{tabular}{C{2cm} C{2cm} C{2cm} C{2cm} C{2cm}}
+\begin{tabular}{C{3cm} C{2cm} C{2cm} C{2cm} C{2cm}}
     \toprule[0.15em]
 		\emph{NUMA nodes location} & \emph{local} & \emph{peer} & \emph{one hop away} & \emph{two hops away} \\
     \midrule[0.1em]
@@ -320,6 +322,8 @@ Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cit
 \end{center}
 \label{tab:idchire}
 \end{table}
+
+\vspace{-1cm}
 
 \subsection{Software background}
 
@@ -337,6 +341,7 @@ OpenMP~\cite{openmp40}, the de-facto standard for shared-memory parallel program
 An OpenMP \emph{task} can be seen as an independant \emph{unit of work} an OpenMP thread can execute.
 Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region. 
 As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were to fine grain to be parallelized using only threads.
+The synchronization of OpenMP 3.0 tasks is performed thanks to the |taskwait| keyword that waits for the completion of all the tasks generated from the current OpenMP parallel region.
 The application programmer is thus responsible for creating and synchronizing OpenMP tasks explicitly. 
 However, the runtime system is in charge of assigning tasks to threads during the application execution, considering the underlying system state.
 
@@ -346,32 +351,16 @@ This information is then processed by the underlying runtime system to decide wh
 
 Listing 1.1 shows the implementation of a blocked matrix multiplication. It is
 taken from the official OpenMP 4.0 examples~\footnote{available at http://www.openmp.org}.
-TODO : blabla matrix multiplication
+Running this |depend| version of the program leads to the creation of a dependency graph.
+A task created on line 7 can thus be executed \emph{as soon as} the data they access has been updated by its predecessors in this graph.
+When an OpenMP thread turns idle, the runtime system browses this graph to decide which task should be executed next, according to tasks' current state and resolved dependencies.
 
-%Instead of waiting for the
-%termination of \emph{all} previous tasks before executing |bmod| tasks,
-%we specify dependencies to make sure |bmod| tasks can
-%execute as soon as the data they access has been updated by the
-%corresponding |fwd| and |bdiv| tasks. Running this |depend| version of
-%the program leads to the creation of a dependency graph. When an OpenMP
-%thread turns idle, the runtime system browses this graph to decide which
-%task should be executed next, according to tasks' current state and
-%resolved dependencies.
+Task dependency support comes with several benefits. 
+First, task dependencies involve decentralized, selective synchronization operations that should scale better than the broad-range taskwait-based approaches.
+In some situations, this way of programming unlocks more valid execution scenarios than explicitly synchronized tasks, which provides the runtime system with many more valid task schedules to choose from. 
+As an added benefit, information about task dependencies also enables the runtime system to optimize further, such as improving task and data placement on NUMA systems, like detailed in this paper.
 
-%Task dependency support comes with several benefits. First, task
-%dependencies involve decentralized, selective synchronization operations
-%that should scale better than the broad-range taskwait-based approaches.
-%In some situations, this way of programming unlocks more valid execution
-%scenarios than explicitly synchronized tasks, which provides the runtime
-%system with many more valid task schedules to choose from. For example,
-%many instances of the |fwd|, |bdiv| and |bmod| computations can legally
-%run concurrently with the version of the LU factorization expressing
-%task dependencies. On the contrary, this level of concurrence is not
-%possible with the |taskwait| version because the lack of accurate
-%dependency information leads to an over-conservative synchronization
-%scheme. As an added benefit, information about task dependencies also
-%enables the runtime system to optimize further, such as improving task
-%and data placement on NUMA systems.
+\vspace{-0.5cm}
 
 \begin{figure}[htbp]
 \begin{lstlisting}[caption=Blocked matrix multiplication with OpenMP task dependencies,frame=tlrb,style=smaller,label=lst:MM-deps]{lst:MM-deps}
@@ -383,30 +372,53 @@ void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
                for (k = 0; k < N; k+=BS) {
                     #pragma omp task depend (in: A[i:BS][k:BS], B[k:BS][j:BS]) \
                          depend (inout: C[i:BS][j:BS])
-                    for (ii = i; ii < i+BS; ii++) {
-                         for (jj = j; jj < j+BS; jj++) {
-                              for (kk = k; kk < k+BS; kk++) {
+                    for (ii = i; ii < i+BS; ii++)
+                         for (jj = j; jj < j+BS; jj++)
+                              for (kk = k; kk < k+BS; kk++)
                                    C[ii][jj] = C[ii][jj] + A[ii][kk] * B[kk][jj];
-                              }
-                         }
-                    }
                }
           }
      }
 }\end{lstlisting}
 \end{figure}
 
+\vspace{-1cm}
+
 \subsubsection{The way we execute task-based applications}
-\paragraph{Inside kaapi}
-\begin{itemize}
-\item des trucs très simples sur le fonctionnement interne d'un
-  runtime data-flow.
-\end{itemize}
-\paragraph{notre façon de voir la machine}
-\begin{itemize}
-\item places (kproc, NUMA) ;
-\item impact du placement sur l'exécution / le vol (pop, steal, blabla)
-\end{itemize}
+
+Thanks to Cilk~\cite{FrigoLeisersonRandall1998,CilkSched98}, the work stealing
+technique has become popular and is often considered when it comes to
+dynamically balance the work load among processing units. The work stealing
+principle can be summarized as follows. An idle thread, called a thief,
+initiates a steal request to a random selected victim. On reply, the thief
+receives a copy of one ready task, leaving the original task marked as stolen.
+Coherency between a thief and its victim is ensured by a variant of the  Cilk's T.H.E
+protocol~\cite{FrigoLeisersonRandall1998}.
+
+The \kaapi runtime system also implements the work-stealing execution model to execute OpenMP task-based applications.
+The runtime creates a system thread, called a \emph{kproc}, for each computation resource to be used.
+On a NUMA multicore machine, a resource is a core.
+A kproc creates tasks and pushes them on its own work queue, which is implemented as a stack.
+The enqueue operation is very fast : it takes around ten cycles on recent x86/64 processors~\cite{libkomp}.
+As in Cilk, a  running \kaapi task can create children tasks. 
+During the execution of a task-based application, if a kproc encounters a task that is marked as stolen, it suspends its execution and switches to
+the work stealing scheduler that waits for dependencies to be met before
+resuming the kproc execution. 
+
+To find a ready task, a thief kproc iterates through the victim's queue from
+the least recently pushed task to the most recently one and it computes true
+data-flow dependencies for each task. 
+%False dependencies are resolved through variables renaming. 
+The iteration stops as soon as the kproc finds a ready task on the victim's queue.
+
+In addition, \kaapi runtime allows the cooperation among thieves, i.e.,
+multiple steal requests to the same processor with reduction of steal
+requests~\cite{marc_paperWS}.
+Previously, when $k > 1$ steal requests were sent on the same processor, only one request could be served.
+If the victim kproc is in a stealing state, the thief aborts the steal request and selects another
+victim randomly.
+The \kaapi cooperation divides the work into $k+1$ pieces when $k$ steal
+requests target the same processor.
 
 \subsection{On pose le problème}
 \begin{itemize}
@@ -525,7 +537,7 @@ task placement when they are created.
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.8]{figures/strategies.pdf}
-\caption{Strategy "P-N"}
+\caption{The "hws\_P\_N" strategy}
 \label{fig:detail-strategy}
 \end{figure}
 
