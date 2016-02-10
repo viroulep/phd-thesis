@@ -429,18 +429,17 @@ Preserving data locality while guaranteeing dynamic load balancing at runtime im
 The following of the paper study all these aspects and how they impact on each other, and more generally how they affect the overall application performance.
 
 \section{Using OpenMP tasks dependencies to improve tasks and data
-  placement on NUMA machines (TODO : horrible :-) )}
+  placement on NUMA machines}
 
 In this section, we describe how the runtime system can have a positive impact on the application execution using the information provided by data dependencies.
 The following sections describe the way we adapted the behavior of the runtime system to control data placement during the initialization phase, when data will be allocated and accessed for the first time, and how we modified the way tasks that perform the actual computations are dynamically assigned to processors while maximizing data locality.
 
 
-\subsection{Some technical details about XKaapi}
+\subsection{Inside the \kaapi task-based runtime system}
 
-Before digging into the strategies details, lets take a look at the XKaapi
-architecture and workflow.
+This section describes some of the key internal structures and mecanisms of the \kaapi runtime system.
 
-\subsubsection{Internal representation}
+\subsubsection{The way \kaapi models the architecture}
 
 \begin{figure}[t]
   \centering
@@ -449,33 +448,26 @@ architecture and workflow.
 \label{fig:detail-topology}
 \end{figure}
 
-XKaapi uses a concept of \verb/place/.
-A \verb/place/ is simply a list of tasks associated with one hierarchical level
-of the machine, and is very similar to the notion of \verb/shepherd/ introduced
-in \cite{DBLP:journals/ijhpca/OlivierPWSP12}.
-
-In this case we will use \verb/places/ at two differents levels, illustrated in
-Figure \ref{fig:detail-topology} : Processor and Node level.
-At the processor level one \verb/place/ is associated to each of the physical cores, and
-at the Node level one \verb/place/ is associated to each of the NUMA nodes.
+\kaapi sees the architecture topology as a hierarchy of \verb/places/.
+A \verb/place/ is a list of tasks associated to a subset of the machine processing units.
+\kaapi's places are very similar to the notion of \emph{shepherd} introduced in \cite{DBLP:journals/ijhpca/OlivierPWSP12}, or ForestGOMP's \emph{runqueues}~\cite{BroFurGogWacNam10IJPP}.
+\kaapi most of the time only considers two levels of places : node-level places, which are bound to the set of processors contained in a NUMA node, and processor-level places, which are bound to a single processor of the platform.
+This way, at the processor level one \verb/place/ is associated to each of the physical cores, and
+at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes, like represented in
+Figure \ref{fig:detail-topology}.
 
 
 \subsubsection{Task execution workflow}
 
-When a processor has finished executing its task, it will need a place
-from which he will get more work. We call this processus the place selection,
-and we will also refer to strategies related to this using \verb/WSselect/ (for WorkStealing select)
-in the remaining of the paper.
-Once a place is selected, the processor will take a task from its queue.
+When a processor becomes idle, the runtime system browses the topology to find a place from which stealing a task.
+There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
+Once a place is selected, the processor will take a ready task from its queue.
 FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
 faire un steal mais il faudrait l'expliquer.
 
-
-Something else occurs when a task execution is finished : the processor will
-compute the list of tasks that are newly ready due to the current task completion.
-It will then push each one of these task to a place. Once again we need to
-carefully select the place we want to push to, and we will refer to strategies
-related to this processus using \verb/WSpush/ (for WorkStealing push).
+The completion of a task most of the time unlocks the execution of some of its children in the dependency graph.
+This means marking them as ready for execution and pushing at least one of them to a place.
+Once again, there are many ways of selecting the place where to push ready tasks, implemented in strategies we refer to as \verb/WSpush/, for \emph{work-stealing push}.
 
 
 \subsection{Initial data distribution/placement}
