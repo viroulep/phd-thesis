@@ -457,13 +457,13 @@ at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes,
 Figure \ref{fig:detail-topology}.
 
 
-\subsubsection{Task execution workflow}
+\subsubsection{The way \kaapi enables ready tasks and steal them}
+FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
+faire un steal mais il faudrait l'expliquer.
 
 When a processor becomes idle, the runtime system browses the topology to find a place from which stealing a task.
 There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
 Once a place is selected, the processor will take a ready task from its queue.
-FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
-faire un steal mais il faudrait l'expliquer.
 
 The completion of a task most of the time unlocks the execution of some of its children in the dependency graph.
 This means marking them as ready for execution and pushing at least one of them to a place.
