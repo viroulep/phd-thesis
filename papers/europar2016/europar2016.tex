@@ -471,33 +471,36 @@ Once again, there are many ways of selecting the place where to push ready tasks
 
 
 \subsection{Initial data distribution/placement}
-TODO citer Markus Wittmann et al ~\cite{DBLP:journals/corr/abs-1101-0093}
+
+Taking into account data locality is a very important point when one want to get performance
+on large NUMA architecture.
+Therefore particular care should be given to the initial data distribution over the machine.
+
+Multiple works have been written on this, using \emph{numactl} is an easy solution which has
+been covered~\cite{DBLP:journals/corr/abs-1101-0093}, \cite{Olivier:2012:CMW:2388996.2389085},
+but it's often not enough to guarantee performances, as data locality is not likely
+to be tight enough to the part of the application which will use it. Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
+have shown that specifying affinity for initialization tasks can lead to
+huge improvement over locality oblivious techniques.
+
+We want to be able to distinguish the initialization parallel region from the computational
+parallel region, therefore we added runtime calls to indicate to the runtime that
+we enter and leave initialization.
+Inside the initialization region the runtime will use a user-defined task placement
+policy : it will ensure the data distribution because of the first-touch policy
+on memory pages.
+It is important to note that unlike \emph{numactl}, the memory placement is
+not based on pages but on data touched by the initialization tasks.
+
+We have implemented several strategies :
+
 \begin{itemize}
-  \item Pour contrôler le placement des données, les gens font au
-    mieux numactl.
-  \item Nous, on agit là-dessus à deux niveaux différents :
-    \begin{itemize}
-      \item au niveau applicatif, où on fournit au programmeur une API
-        pour contrôler le placement mémoire de ses données
-        (omp\_set\_affinity) ;
-      \item un niveau du runtime, où on peut garantir la
-        répartition des données de manière indirecte, en plaçant les
-        tâches d'initialisation (famille WSpush\_init dans laquelle on
-        retrouve : WSpush, cyclicnuma, randnuma, rand). => blabla first-touch
-      \end{itemize}
-    \item Les stratégies de l'état de l'art (numactl etc) s'appliquent
-      pour la totalité d'une exécution. Notre approche est capable de
-      différencier les tâches d'initialisations des tâches de calcul,
-      de manière à adapter la politique de selection et de placement
-      de tâches.
+  \item Cyclic numa : data are distributed in a round-robin fashion among the nodes.
+  \item Rand numa : data are distributed at random among the nodes.
+  \item FIXME introduire l'affinité ? Default numa : uses application's affinity
 \end{itemize}
 
-TODO rework
-\subsubsection{Distribution strategies at initialization}
-\begin{itemize}
-  \item \verb/cyclicnumastrict/ : round robin on numa nodes
-  \item \verb/randnuma/ : each task to a random node.
-\end{itemize}
+
 
 \subsection{Initial task placement when ready : WSpush strategies}
 
@@ -577,20 +580,19 @@ described below.
 \end{itemize}
 
 
-\subsubsection{loose vs strict}
+\subsubsection{Restricting steal to local nodes}
 
-TODO
-Possibility to combine the above with KAAPI\_STRICT\_PUSH to prevent the task from being stolen by a non local kproc.
+This idea has already been described in~\cite{Olivier:2012:CMW:2388996.2389085} :
+we can prevent processors to steal from other NUMA nodes to improve data locality.
+We implemented this to be used conjointly with any strategy, on figure \ref{fig:detail-strategy}
+it would simply means we don't go through steps 3a and 3b.
+We use \verb/strict/ to refer to strategies which restrict steals, and \verb/loose/
+to refer to those which don't.
 
-\begin{itemize}
-  \item pas d'impact significatif : le sortir des courbes, en parler
-    dans un paragraphe dédié où on présente les deux comportements et,
-    de manière synthétique, les perfs associées (tableau, voire
-    pourcentages de différence entre les deux dans le texte)
-  \item {\color{red}Conclusion à revoir, maintenant que le wspush est strict pour tout !}
-\end{itemize}
 
 \section{Evaluation}
+
+TODO version de tout, tag dépot etc...
 
 Evaluating distribution :
 
@@ -607,6 +609,10 @@ Conclusion générale : gérer la distribution c'est indispensable, après cycli
 Evaluating "strictness" :
 FIXME mercredi utiliser hws\_N plutôt que hws\_P
 FIXME courbes avec numactl
+
+Raison : beaucoup de tâche écrive sur la même partie du dernier bloc, il y a plus de tâche que de coeurs qui sont restreintes sur ce coeur,
+c'est du coup moins rentable d'empêcher le vol...
+Dans l'avenir des travaux : regarder sur d'autres applis.
 
 \begin{figure}[t]
   \centering
