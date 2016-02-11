@@ -232,7 +232,7 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 %related works in section \ref{sec:related-work} before concluding.
 
 \section{Background}
-\subsection{Hardware background}
+\subsection{Hardware background}\label{hardware}
 Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
 Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
 Exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
@@ -487,7 +487,7 @@ To better control data distribution on NUMA systems, we propose two different ap
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
 \end{itemize}
 Both of these approaches give the runtime system a way of keeping track of where the memory pages associated to the application data is actually stored.
-This information is then used to guide the way we perform task creation and load balancing. 
+This information is then used to guide the way we perform task creation and load balancing.
 
 We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
 Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding a 8K-long array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
@@ -582,43 +582,108 @@ to refer to those which don't.
 
 \section{Evaluation}
 
-TODO version de tout, tag dépot etc...
+\subsection{Experimental setup}
 
-Evaluating distribution :
+\subsubsection{Hardware}
+We ran all our experiments on the Intel192 machine described in section \ref{hardware}.
+
+\subsubsection{Applications}
+We evaluated our implementations using the KASTORS~\cite{virouleau:hal-01081974}\footnote{git : https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag "tag-europar16"} benchmark suite.
+More specifically we used the dependent tasks version of the blocked QR factorization
+(\verb/dgeqrf_taskdep/), and of the blocked Cholesky factorization (\verb/dpotrf_taskdep/).
+
+These applications rely on kernels from BLAS and LAPACK libraries, we used OpenBlas 2.15
+to provide them.
+
+\subsubsection{Compiler and runtime system}
+
+We used \kaapi as our runtime system, the exact version can be found in its
+git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
+For all of the above applications, we used the GCC 5.2.0 release compiler.
+
+\subsubsection{Data analysis}
+We made our execution log files public\footnote{TODO}, as well as our various scripts, so that
+you could be able to reproduce our data analysis.
+
+\subsection{Impact of the data distribution}
+
+We wanted to evaluate the impact the initial data distribution on the performances
+of the application. We did an evaluation for multiple sizes and blocksizes,
+as well as multiple strategies, and figure \ref{fig:eval-distrib} shows the
+results for the Cholesky application, on matrices with a size
+of 32768 and a blocksize of 512. The behaviour on different sizes and blocksizes is
+similar.
+
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.6]{figures/graph_distrib.pdf}
+  \includegraphics[scale=0.5]{figures/graph_distrib.pdf}
 \caption{Evaluating several data distributions}
 \label{fig:eval-distrib}
 \end{figure}
 
-TODO : seulement le 32K, le dire pour le 16K
-Conclusion générale : gérer la distribution c'est indispensable, après cyclicnuma a l'air suffisant.
+
+TODO Conclusion : gérer la distribution c'est indispensable, après cyclicnuma a l'air suffisant.
 
 
-Evaluating "strictness" :
-FIXME mercredi utiliser hws\_N plutôt que hws\_P
-FIXME courbes avec numactl
+\subsection{Impact of the stealing restriction}
 
-Raison : beaucoup de tâche écrive sur la même partie du dernier bloc, il y a plus de tâche que de coeurs qui sont restreintes sur ce coeur,
-c'est du coup moins rentable d'empêcher le vol...
-Dans l'avenir des travaux : regarder sur d'autres applis.
+Given a data distribution, previous works~\cite{Olivier:2012:CMW:2388996.2389085}
+has shown that restricting the task execution to the node where the data is
+written leads to better data locality, and that performances may indeed be improved.
+
+%Note explicative :
+% Pour i dans 0-N le kernel dpot agit sur chaque bloc de la diagonale
+% Au rang i,
+% - trsm agit sur la colonne en dessous de la case i,i
+% - syrk agit sur toutes les cases de la diagonale à partir de i+1,i+1 jusqu'à n,n
+% - gemm agit sur le reste des cases de la triangulaire inférieure non touchées par trsm ou syrk
+% Bref : il y a 64 tiles en round robin, ça fait un peu moins de 3 tiles/noeuds, sur 64 tiles
+% seulement 36 sont écrites, parmis elles la colonne inférieure 1 est écrite 1 fois,
+% la 2 deux fois, etc. Chaque case i,i est écrite i+1 fois, les dépendances
+% en écriture sont donc très largement concentrées sur la partie inférieure droite de la matrice !
+% Donc le strict c'est nul.
+However this is heavily dependent on how the algorithm work, for instance in the case
+of a Cholesky factorization, a lot of task use write access to the diagonal tiles
+of the matrix comparatively to other tiles of the matrix. Therefore applying
+a steal restriction on those task will potentially lead to an important number
+of inactive processors.
+
+We ran this experiment using multiple strategies and distributions, and found
+out that using a \emph{strict} restriction can lead to a loss of performance by
+around 25\% to more than 75\% with regard to the same setup without the \emph{strict}
+restriction.
+
+For the sake of brevity we did not include a figure for this, but the results of these
+experiments are included in the logs publicly published.
+
+
+%\begin{figure}[t]
+  %\centering
+  %\includegraphics[scale=0.6]{figures/graph_strict.pdf}
+%\caption{Evaluating impact of strictness}
+%\label{fig:eval-strict}
+%\end{figure}
+
+
+\subsection{Overview of the strategies}
+
+We then took a given data distribution, \verb/cyclicnuma/, and compared the
+different strategies, without any steal restriction.
+Once again, even if the performances obtain where obviously not the same, the behaviour
+of the different strategies comparatively to each other where similar for the
+different applications.
+
+Figure \ref{fig:eval-all-strat} shows the results of the experiments for the
+Cholesky algorithm, using matrices of size 32768, with a blocksize of 512 (best configuration).
+
+TODO augmenter les polices des légendes du plot
+
+
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.6]{figures/graph_strict.pdf}
-\caption{Evaluating impact of strictness}
-\label{fig:eval-strict}
-\end{figure}
-
-Conclusion : le strict c'est nul.
-
-Evaluating all the custom strategies :
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[scale=0.6]{figures/graph_all_strat.pdf}
+  \includegraphics[scale=0.5]{figures/graph_all_strat.pdf}
 \caption{Evaluating all strategies}
 \label{fig:eval-all-strat}
 \end{figure}
