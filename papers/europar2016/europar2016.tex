@@ -443,7 +443,7 @@ This section describes some of the key internal structures and mecanisms of the 
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.65]{./figures/topology.pdf}
+  \includegraphics[scale=0.5]{./figures/topology.pdf}
 \caption{Processors and Nodes representation}
 \label{fig:detail-topology}
 \end{figure}
@@ -668,16 +668,30 @@ experiments are included in the logs publicly published.
 
 \subsection{Overview of the strategies}
 
-We then took a given data distribution, \verb/cyclicnuma/, and compared the
+We took a given data distribution, \verb/cyclicnuma/, and compared the
 different strategies, without any steal restriction.
-Once again, even if the performances obtain where obviously not the same, the behaviour
-of the different strategies comparatively to each other where similar for the
+Once again, even if the performances obtained where obviously not the same, the behaviour
+of the different strategies comparatively to each others were similar for the
 different applications.
 
 Figure \ref{fig:eval-all-strat} shows the results of the experiments for the
 Cholesky algorithm, using matrices of size 32768, with a blocksize of 512 (best configuration).
 
-TODO augmenter les polices des légendes du plot
+
+One first interesting fact to note is that even with very basic \verb/WSselect/
+and \verb/WSpush/ strategies (\verb/sRand/+\verb/pLoc/), we get decent performances
+thanks to the distribution.
+
+Another remark : given a selection strategy (e.g. \verb/sRandNum/), placing
+the task on the NUMA node where the written data are allocated (\verb/pNumW/) gives
+better result than simply pushing the data to its NUMA node (\verb/pLocNum/).
+
+Assuming the tasks are pushed using the \verb/pNuwWLoc/ strategy, focusing
+place selection only on one level of the hierarchy (\verb/sProc/ or \verb/sNum/)
+fails to reach performances we could obtain using naive strategies.
+
+On the contrary, taking into account both level of the hierarchy (\verb/sProcNum/,
+\verb/sNumProc/) achieve similar and better performances than other strategies.
 
 
 
@@ -688,19 +702,43 @@ TODO augmenter les polices des légendes du plot
 \label{fig:eval-all-strat}
 \end{figure}
 
-Conclusion : OCR c'est bien, peu de différences entre N/P et P/N, P et N sont un peu en dessous.
 
-Evaluating selected strategies on multiple sizes :
+\subsection{Behaviour of the strategies}
+
+Figure \ref{fig:eval-strat-sizes} shows the behaviour of the different strategies
+depending on the matrix size and block size, again using a \verb/cyclicnuma/ distribution
+without steal restriction. The figure shows the performances using
+the best block size for each matrix size (which is, for our setup, 256 for a matrix
+size of 16384, and 512 for the others).
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.6]{figures/graph_details_strat.pdf}
+  \includegraphics[scale=0.5]{figures/graph_details_strat.pdf}
 \caption{Evaluating specific strategies on multiple sizes}
 \label{fig:eval-strat-sizes}
 \end{figure}
 
-Conclusion : pas besoin de s'embeter pour les petites tailles.
-FIXME : tester sur des plus grosses
+
+From the previous experiment results, we selected a subset of three strategies
+combination for this evaluation :
+\begin{itemize}
+  \item \verb/sRand/ + \verb/pLoc/, which is a basic not hierarchy-aware strategy
+  \item \verb/sNumProc/ + \verb/pNumWLoc/, which was the best strategy in our previous
+    evaluation, and is also equivalent to using \verb/sProcNum/.
+  \item \verb/sRandNum/ + \verb/pNumW/. Two combinations use the \verb/sRandNum/,
+    the one taking into account data locality is simply better.
+\end{itemize}
+We chose not to select \verb/sNum/ or \verb/sLoc/, as they use the same \verb/WSpush/
+as our second combination, but with relatively worse performances.
+
+As expected, taking both hierarchy and data locality into account (\verb/sNumProc/
++ \verb/pNumWLoc/) gives overall the best performances.
+The only exceptions are for small matrix sizes (16384), where there may just be
+not enough work to be able to take advantage of this strategy.
+
+We must note that simply distributing the data over the nodes enables the basic
+\verb/sRand/ + \verb/pLoc/ combination to achieve satisfying performances.
+
 
 \section{Related work}
 \begin{itemize}
@@ -723,6 +761,8 @@ NUMA~\cite{DBLP:journals/corr/Tahan14}, solution au niveau appli
 
 
 \section*{Acknowledgments}
+
+FIXME citer ELCI !
 
 This work has been partially supported by the IRSES2011-295217
 HPC-GA Project.
