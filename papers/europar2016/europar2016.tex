@@ -524,13 +524,8 @@ described below.
 \label{fig:detail-strategy}
 \end{figure}
 \begin{itemize}
-  \item \verb/sProcNum/ : t his strategy is
-    illustrated in figure \ref{fig:detail-strategy}.
-    First of all we select the processor's place (1), upon failure we select
-    another place in the following order : we select one of the neighbour
-    processors (2a); when all the neighbours have been visited, we select the
-    local NUMA place (2b); we continue by looking at all the processors' place
-    from a random remote node (3a) and its NUMA place (3b).
+  \item \verb/sProcNum/ : this strategy is illustrated in figure \ref{fig:detail-strategy}.
+    First, we browse the processor's place (1). Upon failure, we browse the topology in the following order : we first browse one of the neighbor processors (2a); when all the neighbors have been visited, we browse the local NUMA place (2b); we continue by browsing all the processors' places from a random remote node (3a) and we eventually consider the place of its NUMA node (3b).
   \item \verb/sNumProc/ : This strategy is similar, except we always look at the
     NUMA place before looking at the processors' place (in figure \ref{fig:detail-strategy}
     it means we switch step 2a with 2b, and step 3a with 3b).
@@ -542,16 +537,8 @@ described below.
     every steps but step 3a.
 \end{itemize}
 
-
-\subsubsection{Restricting steal to local nodes}
-
-This idea has already been described in~\cite{Olivier:2012:CMW:2388996.2389085} :
-we can prevent processors to steal from other NUMA nodes to improve data locality.
-We implemented this to be used conjointly with any strategy, on figure \ref{fig:detail-strategy}
-it would simply means we don't go through steps 3a and 3b.
-We use \verb/strict/ to refer to strategies which restrict steals, and \verb/loose/
-to refer to those which don't.
-
+Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies comes in two versions : a \verb!strict! version in which we prevent processors to steal from other NUMA nodes to improve data locality, and a \verb!loose! version where these restrictions do not apply.
+For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go though steps 3a and 3b.
 
 \section{Evaluation}
 
