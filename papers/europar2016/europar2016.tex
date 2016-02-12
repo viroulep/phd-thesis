@@ -239,7 +239,7 @@ Exploiting such architectures at their full potential requires a fine control of
 
 The machine we experimented on is a SGI UV2000 platform made of 24 NUMA nodes.
 Each NUMA node holds a 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
-We refer to this machine as Xeon192 in the paper. 
+We refer to this machine as Intel192 in the paper. 
 
 \begin{figure}
 \begin{center}
@@ -289,11 +289,11 @@ We refer to this machine as Xeon192 in the paper.
 
 \end{tikzpicture}
 \end{center}
-\caption{Memory topology of the Xeon192 SGI UV2000 machine.}
+\caption{Memory topology of the Intel192 SGI UV2000 machine.}
 \label{fig:idchire}
 \end{figure}
 
-Figure \ref{fig:idchire} shows the Xeon192 machine memory topology.
+Figure \ref{fig:idchire} shows the Intel192 machine memory topology.
 NUMA nodes are organized by pairs of nodes connected together through Intel QuickPath Interconnect.
 These pairs can communicate together through a proprietary fabric called NUMALink6, represented by the edges on the graph.
 In other words, taking node $n_0$ as example :
@@ -303,14 +303,14 @@ In other words, taking node $n_0$ as example :
 \item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
 \end{itemize}
 
-Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from node $n_0$ to any other node of the Xeon192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
 
 \vspace{-0.5cm}
 
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
 \begin{table}
-\caption{NUMA distances from node 0 advertised by the hwloc library on Xeon192.}
+\caption{NUMA distances from node 0 advertised by the hwloc library on Intel192.}
 \begin{center}
 \begin{tabular}{C{3cm} C{2cm} C{2cm} C{2cm} C{2cm}}
     \toprule[0.15em]
@@ -492,79 +492,52 @@ This information is then used to guide the way we perform task creation and load
 We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
 Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding a 8K-long array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
 
-\subsection{Initial distribution of ready tasks : WSpush strategies}
+\subsection{Distribution of ready tasks : WSpush strategies}
 
-When a task finishes its execution, the processor responsible for its execution
-will look for the tasks depending on the eventual data that were just produced.
-If a task has all of its dependencies met, it should be pushed to a place
-so that it can be executed.
+This section describes four different ways of pushing ready tasks to a NUMA system places.
+Two of them are data-oblivious, while the other two rely on the dependencies expressed using the \verb!depend! keyword on OpenMP tasks.
 
-This task placement should not be neglected, and we have multiple possible
-strategies for this.
+The \verb/pLoc/ strategy makes a processor push ready tasks to
+    its own place, while the \verb/pLocNum/ strategy makes a processor push ready tasks to the place of its NUMA node (\emph{local NUMA node}).
+The \verb/pNumW/ strategy pushes tasks on the node-level place corresponding to the NUMA node where most of their output data are allocated on (W stands for Write).
+The last WSpush strategy, called \verb/pNumWLoc/, behaves almost the same than \verb!pNumW! except that if
+    the data is allocated on the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
+    
+    It's important to note that \verb!pLoc! and \verb!pLocNum! does not take initial data placement into account, while \verb!pNumW! and \verb!pNumWLoc! are both aware of where a task's data are physically allocated and which of them are written, thanks to the OpenMP \verb!depend! keyword.
 
-\subsubsection{Data independent}
+\subsection{Dynamic load balancing using work-stealing : WSselect strategies}
 
-We implemented the following strategies, that are data oblivious :
-\begin{itemize}
-  \item \verb/local/ : in this strategy the processor will push ready tasks to
-    its own place.
-  \item \verb/numa/ : the processor pushes to its NUMA node's place.
-\end{itemize}
+Another important step when implementing work-stealing is the selection of the victim processor we want to steal from.
+This section describe the selection strategies we implemented, that take the architecture memory hierarchy into account.
 
-\subsubsection{Using data dependencies}
+The first two strategies, \verb!sRand! and \verb!sRandNum! are similar to those studied in~\cite{DBLP:journals/ijhpca/OlivierPWSP12}
+and distinguish two levels of hierarchy : the processor level and the NUMA node level.
+\verb/sRand/ selects a random processor's place while \verb/sRandNum/ selects a random NUMA node's place.
 
-We can also use the information present in the task's data dependencies,
-therefore we additionally implemented the following strategies :
-
-FIXME : citer HPF ?
-
-\begin{itemize}
-  \item \verb/Wnuma/ : we first identify an \verb/out/ dependency, then we
-    look for the NUMA node where it is allocated, and we push the task to this
-    node's place.
-  \item \verb/Whws/ : this is the same as the above strategy, except that if
-    the data is allocated on our own node, we push the task to our processor's place.
-\end{itemize}
-
-
-\subsection{Dynamic load balancing using workstealing : WSselect strategies}
-
-Another critical step when using a workstealing approach is the selection of
-the victim we want to steal from.
-For this we should take into account the machine hierarchy.
-
-The following strategies are similar to those studied in~\cite{DBLP:journals/ijhpca/OlivierPWSP12}
-and distinguish two levels of hierarchy.
-
-\begin{itemize}
-  \item \verb/rand/ : Select a random processor's place
-  \item \verb/numa/ : Select a random NUMA node's place
-\end{itemize}
-
-We additionally implemented several strategies mixing both level of hierarchy,
+We additionally implemented several strategies mixing both levels of hierarchy,
 described below.
 
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.7]{figures/strategies.pdf}
-\caption{Illustration of the "hws\_P\_N" strategy}
+\caption{Illustration of the "sProcNum" strategy}
 \label{fig:detail-strategy}
 \end{figure}
 \begin{itemize}
-  \item \verb/hws_P_N/ : \verb/P_N/ stands for "Processor-Node". This strategy is
+  \item \verb/sProcNum/ : t his strategy is
     illustrated in figure \ref{fig:detail-strategy}.
     First of all we select the processor's place (1), upon failure we select
     another place in the following order : we select one of the neighbour
     processors (2a); when all the neighbours have been visited, we select the
     local NUMA place (2b); we continue by looking at all the processors' place
     from a random remote node (3a) and its NUMA place (3b).
-  \item \verb/hws_N_P/ : This strategy is similar, except we always look at the
+  \item \verb/sNumProc/ : This strategy is similar, except we always look at the
     NUMA place before looking at the processors' place (in figure \ref{fig:detail-strategy}
     it means we switch step 2a with 2b, and step 3a with 3b).
-  \item \verb/hws_P/ : In this strategy the stealer will visit only the
+  \item \verb/sProc/ : In this strategy the stealer will visit only the
     processors' places and its own NUMA place. In figure \ref{fig:detail-strategy} it means we do
     every steps but step 3b.
-  \item \verb/hws_N/ : In this strategy the stealer will visit only NUMA places
+  \item \verb/sNum/ : In this strategy the stealer will visit only NUMA places
     and its neighbour. In figure \ref{fig:detail-strategy} it means we do
     every steps but step 3a.
 \end{itemize}
