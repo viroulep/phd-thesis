@@ -714,6 +714,14 @@ We must note that simply distributing the data over the nodes enables the basic
 
 
 \section{Related work}
+
+Numerous works focus on data locality and/or topology-aware scheduling strategies for
+NUMA architectures~\cite{DBLP:conf/europar/Clet-OrtegaCP14,DBLP:journals/ijhpca/OlivierPWSP12,Olivier:2012:CMW:2388996.2389085,DBLP:journals/corr/Tahan14,DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, however none takes advantage of the OpenMP \verb/depend/ clause,
+which indicate precisely which data matter for a given task, and from which
+the runtime can take valuable information for scheduling its tasks.
+
+TODO parler des schedule static.
+
 \begin{itemize}
 \item Ce qu'on fait, c'est mieux que Bronis parce qu'on a la vision
   (et le contrôle indirect) du placement des données. Encore faut-il
@@ -732,6 +740,7 @@ la bonne ref pour Bronis, OpenMP task-scheduling et
 NUMA~\cite{DBLP:journals/corr/Tahan14}, solution au niveau appli
 (terboven)~\cite{DBLP:conf/europar/TerbovenSCM12}, Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12}.
 
+\section{Conclusion and future works}
 
 \section*{Acknowledgments}
 
