@@ -232,7 +232,8 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 %related works in section \ref{sec:related-work} before concluding.
 
 \section{Background}
-\subsection{Hardware background}\label{hardware}
+\subsection{Hardware background}
+\label{sec:hardware}
 Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
 Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
 Exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
@@ -537,43 +538,34 @@ described below.
     every steps but step 3a.
 \end{itemize}
 
-Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies comes in two versions : a \verb!strict! version in which we prevent processors to steal from other NUMA nodes to improve data locality, and a \verb!loose! version where these restrictions do not apply.
+Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies come in two versions : a \verb!strict! version in which we prevent processors from stealing from other NUMA nodes to improve data locality, and a \verb!loose! version where these restrictions do not apply.
 For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go though steps 3a and 3b.
 
 \section{Evaluation}
 
 \subsection{Experimental setup}
 
-\subsubsection{Hardware}
-We ran all our experiments on the Intel192 machine described in section \ref{hardware}.
+We ran all our experiments on the Intel192 machine described in section \ref{sec:hardware}.
 
-\subsubsection{Applications}
-We evaluated our implementations using the KASTORS~\cite{virouleau:hal-01081974}\footnote{git : https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag "tag-europar16"} benchmark suite.
-More specifically we used the dependent tasks version of the blocked QR factorization
+We evaluated our strategies using the KASTORS~\cite{virouleau:hal-01081974}\footnote{git available at https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag "tag-europar16"} benchmark suite.
+More specifically, we used the dependent tasks version of the blocked QR factorization
 (\verb/dgeqrf_taskdep/), and of the blocked Cholesky factorization (\verb/dpotrf_taskdep/).
 
-These applications rely on kernels from BLAS and LAPACK libraries, we used OpenBlas 2.15
+These applications rely on kernels from BLAS and LAPACK libraries, we used OpenBLAS 2.15
 to provide them.
 
-\subsubsection{Compiler and runtime system}
-
-We used \kaapi as our runtime system, the exact version can be found in its
+We used the \kaapi runtime system. We tagged the version we used on \kaapi's
 git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
 For all of the above applications, we used the GCC 5.2.0 release compiler.
 
-\subsubsection{Data analysis}
-We made our execution log files public\footnote{TODO}, as well as our various scripts, so that
-you could be able to reproduce our data analysis.
+We made our execution log files public\footnote{TODO}, as well as all the scripts you used, so that
+anyone may reproduce our data analysis.
 
 \subsection{Impact of the data distribution}
 
-We wanted to evaluate the impact the initial data distribution on the performances
-of the application. We did an evaluation for multiple sizes and blocksizes,
-as well as multiple strategies, and figure \ref{fig:eval-distrib} shows the
-results for the Cholesky application, on matrices with a size
-of 32768 and a blocksize of 512. The behaviour on different sizes and blocksizes is
-similar.
-
+We first evaluated the impact the initial data distribution has on the application performance. We did an evaluation for multiple matrix sizes and block sizes,
+as well as multiple combinations of WSpush and WSselect strategies. Figure \ref{fig:eval-distrib} reports the
+results we obtained for the Cholesky application, on 32K-wide matrices divided in blocks of 512$\times$512 elements. We observed similar behavior running Cholesky on different matrix sizes (16K to 64K) and block sizes (256 to 1024).
 
 \begin{figure}[t]
   \centering
@@ -589,8 +581,8 @@ TODO Conclusion : gérer la distribution c'est indispensable, après cyclicnuma 
 \subsection{Impact of the stealing restriction}
 
 Given a data distribution, previous works~\cite{Olivier:2012:CMW:2388996.2389085}
-has shown that restricting the task execution to the node where the data is
-written leads to better data locality, and that performances may indeed be improved.
+have shown that restricting the task execution to the node where the data is
+written leads to better data locality which may improve the application performance.
 
 %Note explicative :
 % Pour i dans 0-N le kernel dpot agit sur chaque bloc de la diagonale
@@ -603,15 +595,15 @@ written leads to better data locality, and that performances may indeed be impro
 % la 2 deux fois, etc. Chaque case i,i est écrite i+1 fois, les dépendances
 % en écriture sont donc très largement concentrées sur la partie inférieure droite de la matrice !
 % Donc le strict c'est nul.
-However this is heavily dependent on how the algorithm work, for instance in the case
-of a Cholesky factorization, a lot of task use write access to the diagonal tiles
+However, this is heavily dependent on the algorithm the application implements. For instance, in the case
+of a Cholesky factorization, many tasks write to the diagonal tiles
 of the matrix comparatively to other tiles of the matrix. Therefore applying
 a steal restriction on those task will potentially lead to an important number
 of inactive processors.
 
-We ran this experiment using multiple strategies and distributions, and found
-out that using a \emph{strict} restriction can lead to a loss of performance by
-around 25\% to more than 75\% with regard to the same setup without the \emph{strict}
+We evaluated both strict and loose versions of our work-stealing strategies and found
+out that preventing processors from stealing from other NUMA nodes can lead to a loss of performance by
+around 25\% to more than 75\% with respect to the same setup without the \emph{strict}
 restriction.
 
 For the sake of brevity we did not include a figure for this, but the results of these
@@ -626,7 +618,7 @@ experiments are included in the logs publicly published.
 %\end{figure}
 
 
-\subsection{Overview of the strategies}
+\subsection{Overview of the strategies performances}
 
 We took a given data distribution, \verb/cyclicnuma/, and compared the
 different strategies, without any steal restriction.
@@ -663,7 +655,7 @@ On the contrary, taking into account both level of the hierarchy (\verb/sProcNum
 \end{figure}
 
 
-\subsection{Behaviour of the strategies}
+\subsection{Strategies performance scaling}
 
 Figure \ref{fig:eval-strat-sizes} shows the behaviour of the different strategies
 depending on the matrix size and block size, again using a \verb/cyclicnuma/ distribution
