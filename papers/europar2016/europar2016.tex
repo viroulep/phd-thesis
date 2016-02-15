@@ -558,8 +558,8 @@ described below.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.5]{figures/strategies.pdf}
-\caption{Illustration of the "sProcNum" strategy \TG{En mettant 6 étapes, 2 à droite et 2 à gauche il y aurait moins de place perdue.}}
+  \includegraphics[scale=0.45]{figures/strategies.pdf}
+  \caption{Illustration of the "sProcNum" strategy}
 \label{fig:detail-strategy}
 \end{figure}
 \begin{itemize}
@@ -589,9 +589,7 @@ We ran all our experiments on the Intel192 machine described in section \ref{sec
 We evaluated our strategies using the KASTORS~\cite{virouleau:hal-01081974}\footnote{git available at https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag "tag-europar16"} benchmark suite.
 More specifically, we used the dependent tasks version of the blocked QR factorization
 (\verb/dgeqrf_taskdep/), and of the blocked Cholesky factorization (\verb/dpotrf_taskdep/).
-
 These applications rely on kernels from BLAS and LAPACK libraries provided by OpenBLAS 2.15.
-
 We used the OpenMP GCC compliant runtime libKOMP~\cite{libkomp} based on \kaapi runtime system. We tagged the version we used on \kaapi's
 git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
 For all of the above applications, we used the GCC 5.2.0 release compiler.
@@ -604,6 +602,8 @@ anyone may reproduce our data analysis.
 We first evaluated the impact the initial data distribution has on the application performance. We did an evaluation for multiple matrix sizes and block sizes,
 as well as multiple combinations of WSpush and WSselect strategies. Figure \ref{fig:eval-distrib} reports the
 results we obtained for the Cholesky application, on 32K-wide matrices divided into blocks of 512$\times$512 elements. We observed similar behavior running Cholesky on different matrix sizes (16K to 64K) and block sizes (256 to 1024).
+The dashed horizontal line is the \kaapi performance baseline, and the plain
+horizontal line is the \kaapi performance baseline using \verb/numactl/.
 
 \begin{figure}[t]
   \centering
@@ -663,6 +663,7 @@ Once again, even if the performances we obtained are obviously not the same, the
 
 Figure \ref{fig:eval-all-strat} shows the results of the experiments for the
 Cholesky application on 32K-wide matrices divided into blocks of 512$\times$512 elements (best configuration for this matrix size).
+The dashed horizontal line is the GCC performance baseline.
 
 It is first interesting to note that even very basic \verb/WSselect/
 and \verb/WSpush/ strategies, like \verb/sRand/+\verb/pLoc/, obtained decent performances
@@ -681,7 +682,7 @@ On the contrary, taking into account both levels of the hierarchy (\verb/sProcNu
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_all_strat.pdf}
-\caption{Evaluating all strategies}
+  \caption{Evaluating all strategies (WSselect + WSpush)}
 \label{fig:eval-all-strat}
 \end{figure}
 
