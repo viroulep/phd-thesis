@@ -660,8 +660,8 @@ On the contrary, taking into account both levels of the hierarchy (\verb/sProcNu
 
 \subsection{Strategies performance scaling}
 
-Figure \ref{fig:eval-strat-sizes} shows the behaviour of the different strategies
-depending on the matrix size and block size, again using a \verb/cyclicnuma/ distribution
+Figure \ref{fig:eval-strat-sizes} shows the behavior of the different strategies
+depending on the matrix size, again using a \verb/cyclicnuma/ distribution
 without steal restriction. The figure shows the performances using
 the best block size for each matrix size (which is, for our setup, 256 for a matrix
 size of 16384, and 512 for the others).
@@ -674,26 +674,24 @@ size of 16384, and 512 for the others).
 \end{figure}
 
 
-From the previous experiment results, we selected a subset of three strategies
-combination for this evaluation :
+From the previous experiment results, we selected a subset of three strategy
+combinations for this evaluation :
 \begin{itemize}
-  \item \verb/sRand/ + \verb/pLoc/, which is a basic not hierarchy-aware strategy
+  \item \verb/sRand/ + \verb/pLoc/, which is a basic strategy that does not take the architecture topology into account ;
   \item \verb/sNumProc/ + \verb/pNumWLoc/, which was the best strategy in our previous
-    evaluation, and is also equivalent to using \verb/sProcNum/.
-  \item \verb/sRandNum/ + \verb/pNumW/. Two combinations use the \verb/sRandNum/,
-    the one taking into account data locality is simply better.
+    evaluation and is also equivalent to using \verb/sProcNum/ ;
+  \item \verb/sRandNum/ + \verb/pNumW/ that performs random selection of node-level places.
 \end{itemize}
-We chose not to select \verb/sNum/ or \verb/sLoc/, as they use the same \verb/WSpush/
-as our second combination, but with relatively worse performances.
+We chose not to select \verb/sNum/ or \verb/sLoc/ as they use the same \verb/WSpush/ strategy
+as our second combination, but with relatively lower performances.
 
-As expected, taking both hierarchy and data locality into account (\verb/sNumProc/
-+ \verb/pNumWLoc/) gives overall the best performances.
+As expected, combinations of strategies taking both the architecture hierarchy and data locality into account (\verb/sNumProc/
++ \verb/pNumWLoc/) achieve the best performances.
 The only exceptions are for small matrix sizes (16384), where there may just be
 not enough work to be able to take advantage of this strategy.
 
 We must note that simply distributing the data over the nodes enables the basic
 \verb/sRand/ + \verb/pLoc/ combination to achieve satisfying performances.
-
 
 \section{Related work}
 \label{sec:related-work}
