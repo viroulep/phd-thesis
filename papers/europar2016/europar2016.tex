@@ -150,6 +150,16 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
+In the following sections we will first give some background about NUMA architectures
+and the task programming model with data dependencies, in section \ref{sec:background}.
+We will then describe our ideas and strategies to improve the runtime performances
+for these applications in section \ref{sec:contributions},
+as well as how we implemented them in our software. Then we will present the performances
+evaluation in section \ref{sec:performances-evaluation}, where we will discuss
+the results and how they behave with regard to previously suggested strategies.
+We will finally present some related works in section \ref{sec:related-work}
+before concluding.
+
 TODO
 
 task dependencies enable full knowledge about data
@@ -232,6 +242,7 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 %related works in section \ref{sec:related-work} before concluding.
 
 \section{Background}
+\label{sec:background}
 \subsection{Hardware background}
 \label{sec:hardware}
 Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
@@ -422,7 +433,7 @@ The work-stealing execution model they rely on also fill the need for balancing 
 However, exploiting NUMA architectures at their full potential requires some control on the way tasks and data are distributed over the platform, in order to avoid NUMA-related performance penalties. 
 Preserving data locality while guaranteeing dynamic load balancing at runtime imposes an embarrassing dilemma to the runtime system that has a direct impact on :
 \begin{itemize}   
-\item the way data is allocated ;
+\item the way data are allocated ;
 \item the way ready tasks are originally assigned to processors ;
 \item the way the scheduler browses the architecture topology to find a processor to steal tasks from.
 \end{itemize}
@@ -431,6 +442,7 @@ The following of the paper study all these aspects and how they impact on each o
 
 \section{Using OpenMP tasks dependencies to improve tasks and data
   placement on NUMA machines}
+\label{sec:contributions}
 
 In this section, we describe how the runtime system can have a positive impact on the application execution using the information provided by data dependencies.
 The following sections describe the way we adapted the behavior of the runtime system to control data placement during the initialization phase, when data will be allocated and accessed for the first time, and how we modified the way tasks that perform the actual computations are dynamically assigned to processors while maximizing data locality.
@@ -459,8 +471,6 @@ Figure \ref{fig:detail-topology}.
 
 
 \subsubsection{The way \kaapi enables ready tasks and steal them}
-FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
-faire un steal mais il faudrait l'expliquer.
 
 When a processor becomes idle, the runtime system browses the topology to find a place from which stealing a task.
 There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
@@ -471,7 +481,7 @@ This means marking them as ready for execution and pushing at least one of them 
 Once again, there are many ways of selecting the place where to push ready tasks, implemented in strategies we refer to as \verb/WSpush/, for \emph{work-stealing push}.
 
 \subsection{Controlling data distribution on a NUMA system}
-Controlling the way data is allocated on a NUMA system requires a good understanding of the underlying memory architecture.
+Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
 Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
 For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables over all the NUMA nodes of the machine.
 This policy is widely used on NUMA systems in conjonction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to access memory.
@@ -487,7 +497,7 @@ To better control data distribution on NUMA systems, we propose two different ap
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
 \end{itemize}
-Both of these approaches give the runtime system a way of keeping track of where the memory pages associated to the application data is actually stored.
+Both of these approaches give the runtime system a way of keeping track of where the memory pages associated to the application data are actually stored.
 This information is then used to guide the way we perform task creation and load balancing.
 
 We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
@@ -502,7 +512,7 @@ The \verb/pLoc/ strategy makes a processor push ready tasks to
     its own place, while the \verb/pLocNum/ strategy makes a processor push ready tasks to the place of its NUMA node (\emph{local NUMA node}).
 The \verb/pNumW/ strategy pushes tasks on the node-level place corresponding to the NUMA node where most of their output data are allocated on (W stands for Write).
 The last WSpush strategy, called \verb/pNumWLoc/, behaves almost the same than \verb!pNumW! except that if
-    the data is allocated on the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
+    the data are allocated on the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
     
     It's important to note that \verb!pLoc! and \verb!pLocNum! does not take initial data placement into account, while \verb!pNumW! and \verb!pNumWLoc! are both aware of where a task's data are physically allocated and which of them are written, thanks to the OpenMP \verb!depend! keyword.
 
@@ -542,6 +552,7 @@ Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies c
 For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go though steps 3a and 3b.
 
 \section{Evaluation}
+\label{sec:performances-evaluation}
 
 \subsection{Experimental setup}
 
@@ -558,7 +569,7 @@ We used the \kaapi runtime system. We tagged the version we used on \kaapi's
 git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
 For all of the above applications, we used the GCC 5.2.0 release compiler.
 
-We made our execution log files public\footnote{TODO}, as well as all the scripts you used, so that
+We made our execution log files public\footnote{TODO}, as well as all the scripts we used, so that
 anyone may reproduce our data analysis.
 
 \subsection{Impact of the data distribution}
@@ -581,7 +592,7 @@ TODO Conclusion : gérer la distribution c'est indispensable, après cyclicnuma 
 \subsection{Impact of the stealing restriction}
 
 Given a data distribution, previous works~\cite{Olivier:2012:CMW:2388996.2389085}
-have shown that restricting the task execution to the node where the data is
+have shown that restricting the task execution to the node where the data are
 written leads to better data locality which may improve the application performance.
 
 %Note explicative :
@@ -693,6 +704,7 @@ We must note that simply distributing the data over the nodes enables the basic
 
 
 \section{Related work}
+\label{sec:related-work}
 
 Numerous works focus on data locality and/or topology-aware scheduling strategies for
 NUMA architectures~\cite{DBLP:conf/europar/Clet-OrtegaCP14,DBLP:journals/ijhpca/OlivierPWSP12,Olivier:2012:CMW:2388996.2389085,DBLP:journals/corr/Tahan14,DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, however none takes advantage of the OpenMP \verb/depend/ clause,
