@@ -267,75 +267,70 @@ Exploiting such architectures at their full potential requires a fine control of
 The machine we experimented on is an SGI UV2000 platform made of 24 NUMA nodes.
 Each NUMA node holds an 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
 We refer to this machine as Intel192 in the paper. 
+%\begin{figure}
+%\begin{center}
+%\begin{tikzpicture}[scale=0.6]
+%\tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
+%
+%\Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
+%\Vertex[x=0, y=2, L=$n_{22,23}$]{n4}
+%\Vertex[x=0, y=4, L=$n_{8,9}$]{n8}
+%\Vertex[x=0, y=6, L=$n_{12,13}$]{n12}
+%\Vertex[x=2, y=0, L=$n_{10,11}$]{n1}
+%\Vertex[x=2, y=2, L=$n_{6,7}$]{n5}
+%\Vertex[x=2, y=4, L=$n_{0,1}$]{n9}
+%\Vertex[x=2, y=6, L=$n_{16,17}$]{n13}
+%
+%\Vertex[x=4, y=0, L=$n_{20,21}$]{n2}
+%\Vertex[x=4, y=2, L=$n_{4,5}$]{n6}
+%\Vertex[x=4, y=4, L=$n_{2,3}$]{n10}
+%\Vertex[x=4, y=6, L=$n_{10,11}$]{n14}
+%\Vertex[x=6, y=0, L=$n_{12,13}$]{n3}
+%\Vertex[x=6, y=2, L=$n_{8,9}$]{n7}
+%\Vertex[x=6, y=4, L=$n_{18,19}$]{n11}
+%\Vertex[x=6, y=6, L=$n_{14,15}$]{n15}
+%
+%\Edge(n0)(n5)
+%\Edge(n4)(n5)
+%\Edge(n1)(n5)
+%
+%\Edge(n13)(n9)
+%\Edge(n12)(n9)
+%\Edge(n8)(n9)
+%
+%\Edge(n15)(n10)
+%\Edge(n14)(n10)
+%\Edge(n11)(n10)
+%
+%\Edge(n3)(n6)
+%\Edge(n2)(n6)
+%\Edge(n7)(n6)
+%
+%\Edge(n9)(n5)
+%\Edge(n9)(n10)
+%\Edge(n5)(n10)
+%\Edge(n9)(n6)
+%\Edge(n5)(n6)
+%\Edge(n10)(n6)
+%
+%\end{tikzpicture}
+%\end{center}
+%\caption{Memory topology of the Intel192 SGI UV2000 machine. \TG{Je supprimerai la figure.}}
+%\label{fig:idchire}
+%\end{figure}
+The memory topology is organized by pairs of NUMA nodes connected together through Intel QuickPath Interconnect.
+These pairs can communicate together through a proprietary fabric called NUMALink6 with up to two hops.
+%, represented by the edges of the graph.In other words, taking node $n_0$ as example :
+%\begin{itemize}
+%\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
+%\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
+%\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
+%\end{itemize}
 
-\begin{figure}
-\begin{center}
-\begin{tikzpicture}[scale=0.6]
-\tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
-
-\Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
-\Vertex[x=0, y=2, L=$n_{22,23}$]{n4}
-\Vertex[x=0, y=4, L=$n_{8,9}$]{n8}
-\Vertex[x=0, y=6, L=$n_{12,13}$]{n12}
-\Vertex[x=2, y=0, L=$n_{10,11}$]{n1}
-\Vertex[x=2, y=2, L=$n_{6,7}$]{n5}
-\Vertex[x=2, y=4, L=$n_{0,1}$]{n9}
-\Vertex[x=2, y=6, L=$n_{16,17}$]{n13}
-
-\Vertex[x=4, y=0, L=$n_{20,21}$]{n2}
-\Vertex[x=4, y=2, L=$n_{4,5}$]{n6}
-\Vertex[x=4, y=4, L=$n_{2,3}$]{n10}
-\Vertex[x=4, y=6, L=$n_{10,11}$]{n14}
-\Vertex[x=6, y=0, L=$n_{12,13}$]{n3}
-\Vertex[x=6, y=2, L=$n_{8,9}$]{n7}
-\Vertex[x=6, y=4, L=$n_{18,19}$]{n11}
-\Vertex[x=6, y=6, L=$n_{14,15}$]{n15}
-
-\Edge(n0)(n5)
-\Edge(n4)(n5)
-\Edge(n1)(n5)
-
-\Edge(n13)(n9)
-\Edge(n12)(n9)
-\Edge(n8)(n9)
-
-\Edge(n15)(n10)
-\Edge(n14)(n10)
-\Edge(n11)(n10)
-
-\Edge(n3)(n6)
-\Edge(n2)(n6)
-\Edge(n7)(n6)
-
-\Edge(n9)(n5)
-\Edge(n9)(n10)
-\Edge(n5)(n10)
-\Edge(n9)(n6)
-\Edge(n5)(n6)
-\Edge(n10)(n6)
-
-\end{tikzpicture}
-\end{center}
-\caption{Memory topology of the Intel192 SGI UV2000 machine. \TG{Je supprimerai la figure.}}
-\label{fig:idchire}
-\end{figure}
-
-Figure \ref{fig:idchire} shows the Intel192 machine memory topology.
-NUMA nodes are organized by pairs of nodes connected together through Intel QuickPath Interconnect.
-These pairs can communicate together through a proprietary fabric called NUMALink6, represented by the edges of the graph.
-In other words, taking node $n_0$ as example :
-\begin{itemize}
-\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
-\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
-\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
-\end{itemize}
-
-Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
-
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from one core to different NUMA nodes. Distances named \textit{local} and \textit{peer} are through Intel QuickPath only.
+%node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
 \vspace{-0.5cm}
-
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-
 \begin{table}
 \caption{NUMA distances from node 0 advertised by the hwloc library on Intel192.}
 \begin{center}
