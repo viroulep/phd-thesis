@@ -105,12 +105,12 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \begin{document}
 
-\title{Using data dependencies to improve task based scheduling strategies on NUMA architectures}
+\title{Using data dependencies to improve task-based scheduling strategies on NUMA architectures}
 \author{
   Philippe Virouleau$^1$ \and François Broquedis$^2$ \and Thierry Gautier$^{1,3}$
  \vspace*{-1ex}}
 \institute{
-   $^1$INRIA, $^2$Grenoble Institure of Technology, $^3$LIP\\
+   $^1$INRIA, $^2$Grenoble Institute of Technology, $^3$LIP\\
    CORSE and AVALON Teams, Computer Science Laboratories of Grenoble
    and Lyon, France\\
    \email{philippe.virouleau@inria.fr}\\
@@ -128,9 +128,9 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
   to know exactly which data are read or written by a given task, and how these
   data will be used through the program lifetime.  Data placement and scheduling
   strategies have a significant impact on performances when considering
-  NUMA architectures.  Numerous papers focus on these topics, however none
+  NUMA architectures.  While numerous papers focus on these topics, none of them
   has made extensive use of the information available through dependencies.
-  One can use these information to modify the behaviour of the application at
+  One can use this information to modify the behavior of the application at
   several levels : during initialization to control data placement,
   and during the application runtime to dynamically control both the preferred
   task placement and stealing strategy, depending on the topology.
@@ -143,14 +143,14 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 \smallskip
   \noindent\textbf{Keywords:}
   \emph{
-    OpenMP, task dependencies, benchmark, runtime systems, NUMA, Kaapi, scheduling, workstealing
+    OpenMP, task dependencies, benchmark, runtime systems, NUMA, Kaapi, scheduling, work-stealing
   }
 \end{abstract}
 
 
 \section{Introduction}
 
-In the following sections we will first give some background about NUMA architectures
+In the following sections, we will first give some background about NUMA architectures
 and the task programming model with data dependencies, in section \ref{sec:background}.
 We will then describe our ideas and strategies to improve the runtime performances
 for these applications in section \ref{sec:contributions},
@@ -174,7 +174,7 @@ Dynamic ready-task placement (push)
 
 Work-stealing strategies (select)
 
-Contribution : new heuristic for these approaches, evaluation and comparison against previous one on a large NUMA machine.
+Contribution : new heuristic for these approaches, evaluation and comparison against the previous one on a large NUMA machine.
 
 
 
@@ -245,12 +245,12 @@ Contribution : new heuristic for these approaches, evaluation and comparison aga
 \label{sec:background}
 \subsection{Hardware background}
 \label{sec:hardware}
-Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split in several banks attached to processors.
+Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split into several banks attached to processors.
 Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
 Exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
 
-The machine we experimented on is a SGI UV2000 platform made of 24 NUMA nodes.
-Each NUMA node holds a 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
+The machine we experimented on is an SGI UV2000 platform made of 24 NUMA nodes.
+Each NUMA node holds an 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
 We refer to this machine as Intel192 in the paper. 
 
 \begin{figure}
@@ -307,7 +307,7 @@ We refer to this machine as Intel192 in the paper.
 
 Figure \ref{fig:idchire} shows the Intel192 machine memory topology.
 NUMA nodes are organized by pairs of nodes connected together through Intel QuickPath Interconnect.
-These pairs can communicate together through a proprietary fabric called NUMALink6, represented by the edges on the graph.
+These pairs can communicate together through a proprietary fabric called NUMALink6, represented by the edges of the graph.
 In other words, taking node $n_0$ as example :
 \begin{itemize}
 \item node $n_0$ communicates with node $n_1$ through Intel QPI ;
@@ -350,7 +350,7 @@ OpenMP~\cite{openmp40}, the de-facto standard for shared-memory parallel program
 
 \subsubsection{A glimpse at OpenMP tasking}
 
-An OpenMP \emph{task} can be seen as an independant \emph{unit of work} an OpenMP thread can execute.
+An OpenMP \emph{task} can be seen as an independent \emph{unit of work} an OpenMP thread can execute.
 Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region. 
 As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were too fine grain to be parallelized using only threads.
 The synchronization of OpenMP 3.0 tasks is performed thanks to the |taskwait| keyword that waits for the completion of all the tasks generated from the current OpenMP parallel region.
@@ -399,7 +399,7 @@ void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
 \subsubsection{The way we execute task-based applications}
 
 Most task-based programming environments rely on a work-stealing execution model, originally introduced in Cilk~\cite{cilk5}. 
-Work-stealing is indeed often considered when it comes to dynamically balance the work load among processing units. 
+Work-stealing is indeed often considered when it comes to dynamically balance the workload among processing units. 
 The work-stealing principle can be summarized as follows. 
 An idle thread, called a thief, initiates a steal request to a randomly selected victim. 
 On reply, the thief receives a copy of one ready task, leaving the original task marked as stolen.
@@ -450,7 +450,7 @@ The following sections describe the way we adapted the behavior of the runtime s
 
 \subsection{Inside the \kaapi task-based runtime system}
 
-This section describes some of the key internal structures and mecanisms of the \kaapi runtime system.
+This section describes some of the key internal structures and mechanisms of the \kaapi runtime system.
 
 \subsubsection{The way \kaapi models the architecture}
 
@@ -462,7 +462,7 @@ This section describes some of the key internal structures and mecanisms of the 
 \end{figure}
 
 \kaapi sees the architecture topology as a hierarchy of \verb/places/.
-A \verb/place/ is a list of tasks associated to a subset of the machine processing units.
+A \verb/place/ is a list of tasks associated with a subset of the machine processing units.
 \kaapi's places are very similar to the notion of \emph{shepherd} introduced in \cite{DBLP:journals/ijhpca/OlivierPWSP12}, or ForestGOMP's \emph{runqueues}~\cite{BroFurGogWacNam10IJPP}.
 \kaapi most of the time only considers two levels of places : node-level places, which are bound to the set of processors contained in a NUMA node, and processor-level places, which are bound to a single processor of the platform.
 This way, at the processor level one \verb/place/ is associated to each of the physical cores, and
@@ -484,9 +484,9 @@ Once again, there are many ways of selecting the place where to push ready tasks
 Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
 Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
 For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables over all the NUMA nodes of the machine.
-This policy is widely used on NUMA systems in conjonction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to access memory.
-To better control data placement, parallel application programmers are used to rely on the \emph{first-touch} allocation policy, which is the default behavior for memory allocation on most Linux systems.
-This allows to allocate memory pages when they are accessed for the first time.
+This policy is widely used on NUMA systems in conjunction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to access memory.
+To better control data placement, parallel application programmers are used to relying on the \emph{first-touch} allocation policy, which is the default behavior for memory allocation on most Linux systems.
+This allows allocating memory pages when they are accessed for the first time.
 Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
 Many parallel applications perform the initialization of data structures in parallel, to indirectly distribute data thanks to the first-touch policy.
 However, in order to avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
@@ -497,20 +497,20 @@ To better control data distribution on NUMA systems, we propose two different ap
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
 \end{itemize}
-Both of these approaches give the runtime system a way of keeping track of where the memory pages associated to the application data are actually stored.
+Both of these approaches give the runtime system a way of keeping track of where the memory pages associated with the application data are actually stored.
 This information is then used to guide the way we perform task creation and load balancing.
 
 We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
-Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding a 8K-long array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
+Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding an 8K-wide array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
 
 \subsection{Distribution of ready tasks : WSpush strategies}
 
 This section describes four different ways of pushing ready tasks to a NUMA system places.
-Two of them are data-oblivious, while the other two rely on the dependencies expressed using the \verb!depend! keyword on OpenMP tasks.
+Two of them are data-oblivious while the other two rely on the dependencies expressed using the \verb!depend! keyword on OpenMP tasks.
 
 The \verb/pLoc/ strategy makes a processor push ready tasks to
     its own place, while the \verb/pLocNum/ strategy makes a processor push ready tasks to the place of its NUMA node (\emph{local NUMA node}).
-The \verb/pNumW/ strategy pushes tasks on the node-level place corresponding to the NUMA node where most of their output data are allocated on (W stands for Write).
+The \verb/pNumW/ strategy pushes tasks on the node-level place corresponding to the NUMA node where most of their output data are allocated to (W stands for Write).
 The last WSpush strategy, called \verb/pNumWLoc/, behaves almost the same than \verb!pNumW! except that if
     the data are allocated on the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
     
@@ -519,7 +519,7 @@ The last WSpush strategy, called \verb/pNumWLoc/, behaves almost the same than \
 \subsection{Dynamic load balancing using work-stealing : WSselect strategies}
 
 Another important step when implementing work-stealing is the selection of the victim processor we want to steal from.
-This section describe the selection strategies we implemented, that take the architecture memory hierarchy into account.
+This section describes the selection strategies we implemented, that take the architecture memory hierarchy into account.
 
 The first two strategies, \verb!sRand! and \verb!sRandNum! are similar to those studied in~\cite{DBLP:journals/ijhpca/OlivierPWSP12}
 and distinguish two levels of hierarchy : the processor level and the NUMA node level.
@@ -542,14 +542,14 @@ described below.
     it means we switch step 2a with 2b, and step 3a with 3b).
   \item \verb/sProc/ : In this strategy the stealer will visit only the
     processors' places and its own NUMA place. In figure \ref{fig:detail-strategy} it means we do
-    every steps but step 3b.
+    all the steps but step 3b.
   \item \verb/sNum/ : In this strategy the stealer will visit only NUMA places
     and its neighbour. In figure \ref{fig:detail-strategy} it means we do
     every steps but step 3a.
 \end{itemize}
 
-Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies come in two versions : a \verb!strict! version in which we prevent processors from stealing from other NUMA nodes to improve data locality, and a \verb!loose! version where these restrictions do not apply.
-For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go though steps 3a and 3b.
+Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies come in two versions : a \verb!strict! version in which we prevent processors from stealing from other NUMA nodes to improve data locality and a \verb!loose! version where these restrictions do not apply.
+For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go through steps 3a and 3b.
 
 \section{Evaluation}
 \label{sec:performances-evaluation}
@@ -562,8 +562,7 @@ We evaluated our strategies using the KASTORS~\cite{virouleau:hal-01081974}\foot
 More specifically, we used the dependent tasks version of the blocked QR factorization
 (\verb/dgeqrf_taskdep/), and of the blocked Cholesky factorization (\verb/dpotrf_taskdep/).
 
-These applications rely on kernels from BLAS and LAPACK libraries, we used OpenBLAS 2.15
-to provide them.
+These applications rely on kernels from BLAS and LAPACK libraries provided by OpenBLAS 2.15.
 
 We used the \kaapi runtime system. We tagged the version we used on \kaapi's
 git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
@@ -576,7 +575,7 @@ anyone may reproduce our data analysis.
 
 We first evaluated the impact the initial data distribution has on the application performance. We did an evaluation for multiple matrix sizes and block sizes,
 as well as multiple combinations of WSpush and WSselect strategies. Figure \ref{fig:eval-distrib} reports the
-results we obtained for the Cholesky application, on 32K-wide matrices divided in blocks of 512$\times$512 elements. We observed similar behavior running Cholesky on different matrix sizes (16K to 64K) and block sizes (256 to 1024).
+results we obtained for the Cholesky application, on 32K-wide matrices divided into blocks of 512$\times$512 elements. We observed similar behavior running Cholesky on different matrix sizes (16K to 64K) and block sizes (256 to 1024).
 
 \begin{figure}[t]
   \centering
@@ -609,7 +608,7 @@ written leads to better data locality which may improve the application performa
 However, this is heavily dependent on the algorithm the application implements. For instance, in the case
 of a Cholesky factorization, many tasks write to the diagonal tiles
 of the matrix comparatively to other tiles of the matrix. Therefore applying
-a steal restriction on those task will potentially lead to an important number
+a steal restriction on these tasks will potentially lead to an important number
 of inactive processors.
 
 We evaluated both strict and loose versions of our work-stealing strategies and found
@@ -631,32 +630,25 @@ experiments are included in the logs publicly published.
 
 \subsection{Overview of the strategies performances}
 
-We took a given data distribution, \verb/cyclicnuma/, and compared the
-different strategies, without any steal restriction.
-Once again, even if the performances obtained where obviously not the same, the behaviour
-of the different strategies comparatively to each others were similar for the
-different applications.
+We took a given data distribution, \verb/cyclicnuma/, and compared the different strategies, without any steal restriction.
+Once again, even if the performances we obtained are obviously not the same, the behavior of the different strategies comparatively to each others are similar for the different applications we ran.
 
 Figure \ref{fig:eval-all-strat} shows the results of the experiments for the
-Cholesky algorithm, using matrices of size 32768, with a blocksize of 512 (best configuration).
+Cholesky application on 32K-wide matrices divided into blocks of 512$\times$512 elements (best configuration for this matrix size).
 
+It is first interesting to note that even very basic \verb/WSselect/
+and \verb/WSpush/ strategies, like \verb/sRand/+\verb/pLoc/, obtained decent performances
+thanks to the data distribution.
 
-One first interesting fact to note is that even with very basic \verb/WSselect/
-and \verb/WSpush/ strategies (\verb/sRand/+\verb/pLoc/), we get decent performances
-thanks to the distribution.
+Also, given a selection strategy (e.g. \verb/sRandNum/), placing
+the task on the NUMA node where the written data are allocated (\verb/pNumW/) behaves better than simply pushing the data to its NUMA node (\verb/pLocNum/).
 
-Another remark : given a selection strategy (e.g. \verb/sRandNum/), placing
-the task on the NUMA node where the written data are allocated (\verb/pNumW/) gives
-better result than simply pushing the data to its NUMA node (\verb/pLocNum/).
+However, assuming the tasks are being pushed using the \verb/pNumWLoc/ strategy, focusing the
+place selection on only one level of the hierarchy (\verb/sProc/ or \verb/sNum/)
+fails to reach the same level of performance we obtained with naive strategies.
 
-Assuming the tasks are pushed using the \verb/pNuwWLoc/ strategy, focusing
-place selection only on one level of the hierarchy (\verb/sProc/ or \verb/sNum/)
-fails to reach performances we could obtain using naive strategies.
-
-On the contrary, taking into account both level of the hierarchy (\verb/sProcNum/,
-\verb/sNumProc/) achieve similar and better performances than other strategies.
-
-
+On the contrary, taking into account both levels of the hierarchy (\verb/sProcNum/,
+\verb/sNumProc/) achieve similar performance that outperforms other strategies.
 
 \begin{figure}[t]
   \centering
