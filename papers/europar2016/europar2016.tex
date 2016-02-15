@@ -269,75 +269,70 @@ Exploiting such architectures at their full potential requires a fine control of
 The machine we experimented on is an SGI UV2000 platform made of 24 NUMA nodes.
 Each NUMA node holds an 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
 We refer to this machine as Intel192 in the paper. 
+%\begin{figure}
+%\begin{center}
+%\begin{tikzpicture}[scale=0.6]
+%\tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
+%
+%\Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
+%\Vertex[x=0, y=2, L=$n_{22,23}$]{n4}
+%\Vertex[x=0, y=4, L=$n_{8,9}$]{n8}
+%\Vertex[x=0, y=6, L=$n_{12,13}$]{n12}
+%\Vertex[x=2, y=0, L=$n_{10,11}$]{n1}
+%\Vertex[x=2, y=2, L=$n_{6,7}$]{n5}
+%\Vertex[x=2, y=4, L=$n_{0,1}$]{n9}
+%\Vertex[x=2, y=6, L=$n_{16,17}$]{n13}
+%
+%\Vertex[x=4, y=0, L=$n_{20,21}$]{n2}
+%\Vertex[x=4, y=2, L=$n_{4,5}$]{n6}
+%\Vertex[x=4, y=4, L=$n_{2,3}$]{n10}
+%\Vertex[x=4, y=6, L=$n_{10,11}$]{n14}
+%\Vertex[x=6, y=0, L=$n_{12,13}$]{n3}
+%\Vertex[x=6, y=2, L=$n_{8,9}$]{n7}
+%\Vertex[x=6, y=4, L=$n_{18,19}$]{n11}
+%\Vertex[x=6, y=6, L=$n_{14,15}$]{n15}
+%
+%\Edge(n0)(n5)
+%\Edge(n4)(n5)
+%\Edge(n1)(n5)
+%
+%\Edge(n13)(n9)
+%\Edge(n12)(n9)
+%\Edge(n8)(n9)
+%
+%\Edge(n15)(n10)
+%\Edge(n14)(n10)
+%\Edge(n11)(n10)
+%
+%\Edge(n3)(n6)
+%\Edge(n2)(n6)
+%\Edge(n7)(n6)
+%
+%\Edge(n9)(n5)
+%\Edge(n9)(n10)
+%\Edge(n5)(n10)
+%\Edge(n9)(n6)
+%\Edge(n5)(n6)
+%\Edge(n10)(n6)
+%
+%\end{tikzpicture}
+%\end{center}
+%\caption{Memory topology of the Intel192 SGI UV2000 machine. \TG{Je supprimerai la figure.}}
+%\label{fig:idchire}
+%\end{figure}
+The memory topology is organized by pairs of NUMA nodes connected together through Intel QuickPath Interconnect.
+These pairs can communicate together through a proprietary fabric called NUMALink6 with up to two hops.
+%, represented by the edges of the graph.In other words, taking node $n_0$ as example :
+%\begin{itemize}
+%\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
+%\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
+%\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
+%\end{itemize}
 
-\begin{figure}
-\begin{center}
-\begin{tikzpicture}[scale=0.6]
-\tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
-
-\Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
-\Vertex[x=0, y=2, L=$n_{22,23}$]{n4}
-\Vertex[x=0, y=4, L=$n_{8,9}$]{n8}
-\Vertex[x=0, y=6, L=$n_{12,13}$]{n12}
-\Vertex[x=2, y=0, L=$n_{10,11}$]{n1}
-\Vertex[x=2, y=2, L=$n_{6,7}$]{n5}
-\Vertex[x=2, y=4, L=$n_{0,1}$]{n9}
-\Vertex[x=2, y=6, L=$n_{16,17}$]{n13}
-
-\Vertex[x=4, y=0, L=$n_{20,21}$]{n2}
-\Vertex[x=4, y=2, L=$n_{4,5}$]{n6}
-\Vertex[x=4, y=4, L=$n_{2,3}$]{n10}
-\Vertex[x=4, y=6, L=$n_{10,11}$]{n14}
-\Vertex[x=6, y=0, L=$n_{12,13}$]{n3}
-\Vertex[x=6, y=2, L=$n_{8,9}$]{n7}
-\Vertex[x=6, y=4, L=$n_{18,19}$]{n11}
-\Vertex[x=6, y=6, L=$n_{14,15}$]{n15}
-
-\Edge(n0)(n5)
-\Edge(n4)(n5)
-\Edge(n1)(n5)
-
-\Edge(n13)(n9)
-\Edge(n12)(n9)
-\Edge(n8)(n9)
-
-\Edge(n15)(n10)
-\Edge(n14)(n10)
-\Edge(n11)(n10)
-
-\Edge(n3)(n6)
-\Edge(n2)(n6)
-\Edge(n7)(n6)
-
-\Edge(n9)(n5)
-\Edge(n9)(n10)
-\Edge(n5)(n10)
-\Edge(n9)(n6)
-\Edge(n5)(n6)
-\Edge(n10)(n6)
-
-\end{tikzpicture}
-\end{center}
-\caption{Memory topology of the Intel192 SGI UV2000 machine. \TG{Je supprimerai la figure.}}
-\label{fig:idchire}
-\end{figure}
-
-Figure \ref{fig:idchire} shows the Intel192 machine memory topology.
-NUMA nodes are organized by pairs of nodes connected together through Intel QuickPath Interconnect.
-These pairs can communicate together through a proprietary fabric called NUMALink6, represented by the edges of the graph.
-In other words, taking node $n_0$ as example :
-\begin{itemize}
-\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
-\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
-\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
-\end{itemize}
-
-Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
-
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from one core to different NUMA nodes. Distances named \textit{local} and \textit{peer} are through Intel QuickPath only.
+%node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
 \vspace{-0.5cm}
-
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
-
 \begin{table}
 \caption{NUMA distances from node 0 advertised by the hwloc library on Intel192.}
 \begin{center}
@@ -351,8 +346,6 @@ Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cit
 \end{center}
 \label{tab:idchire}
 \end{table}
-
-\vspace{-1cm}
 
 \subsection{Software background}
 
@@ -512,30 +505,30 @@ Before parallel computation begins, the runtime system distributed the set of re
 These functions are the three main entry points to specify a scheduling algorithm in \kaapi. 
 
 \subsection{Controlling data distribution on a NUMA system}
-\TG{R\'eduire ce paragraphe}.
+
 Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
 Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
 For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables over all the NUMA nodes of the machine.
 This policy is widely used on NUMA systems in conjunction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to access memory.
 To better control data placement, parallel application programmers are used to relying on the \emph{first-touch} allocation policy, which is the default behavior for memory allocation on most Linux systems.
 This allows allocating memory pages when they are accessed for the first time.
-Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
-Many parallel applications perform the initialization of data structures in parallel, to indirectly distribute data thanks to the first-touch policy.
-However, in order to avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
+%Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
+%Many parallel applications perform the initialization of data structures in parallel, to indirectly distribute data thanks to the first-touch policy.
+%However, in order to avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
 
 To better control data distribution on NUMA systems, we propose two different approaches :
 \begin{itemize}
-\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide (\verb!omp_set_affinity)!;
-\TG{No comprendo.  Le omp\_set\_affinity est une annotation pour une tâche et non pas pour allouer des données : A mettre dans l'exploitation du first touch de l'OS dans le second item. Ici reprendre l'API proposé à IWOMP 2013 de type MAMI: omp\_locality\_domain\_allocate\_XXX où XXX = stratégie.}.
+\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb!XXX! that make bloc cyclic data distribution for one or two dimensional arrays over libMAMI~\cite{mami};
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
-\TG{We extend the OpenMP runtime functions to give which specific NUMA nodes a task is attached  through a dedicated API we provide (omp\_set\_affinity.}
+To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism. We extend the OpenMP runtime functions to provide a dedicated API: \verb!omp_set_affinity! to give directive to the runtime to map the next task to a specific NUMA node.
 \end{itemize}
 Both of these approaches give the runtime system a way of keeping track of where the memory pages associated with the application data are actually stored.
 This information is then used to guide the way we perform task creation and load balancing.
 
-\TG{No comprendo. Idem ici, il ne s'agit pas de stratégie de distribution de data, mais d'une annotation sur les tâches afin de spécifier le nœud NUMA privilégié (ou strict) afin que, grâce à l'allocation des pages par la stratégie first touch, le sytème alloue des données. Est-ce par soucis de simplification que l'on ramène ces stratégies à des "allocation/distribution" de données. Je pense qu'il faut plutôt se positionner par rapport à Olvier et al. ci-dessus en disant que l'on a spécifier un ensemble de stratégie d'initialization tasks}.
-We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
+\subsection{Distribution of initial ready tasks : WSpush\_init strategies}
+Initial tasks appears in any task based computation in OpenMP parallel region. A ready task is typically a source of DAG such a an initialization task.
+We have implemented three task's distribution strategies : \verb!cyclicnuma! which distributes the tasks in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the tasks over the NUMA nodes and \verb!defaultnuma! which distributes the tasks according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
 Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding an 8K-wide array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
 
 \subsection{Distribution of ready tasks : WSpush strategies}
@@ -731,30 +724,37 @@ We must note that simply distributing the data over the nodes enables the basic
 \section{Related work}
 \label{sec:related-work}
 
-Numerous works focus on data locality and/or topology-aware scheduling strategies for
-NUMA architectures~\cite{DBLP:conf/europar/Clet-OrtegaCP14,DBLP:journals/ijhpca/OlivierPWSP12,Olivier:2012:CMW:2388996.2389085,DBLP:journals/corr/Tahan14,DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, however none takes advantage of the OpenMP \verb/depend/ clause,
-which indicate precisely which data matter for a given task, and from which
-the runtime can take valuable information for scheduling its tasks.
+Numerous works focus on data locality and/or topology-aware task scheduling strategies for
+NUMA architectures.
 
-TODO parler des schedule static.
+Clet-Ortega et al.~\cite{DBLP:conf/europar/Clet-OrtegaCP14} studied different ways of decorating the architecture topology with task lists and how it impacts the performance of task-based applications on NUMA systems, promoting private per-threads lists of tasks browsed in a hierarchical way by work-stealing strategies.
+We somehow extended this work considering also node-level task lists. We showed considering these lists for pushing ready tasks and selecting work-stealing victims can help improving performance on NUMA systems.
 
-\begin{itemize}
-\item Ce qu'on fait, c'est mieux que Bronis parce qu'on a la vision
-  (et le contrôle indirect) du placement des données. Encore faut-il
-  le démontrer! Une coucourbe hwsnumafirst.numa.* (TODO : à vérifier)
-  devrait suffire à montrer que ce qu'on fait va plus loin (en termes
-  de perfs) que ce qu'ils proposaient.
-\item La question qui tue (Thierry ?) : si on est capable de contrôler le
-  placement des tâches dans les kprocs, et de contrôler le placement
-  mémoire, pourquoi on ne fait pas de placement statique à la SCOTCH
-  ou autre?
-\end{itemize}
+Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12} evaluated hierarchical task scheduling with respect to traditional centralized or distributed task schedulers. Creating a thread list, called \emph{sherperd}, per NUMA node allowed their hierarchical scheduler to outperforms other approaches on several task-based applications. 
 
-CEA~\cite{DBLP:conf/europar/Clet-OrtegaCP14},
-Bronis~\cite{DBLP:journals/sp/OlivierSSP13} TODO: c'est peut-être pas
-la bonne ref pour Bronis, OpenMP task-scheduling et
-NUMA~\cite{DBLP:journals/corr/Tahan14}, solution au niveau appli
-(terboven)~\cite{DBLP:conf/europar/TerbovenSCM12}, Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12}.
+Tahan et al.~\cite{DBLP:journals/corr/Tahan14} also studied the behavior of task-based OpenMP applications on NUMA systems, extending the NANOS runtime system with two NUMA-aware task schedulers called DFWSPT and DFWSRPT, taking into account the notion of task priority when pushing tasks to core-level queues. They also try to minimize the number of \emph{memory hops} when performing load balancing.
+
+While the same kind of studies have been conducted in other contexts~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, none of them takes advantage of the OpenMP \verb/depend/ clause, which precisely indicates which data are read and written by a given task. As advertised by the results obtained by our \verb!sNumProc+pNumWLoc! combined strategy, this information is worth taking into account when choosing a place to push ready tasks to.
+
+%TODO parler des schedule static.
+
+%\begin{itemize}
+%\item Ce qu'on fait, c'est mieux que Bronis parce qu'on a la vision
+%  (et le contrôle indirect) du placement des données. Encore faut-il
+%  le démontrer! Une coucourbe hwsnumafirst.numa.* (TODO : à vérifier)
+%  devrait suffire à montrer que ce qu'on fait va plus loin (en termes
+%  de perfs) que ce qu'ils proposaient.
+%\item La question qui tue (Thierry ?) : si on est capable de contrôler le
+%  placement des tâches dans les kprocs, et de contrôler le placement
+%  mémoire, pourquoi on ne fait pas de placement statique à la SCOTCH
+%  ou autre?
+%\end{itemize}
+
+%CEA~\cite{DBLP:conf/europar/Clet-OrtegaCP14},
+%Bronis~\cite{DBLP:journals/sp/OlivierSSP13} TODO: c'est peut-être pas
+%la bonne ref pour Bronis, OpenMP task-scheduling et
+%NUMA~\cite{DBLP:journals/corr/Tahan14}, solution au niveau appli
+%(terboven)~\cite{DBLP:conf/europar/TerbovenSCM12}, Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12}.
 
 \section{Conclusion and future works}
 
