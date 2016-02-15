@@ -518,7 +518,7 @@ This allows allocating memory pages when they are accessed for the first time.
 
 To better control data distribution on NUMA systems, we propose two different approaches :
 \begin{itemize}
-\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb!XXX! that make bloc cyclic data distribution for one or two dimensional arrays over libMAMI~\cite{mami};
+\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb!XXX! that make bloc cyclic data distribution for one or two dimensional arrays over MAMI~\cite{BroFurGogWacNam10IJPP};
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
 To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism. We extend the OpenMP runtime functions to provide a dedicated API: \verb!omp_set_affinity! to give directive to the runtime to map the next task to a specific NUMA node.
@@ -548,11 +548,9 @@ The last WSpush strategy, called \verb/pNumWLoc/, behaves almost the same than \
 
 Another important step when implementing work-stealing is the selection of the victim processor we want to steal from.
 This section describes the selection strategies we implemented, that take the architecture memory hierarchy into account.
-
 The first two strategies, \verb!sRand! and \verb!sRandNum! are similar to those studied in~\cite{DBLP:journals/ijhpca/OlivierPWSP12}
 and distinguish two levels of hierarchy : the processor level and the NUMA node level.
 \verb/sRand/ selects a random processor's place while \verb/sRandNum/ selects a random NUMA node's place.
-
 We additionally implemented several strategies mixing both levels of hierarchy,
 described below.
 
@@ -736,6 +734,14 @@ While the same kind of studies have been conducted in other contexts~\cite{DBLP:
 %(terboven)~\cite{DBLP:conf/europar/TerbovenSCM12}, Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12}.
 
 \section{Conclusion and future works}
+Task-based programming environments like OpenMP have become a standard way to program large scale NUMA systems.
+Indeed, they give the programmer ways of expressing massive fine-grain parallelism that can be dynamically mapped to the architecture topology at runtime.
+OpenMP recently evolved to deal with tasks dependencies describing the data a task reads as input and writes as output. 
+
+This paper presented several runtime-level strategies to efficiently assign tasks to processors on any NUMA architecture. We presented strategies assigning ready tasks to lists of tasks, called \emph{places}, attached to processors and NUMA nodes. These strategies define the way a task-based runtime system pushes ready tasks to their initial place and the way idle processors browse the architecture topology to select a place to steal from. We considered several initial data distributions and evaluated different combinations of "push" and "select" strategies on a 192 core NUMA system, on linear algebra applications. We achieved the best performance with strategies taking into account both the architecture topology and the initial data placement obtained through OpenMP tasks dependencies.
+
+A short-term future work will be to extend an OpenMP compiler to be able to identify the initialization tasks in a more OpenMP-friendly manner, like extending the \verb!task! construct with a \verb!init! clause. We also intend to experiment with more OpenMP 4 applications.
+In a longer term, we intend to move our focus to compile-time techniques able to infer and to attach valuable information on tasks, like an estimation of a task operational intensity, that could guide some of the runtime system's decisions regarding task scheduling and load balancing. We strongly believe a tight cooperation between the compiler and the runtime system is a key step to enhance the performance and scalability of task-based programs on large-scale platforms.
 
 \section*{Acknowledgments}
 
