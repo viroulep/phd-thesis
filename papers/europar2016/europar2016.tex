@@ -26,13 +26,16 @@
 \usepackage{tkz-graph}
 \newcommand{\arevoir}[1]{#1}
 
-\newcommand{\kaapi}{\textsc{\mbox{kaapi}}\xspace}
+\newcommand{\kaapi}{\textsc{\mbox{Xkaapi}}\xspace}
 
 \newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
 
 \usepackage{xcolor}
 \usepackage{todonotes}
 \usepackage[color,leftbars]{changebar}
+
+\newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
+
 
 \newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
 \newcommand{\cfsectpage}[1]{(\textit{cf.} section~\ref{#1}, page~\pageref{#1})}
@@ -315,7 +318,7 @@ We refer to this machine as Intel192 in the paper.
 
 \end{tikzpicture}
 \end{center}
-\caption{Memory topology of the Intel192 SGI UV2000 machine.}
+\caption{Memory topology of the Intel192 SGI UV2000 machine. \TG{Je supprimerai la figure.}}
 \label{fig:idchire}
 \end{figure}
 
@@ -405,7 +408,8 @@ void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
                }
           }
      }
-}\end{lstlisting}
+}
+\end{lstlisting}
 \end{figure}
 
 \vspace{-1cm}
@@ -429,16 +433,24 @@ During the execution of a task-based application, if a kproc encounters a task t
 the work stealing scheduler that waits for dependencies to be met before
 resuming the kproc execution. 
 
-To find a ready task, a thief kproc iterates through the victim's queue from
+Depending on the number of tasks per thread, \kaapi implements to strategies to find a ready task. 
+If the number of tasks is lower than a threshold, \kaapi follows the Cilk's~\textit{work first principle} to report overhead
+from the work to the critical pass. In that case, the thief iterates through the victim's stack queue from 
 the least recently pushed task to the most recently one and it computes true
-data-flow dependencies for each task. 
-%False dependencies are resolved through variables renaming. 
-The iteration stops as soon as the kproc finds a ready task on the victim's queue.
+data-flow dependencies for each task until ready task is found. If the number of tasks is greater than the threshold, 
+the data flow graph is built and the thief picks a tasks into the victim's list of ready task~\cite{Bleuse2014}.
+By the nature of our benchmarks, this latter strategy is de facto selected and we developed new NUMA aware strategies.
 
-In addition, \kaapi promotes a cooperative way of stealing tasks,
-enabling multiple steal requests to the same processor to be served at once~\cite{DBLP:conf/europar/TchiboukdjianDGMR10}.
-In practice, if the victim kproc is in a stealing state, the thief aborts the steal request and selects another victim randomly.
-The \kaapi cooperative stealing algorithm divides the work into $k+1$ pieces when $k$ steal requests target the same processor.
+%To find a ready task, a thief kproc iterates through the victim's queue from
+%the least recently pushed task to the most recently one and it computes true
+%data-flow dependencies for each task. 
+%%False dependencies are resolved through variables renaming. 
+%The iteration stops as soon as the kproc finds a ready task on the victim's queue.
+%
+%In addition, \kaapi promotes a cooperative way of stealing tasks,
+%enabling multiple steal requests to the same processor to be served at once~\cite{DBLP:conf/europar/TchiboukdjianDGMR10}.
+%In practice, if the victim kproc is in a stealing state, the thief aborts the steal request and selects another victim randomly.
+%The \kaapi cooperative stealing algorithm divides the work into $k+1$ pieces when $k$ steal requests target the same processor.
 
 \subsection{Summary}
 Task-based programming environments stand as a promising candidate to exploit large-scale NUMA machines.
@@ -466,7 +478,7 @@ The following sections describe the way we adapted the behavior of the runtime s
 
 This section describes some of the key internal structures and mechanisms of the \kaapi runtime system.
 
-\subsubsection{The way \kaapi models the architecture}
+\subsubsection{The way \kaapi models the architecture.}
 
 \begin{figure}[t]
   \centering
@@ -484,17 +496,23 @@ at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes,
 Figure \ref{fig:detail-topology}.
 
 
-\subsubsection{The way \kaapi enables ready tasks and steal them}
+\subsubsection{The way \kaapi enables ready tasks and steal them.}
+%FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
+%faire un steal mais il faudrait l'expliquer.
+The scheduling framework in \kaapi~\cite{Bleuse2014} relies on virtual functions for \textit{selecting a victim}, \textit{selecting a place} to push a ready task and \textit{pushing} a set of initial ready tasks.
+When a processor becomes idle, the runtime system calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browses the topology to find a place from which stealing a task from the place task queue.
+%There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
+%Once a place is selected, the processor will take a ready task from its queue.
 
-When a processor becomes idle, the runtime system browses the topology to find a place from which stealing a task.
-There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
-Once a place is selected, the processor will take a ready task from its queue.
-
-The completion of a task most of the time unlocks the execution of some of its children in the dependency graph.
+The completion of a task may unlock the execution of some of its children in the dependency graph.
 This means marking them as ready for execution and pushing at least one of them to a place.
 Once again, there are many ways of selecting the place where to push ready tasks, implemented in strategies we refer to as \verb/WSpush/, for \emph{work-stealing push}.
+Before parallel computation begins, the runtime system distributed the set of ready tasks accordingly  to the strategy defines by a the \verb/WSpush_init/.
+
+These functions are the three main entry points to specify a scheduling algorithm in \kaapi. 
 
 \subsection{Controlling data distribution on a NUMA system}
+\TG{R\'eduire ce paragraphe}.
 Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
 Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
 For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables over all the NUMA nodes of the machine.
@@ -508,12 +526,15 @@ However, in order to avoid remote memory accesses, the threads must access the d
 To better control data distribution on NUMA systems, we propose two different approaches :
 \begin{itemize}
 \item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide (\verb!omp_set_affinity)!;
+\TG{No comprendo.  Le omp\_set\_affinity est une annotation pour une tâche et non pas pour allouer des données : A mettre dans l'exploitation du first touch de l'OS dans le second item. Ici reprendre l'API proposé à IWOMP 2013 de type MAMI: omp\_locality\_domain\_allocate\_XXX où XXX = stratégie.}.
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
+\TG{We extend the OpenMP runtime functions to give which specific NUMA nodes a task is attached  through a dedicated API we provide (omp\_set\_affinity.}
 \end{itemize}
 Both of these approaches give the runtime system a way of keeping track of where the memory pages associated with the application data are actually stored.
 This information is then used to guide the way we perform task creation and load balancing.
 
+\TG{No comprendo. Idem ici, il ne s'agit pas de stratégie de distribution de data, mais d'une annotation sur les tâches afin de spécifier le nœud NUMA privilégié (ou strict) afin que, grâce à l'allocation des pages par la stratégie first touch, le sytème alloue des données. Est-ce par soucis de simplification que l'on ramène ces stratégies à des "allocation/distribution" de données. Je pense qu'il faut plutôt se positionner par rapport à Olvier et al. ci-dessus en disant que l'on a spécifier un ensemble de stratégie d'initialization tasks}.
 We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
 Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding an 8K-wide array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
 
@@ -544,8 +565,8 @@ described below.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[scale=0.7]{figures/strategies.pdf}
-\caption{Illustration of the "sProcNum" strategy}
+  \includegraphics[scale=0.5]{figures/strategies.pdf}
+\caption{Illustration of the "sProcNum" strategy \TG{En mettant 6 étapes, 2 à droite et 2 à gauche il y aurait moins de place perdue.}}
 \label{fig:detail-strategy}
 \end{figure}
 \begin{itemize}
@@ -578,7 +599,7 @@ More specifically, we used the dependent tasks version of the blocked QR factori
 
 These applications rely on kernels from BLAS and LAPACK libraries provided by OpenBLAS 2.15.
 
-We used the \kaapi runtime system. We tagged the version we used on \kaapi's
+We used the OpenMP GCC compliant runtime libKOMP~\cite{libkomp} based on \kaapi runtime system. We tagged the version we used on \kaapi's
 git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
 For all of the above applications, we used the GCC 5.2.0 release compiler.
 
