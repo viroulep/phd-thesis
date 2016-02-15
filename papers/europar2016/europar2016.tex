@@ -150,6 +150,18 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
+Very large non-uniform memory access (NUMA) architectures are still heavily used
+nowodays, and not yet fully exploited to the best of their performances.
+On such architectures the memory is distributed among several nodes, and
+both bandwidth and latency depends on which processor want to access specific data,
+meaning that executing each part of an application near its data is one of the key to achieve good
+performances.
+The recent addition of data dependencies to the OpenMP tasking model enable the
+runtime to have very precise informations about which part of an application
+needs which data.
+This paper aims at using both these informations and the topology of the architecture
+to improve data locality and task placement, to achieve better performances.
+
 In the following sections we will first give some background about NUMA architectures
 and the task programming model with data dependencies, in section \ref{sec:background}.
 We will then describe our ideas and strategies to improve the runtime performances
