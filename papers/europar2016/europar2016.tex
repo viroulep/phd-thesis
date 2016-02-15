@@ -579,24 +579,22 @@ described below.
 Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies come in two versions : a \verb!strict! version in which we prevent processors from stealing from other NUMA nodes to improve data locality and a \verb!loose! version where these restrictions do not apply.
 For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go through steps 3a and 3b.
 
+% TODO : truc court sur implémentation OpenMP (trois points d'entrée à implémenter)
+
 \section{Evaluation}
 \label{sec:performances-evaluation}
 
 \subsection{Experimental setup}
 
 We ran all our experiments on the Intel192 machine described in section \ref{sec:hardware}.
-
 We evaluated our strategies using the KASTORS~\cite{virouleau:hal-01081974}\footnote{git available at https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag "tag-europar16"} benchmark suite.
 More specifically, we used the dependent tasks version of the blocked QR factorization
 (\verb/dgeqrf_taskdep/), and of the blocked Cholesky factorization (\verb/dpotrf_taskdep/).
-
 These applications rely on kernels from BLAS and LAPACK libraries provided by OpenBLAS 2.15.
-
 We used the OpenMP GCC compliant runtime libKOMP~\cite{libkomp} based on \kaapi runtime system. We tagged the version we used on \kaapi's
 git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
 For all of the above applications, we used the GCC 5.2.0 release compiler.
-
-We made our execution log files public\footnote{TODO}, as well as all the scripts we used, so that
+We also made our execution log files public\footnote{TODO}, as well as all the scripts we used, so that
 anyone may reproduce our data analysis.
 
 \subsection{Impact of the data distribution}
@@ -621,7 +619,6 @@ TODO Conclusion : gérer la distribution c'est indispensable, après cyclicnuma 
 Given a data distribution, previous works~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that restricting the task execution to the node where the data are
 written leads to better data locality which may improve the application performance.
-
 %Note explicative :
 % Pour i dans 0-N le kernel dpot agit sur chaque bloc de la diagonale
 % Au rang i,
@@ -638,15 +635,12 @@ of a Cholesky factorization, many tasks write to the diagonal tiles
 of the matrix comparatively to other tiles of the matrix. Therefore applying
 a steal restriction on these tasks will potentially lead to an important number
 of inactive processors.
-
 We evaluated both strict and loose versions of our work-stealing strategies and found
 out that preventing processors from stealing from other NUMA nodes can lead to a loss of performance by
 around 25\% to more than 75\% with respect to the same setup without the \emph{strict}
 restriction.
-
 For the sake of brevity we did not include a figure for this, but the results of these
 experiments are included in the logs publicly published.
-
 
 %\begin{figure}[t]
   %\centering
@@ -659,22 +653,18 @@ experiments are included in the logs publicly published.
 \subsection{Overview of the strategies performances}
 
 We took a given data distribution, \verb/cyclicnuma/, and compared the different strategies, without any steal restriction.
+The performance obtained running the Cholesky application compiled with GCC 5.2.0 and executed by the corresponding libGOMP runtime system (without modification) is considered as a baseline for these experiments.
 Once again, even if the performances we obtained are obviously not the same, the behavior of the different strategies comparatively to each others are similar for the different applications we ran.
-
 Figure \ref{fig:eval-all-strat} shows the results of the experiments for the
 Cholesky application on 32K-wide matrices divided into blocks of 512$\times$512 elements (best configuration for this matrix size).
-
 It is first interesting to note that even very basic \verb/WSselect/
 and \verb/WSpush/ strategies, like \verb/sRand/+\verb/pLoc/, obtained decent performances
 thanks to the data distribution.
-
 Also, given a selection strategy (e.g. \verb/sRandNum/), placing
 the task on the NUMA node where the written data are allocated (\verb/pNumW/) behaves better than simply pushing the data to its NUMA node (\verb/pLocNum/).
-
 However, assuming the tasks are being pushed using the \verb/pNumWLoc/ strategy, focusing the
 place selection on only one level of the hierarchy (\verb/sProc/ or \verb/sNum/)
 fails to reach the same level of performance we obtained with naive strategies.
-
 On the contrary, taking into account both levels of the hierarchy (\verb/sProcNum/,
 \verb/sNumProc/) achieve similar performance that outperforms other strategies.
 
@@ -688,12 +678,6 @@ On the contrary, taking into account both levels of the hierarchy (\verb/sProcNu
 
 \subsection{Strategies performance scaling}
 
-Figure \ref{fig:eval-strat-sizes} shows the behavior of the different strategies
-depending on the matrix size, again using a \verb/cyclicnuma/ distribution
-without steal restriction. The figure shows the performances using
-the best block size for each matrix size (which is, for our setup, 256 for a matrix
-size of 16384, and 512 for the others).
-
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_details_strat.pdf}
@@ -701,23 +685,22 @@ size of 16384, and 512 for the others).
 \label{fig:eval-strat-sizes}
 \end{figure}
 
-
-From the previous experiment results, we selected a subset of three strategy
-combinations for this evaluation :
+We eventually selected the three strategy combinations that outperformed the GCC baseline to evaluate their scalability depending on the size of the input matrix.
+These strategy combinations are :
 \begin{itemize}
   \item \verb/sRand/ + \verb/pLoc/, which is a basic strategy that does not take the architecture topology into account ;
   \item \verb/sNumProc/ + \verb/pNumWLoc/, which was the best strategy in our previous
     evaluation and is also equivalent to using \verb/sProcNum/ ;
   \item \verb/sRandNum/ + \verb/pNumW/ that performs random selection of node-level places.
 \end{itemize}
-We chose not to select \verb/sNum/ or \verb/sLoc/ as they use the same \verb/WSpush/ strategy
-as our second combination, but with relatively lower performances.
 
+Figure \ref{fig:eval-strat-sizes} reports their performance using a \verb/cyclicnuma/ distribution without steal restriction. 
+The figure shows the performances using the best block size for each matrix size (which is, for our setup, 256 for a matrix
+size of 16384, and 512 for the others).
 As expected, combinations of strategies taking both the architecture hierarchy and data locality into account (\verb/sNumProc/
 + \verb/pNumWLoc/) achieve the best performances.
 The only exceptions are for small matrix sizes (16384), where there may just be
 not enough work to be able to take advantage of this strategy.
-
 We must note that simply distributing the data over the nodes enables the basic
 \verb/sRand/ + \verb/pLoc/ combination to achieve satisfying performances.
 
@@ -726,14 +709,10 @@ We must note that simply distributing the data over the nodes enables the basic
 
 Numerous works focus on data locality and/or topology-aware task scheduling strategies for
 NUMA architectures.
-
 Clet-Ortega et al.~\cite{DBLP:conf/europar/Clet-OrtegaCP14} studied different ways of decorating the architecture topology with task lists and how it impacts the performance of task-based applications on NUMA systems, promoting private per-threads lists of tasks browsed in a hierarchical way by work-stealing strategies.
 We somehow extended this work considering also node-level task lists. We showed considering these lists for pushing ready tasks and selecting work-stealing victims can help improving performance on NUMA systems.
-
 Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12} evaluated hierarchical task scheduling with respect to traditional centralized or distributed task schedulers. Creating a thread list, called \emph{sherperd}, per NUMA node allowed their hierarchical scheduler to outperforms other approaches on several task-based applications. 
-
 Tahan et al.~\cite{DBLP:journals/corr/Tahan14} also studied the behavior of task-based OpenMP applications on NUMA systems, extending the NANOS runtime system with two NUMA-aware task schedulers called DFWSPT and DFWSRPT, taking into account the notion of task priority when pushing tasks to core-level queues. They also try to minimize the number of \emph{memory hops} when performing load balancing.
-
 While the same kind of studies have been conducted in other contexts~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, none of them takes advantage of the OpenMP \verb/depend/ clause, which precisely indicates which data are read and written by a given task. As advertised by the results obtained by our \verb!sNumProc+pNumWLoc! combined strategy, this information is worth taking into account when choosing a place to push ready tasks to.
 
 %TODO parler des schedule static.
