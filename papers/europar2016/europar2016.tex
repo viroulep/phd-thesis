@@ -503,30 +503,30 @@ Before parallel computation begins, the runtime system distributed the set of re
 These functions are the three main entry points to specify a scheduling algorithm in \kaapi. 
 
 \subsection{Controlling data distribution on a NUMA system}
-\TG{R\'eduire ce paragraphe}.
+
 Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
 Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
 For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables over all the NUMA nodes of the machine.
 This policy is widely used on NUMA systems in conjunction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to access memory.
 To better control data placement, parallel application programmers are used to relying on the \emph{first-touch} allocation policy, which is the default behavior for memory allocation on most Linux systems.
 This allows allocating memory pages when they are accessed for the first time.
-Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
-Many parallel applications perform the initialization of data structures in parallel, to indirectly distribute data thanks to the first-touch policy.
-However, in order to avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
+%Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
+%Many parallel applications perform the initialization of data structures in parallel, to indirectly distribute data thanks to the first-touch policy.
+%However, in order to avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
 
 To better control data distribution on NUMA systems, we propose two different approaches :
 \begin{itemize}
-\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide (\verb!omp_set_affinity)!;
-\TG{No comprendo.  Le omp\_set\_affinity est une annotation pour une tâche et non pas pour allouer des données : A mettre dans l'exploitation du first touch de l'OS dans le second item. Ici reprendre l'API proposé à IWOMP 2013 de type MAMI: omp\_locality\_domain\_allocate\_XXX où XXX = stratégie.}.
+\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb!XXX! that make bloc cyclic data distribution for one or two dimensional arrays over libMAMI~\cite{mami};
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
-\TG{We extend the OpenMP runtime functions to give which specific NUMA nodes a task is attached  through a dedicated API we provide (omp\_set\_affinity.}
+To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism. We extend the OpenMP runtime functions to provide a dedicated API: \verb!omp_set_affinity! to give directive to the runtime to map the next task to a specific NUMA node.
 \end{itemize}
 Both of these approaches give the runtime system a way of keeping track of where the memory pages associated with the application data are actually stored.
 This information is then used to guide the way we perform task creation and load balancing.
 
-\TG{No comprendo. Idem ici, il ne s'agit pas de stratégie de distribution de data, mais d'une annotation sur les tâches afin de spécifier le nœud NUMA privilégié (ou strict) afin que, grâce à l'allocation des pages par la stratégie first touch, le sytème alloue des données. Est-ce par soucis de simplification que l'on ramène ces stratégies à des "allocation/distribution" de données. Je pense qu'il faut plutôt se positionner par rapport à Olvier et al. ci-dessus en disant que l'on a spécifier un ensemble de stratégie d'initialization tasks}.
-We have implemented three data distribution strategies : \verb!cyclicnuma! which distributes the data in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the data over the NUMA nodes and \verb!defaultnuma! which distributes the data according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
+\subsection{Distribution of initial ready tasks : WSpush\_init strategies}
+Initial tasks appears in any task based computation in OpenMP parallel region. A ready task is typically a source of DAG such a an initialization task.
+We have implemented three task's distribution strategies : \verb!cyclicnuma! which distributes the tasks in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the tasks over the NUMA nodes and \verb!defaultnuma! which distributes the tasks according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
 Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding an 8K-wide array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
 
 \subsection{Distribution of ready tasks : WSpush strategies}
