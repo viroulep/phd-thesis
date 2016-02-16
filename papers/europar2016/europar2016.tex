@@ -635,7 +635,7 @@ The \verb/pLoc/ strategy makes a processor push ready tasks to
     its own place, while the \verb/pLocNum/ strategy makes a processor push ready tasks to the place of its NUMA node (\emph{local NUMA node}).
 The \verb/pNumW/ strategy pushes tasks on the node-level place corresponding to the NUMA node where most of their output data are allocated to (W stands for Write).
 The last WSpush strategy, called \verb/pNumWLoc/, behaves almost the same than \verb!pNumW! except that if
-    the data are allocated on the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
+    the data are allocated to the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
     
     It's important to note that \verb!pLoc! and \verb!pLocNum! does not take initial data placement into account, while \verb!pNumW! and \verb!pNumWLoc! are both aware of where a task's data are physically allocated and which of them are written, thanks to the OpenMP \verb!depend! keyword.
 
@@ -834,8 +834,8 @@ While the same kind of studies have been conducted in other contexts~\cite{DBLP:
 %NUMA~\cite{DBLP:journals/corr/Tahan14}, solution au niveau appli
 %(terboven)~\cite{DBLP:conf/europar/TerbovenSCM12}, Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12}.
 
-\section{Conclusion and future works}
-Task-based programming environments like OpenMP have become a standard way to program large scale NUMA systems.
+\section{Conclusion and future work}
+Task-based programming environments like OpenMP have become a standard way to program large-scale NUMA systems.
 Indeed, they give the programmer ways of expressing massive fine-grain parallelism that can be dynamically mapped to the architecture topology at runtime.
 OpenMP recently evolved to deal with tasks dependencies describing the data a task reads as input and writes as output. 
 
