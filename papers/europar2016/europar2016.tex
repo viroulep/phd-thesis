@@ -155,7 +155,7 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
-While non-uniform memory access (NUMA) architectures have been a popular way of designing large-scale shared memory machines for many years, exploiting them at their full potential remains challenging.
+While non-uniform memory access (NUMA) architectures stand today as one of the most popular design to build large-scale shared memory machines, exploiting them at their full potential remains challenging.
 On such architectures, the memory is split into several NUMA nodes and
 both bandwidth and latency depend on which processor accesses specific data :
 accessing memory allocated locally is most of the time faster than accessing data allocated to remotely-located NUMA nodes.
@@ -264,7 +264,7 @@ before concluding.
 %\ref{sec:extensions} to address these issues. We finally present some
 %related works in section \ref{sec:related-work} before concluding.
 
-\section{Background}
+\section{NUMA architectures design and exploitation}
 \label{sec:background}
 \subsection{Hardware background}
 \label{sec:hardware}
@@ -483,11 +483,11 @@ As in Cilk, a  running \kaapi task can create children tasks.
 %the work stealing scheduler that waits for dependencies to be met before
 %resuming the kproc execution. 
 Depending on the number of tasks per thread, \kaapi implements two strategies to find a ready task.
-If the number of tasks is lower than a threshold, \kaapi follows the Cilk's~\textit{work first principle} to report overhead
-from the work to the critical pass. In that case, the thief iterates through the victim's stack queue from 
+If the number of tasks is lower than a threshold, \kaapi follows the Cilk's~\textit{work first principle}. 
+In that case, the thief iterates through the victim's stack queue from 
 the least recently pushed task to the most recently one and it computes true
 data-flow dependencies for each task until ready task is found. If the number of tasks is greater than the threshold, 
-the data flow graph is built and the thief picks a tasks into the victim's list of ready task~\cite{Bleuse2014}.
+the data flow graph is built and the thief picks a tasks into the victim's list of ready tasks~\cite{Bleuse2014}.
 By the nature of our benchmarks, this latter strategy is de facto selected and we developed new NUMA aware strategies.
 
 
