@@ -113,18 +113,15 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \title{Using data dependencies to improve task-based scheduling strategies on NUMA architectures}
 \author{
-  Philippe Virouleau$^{1,2,3}$ \and François Broquedis$^4$ \and Thierry Gautier$^{1,5}$ \and Fabrice Rastello$^{1,2,3}$
+  Philippe Virouleau \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
  \vspace*{-1ex}}
 \institute{
-   $^1$Inria,
-   $^2$Univ. Grenoble Alpes, LIG, Grenoble, France,
-   $^3$CNRS, LIG, Grenoble, France,
-   $^4$Grenoble Institute of Technology,
-   $^5$LIP, ENS de Lyon\\
-   \email{philippe.virouleau@inria.fr}\\
-   \email{francois.broquedis@imag.fr}\\
+   Inria,
+   Univ. Grenoble Alpes, LIG, CNRS, Grenoble, France,
+   Grenoble Institute of Technology,
+   LIP, ENS de Lyon\\
+   \email{firstname.lastname@inria.fr}\\
    \email{thierry.gautier@inrialpes.fr}\\
-   \email{fabrice.rastello@inria.fr}\\
 }
 \date{}
 \maketitle
@@ -341,7 +338,6 @@ These pairs can communicate together through a proprietary fabric called NUMALin
 
 Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from one core to different NUMA nodes. Distances named \textit{local} and \textit{peer} are through Intel QuickPath only.
 %node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
-\vspace{-0.5cm}
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \begin{table}
 \caption{NUMA distances from node 0 advertised by the hwloc library on Intel192.}
@@ -548,8 +544,7 @@ A \verb/place/ is a list of tasks associated with a subset of the machine proces
 \kaapi's places are very similar to the notion of \emph{shepherd} introduced in \cite{DBLP:journals/ijhpca/OlivierPWSP12}, or ForestGOMP's \emph{runqueues}~\cite{BroFurGogWacNam10IJPP}.
 \kaapi most of the time only considers two levels of places : node-level places, which are bound to the set of processors contained in a NUMA node, and processor-level places, which are bound to a single processor of the platform.
 This way, at the processor level one \verb/place/ is associated to each of the physical cores, and
-at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes, like represented in
-Figure \ref{fig:detail-topology}.
+at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes.
 
 
 \subsubsection{The way \kaapi enables ready tasks and steals them.}
@@ -624,21 +619,16 @@ described below.
 %\label{fig:detail-strategy}
 %\end{figure}
 \begin{itemize}
-  \item \verb/sProcNum/ : this strategy is illustrated in figure \ref{fig:detail-strategy}.
-    First, we browse the processor's place (1). Upon failure, we browse the topology in the following order : we first browse one of the neighbor processors (2a); when all the neighbors have been visited, we browse the local NUMA place (2b); we continue by browsing all the processors' places from a random remote node (3a) and we eventually consider the place of its NUMA node (3b).
+  \item \verb/sProcNum/ : First, we browse the processor's place. Upon failure, we browse the topology in the following order : we first browse one of the neighbor processors ; when all the neighbors have been visited, we browse the local NUMA place ; we continue by browsing all the processors' places from a random remote node and we eventually consider the place of its NUMA node.
   \item \verb/sNumProc/ : This strategy is similar, except we always look at the
-    NUMA place before looking at the processors' place (in figure \ref{fig:detail-strategy}
-    it means we switch step 2a with 2b, and step 3a with 3b).
+    NUMA place before looking at the processors' place.
   \item \verb/sProc/ : In this strategy the stealer will visit only the
-    processors' places and its own NUMA place. In figure \ref{fig:detail-strategy} it means we do
-    all the steps but step 3b.
+    processors' places and its own NUMA place.
   \item \verb/sNum/ : In this strategy the stealer will visit only NUMA places
-    and its neighbour. In figure \ref{fig:detail-strategy} it means we do
-    every steps but step 3a.
+    and its neighbors. 
 \end{itemize}
 
 Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies come in two versions : a \verb!strict! version in which we prevent processors from stealing from other NUMA nodes to improve data locality and a \verb!loose! version where these restrictions do not apply.
-For example, the \verb!strict! version of the \verb!sProcNum! strategy could be illustrated by the same kind of diagram as figure \ref{fig:detail-strategy} except we would not go through steps 3a and 3b.
 
 % TODO : truc court sur implémentation OpenMP (trois points d'entrée à implémenter)
 
@@ -820,11 +810,7 @@ In a longer term, we intend to move our focus to compile-time techniques able to
 
 \section*{Acknowledgments}
 
-FIXME citer ELCI !
-
-This work has been partially supported by the IRSES2011-295217
-HPC-GA Project.
-
+ELCI
   \small \bibliographystyle{Styles/iplain}
 %\nocite{*}
   \bibliography{Bib/paper}
