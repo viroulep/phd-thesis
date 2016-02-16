@@ -110,12 +110,12 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \title{Using data dependencies to improve task-based scheduling strategies on NUMA architectures}
 \author{
-  Philippe Virouleau$^{3,2,1}$ \and François Broquedis$^4$ \and Thierry Gautier$^{5,3}$
+  Philippe Virouleau$^{1,2,3}$ \and François Broquedis$^4$ \and Thierry Gautier$^{1,5}$
  \vspace*{-1ex}}
 \institute{
-   $^1$Univ. Grenoble Alpes, LIG, Grenoble, France,
-   $^2$CNRS, LIG, Grenoble, France,
-   $^3$INRIA,
+   $^1$Inria,
+   $^2$Univ. Grenoble Alpes, LIG, Grenoble, France,
+   $^3$CNRS, LIG, Grenoble, France,
    $^4$Grenoble Institute of Technology,
    $^5$LIP, ENS de Lyon\\
    \email{philippe.virouleau@inria.fr}\\
@@ -165,10 +165,10 @@ Controlling data locality over the application lifetime is one of the key challe
 achieve good performances on those architectures.
 
 The recent extension of the OpenMP tasking model to allow dependent tasks, enables the
-run-time to have very precise information about which part of an application
+runtime to have very precise information about which part of an application
 needs which data~: thanks to these dependencies, it is known which data blocks are read,
 written, or both, and by which task.
-The run-time has a lot of freedom in its scheduling strategies. This work aims
+The runtime has a lot of freedom in its scheduling strategies. This work aims
 at using the data placement information and the topology of the architecture
 to improve both data locality and tasks placement, thus achieving better performances.
 
@@ -181,7 +181,7 @@ approaches.
 The layout of this paper falls into six sections as follow:
 In Section~\ref{sec:background}, we first give some background about NUMA architectures
 and the task programming model with data dependencies.
-We  then describe in Section~\ref{sec:contributions} the ideas, strategies and implementation details that we used to improve the run-time performances
+We  then describe in Section~\ref{sec:contributions} the ideas, strategies and implementation details that we used to improve the runtime performances
 for these applications. Section~\ref{sec:performances-evaluation} is devoted to the presentation performances evaluation.
 We eventually present some related works in Section~\ref{sec:related-work}
 before concluding.
@@ -484,7 +484,7 @@ As in Cilk, a  running \kaapi task can create children tasks.
 %During the execution of a task-based application, if a kproc encounters a task that is marked as stolen, it suspends its execution and switches to
 %the work stealing scheduler that waits for dependencies to be met before
 %resuming the kproc execution. 
-Depending on the number of tasks per thread, \kaapi implements to strategies to find a ready task.  
+Depending on the number of tasks per thread, \kaapi implements two strategies to find a ready task.
 If the number of tasks is lower than a threshold, \kaapi follows the Cilk's~\textit{work first principle} to report overhead
 from the work to the critical pass. In that case, the thief iterates through the victim's stack queue from 
 the least recently pushed task to the most recently one and it computes true
@@ -549,18 +549,18 @@ at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes,
 Figure \ref{fig:detail-topology}.
 
 
-\subsubsection{The way \kaapi enables ready tasks and steal them.}
+\subsubsection{The way \kaapi enables ready tasks and steals them.}
 %FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
 %faire un steal mais il faudrait l'expliquer.
 The scheduling framework in \kaapi~\cite{Bleuse2014} relies on virtual functions for \textit{selecting a victim}, \textit{selecting a place} to push a ready task and \textit{pushing} a set of initial ready tasks.
-When a processor becomes idle, the runtime system calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browses the topology to find a place from which stealing a task from the place task queue.
+When a processor becomes idle, the runtime system calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browse the topology to find a place from which stealing a task from the place task queue.
 %There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
 %Once a place is selected, the processor will take a ready task from its queue.
 
 The completion of a task may unlock the execution of some of its children in the dependency graph.
 This means marking them as ready for execution and pushing at least one of them to a place.
 Once again, there are many ways of selecting the place where to push ready tasks, implemented in strategies we refer to as \verb/WSpush/, for \emph{work-stealing push}.
-Before parallel computation begins, the runtime system distributed the set of ready tasks accordingly  to the strategy defines by a the \verb/WSpush_init/.
+Before parallel computation begins, the runtime system distributed the set of ready tasks accordingly to the strategy defined by \verb/WSpush_init/.
 
 These functions are the three main entry points to specify a scheduling algorithm in \kaapi. 
 
@@ -568,8 +568,8 @@ These functions are the three main entry points to specify a scheduling algorith
 
 Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
 Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
-For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables over all the NUMA nodes of the machine.
-This policy is widely used on NUMA systems in conjunction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to access memory.
+For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables, over all the NUMA nodes of the machine.
+This policy is widely used on NUMA systems in conjunction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to memory access.
 To better control data placement, parallel application programmers are used to relying on the \emph{first-touch} allocation policy, which is the default behavior for memory allocation on most Linux systems.
 This allows allocating memory pages when they are accessed for the first time.
 %Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
