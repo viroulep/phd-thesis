@@ -269,7 +269,7 @@ before concluding.
 \label{sec:background}
 \subsection{Hardware background}
 \label{sec:hardware}
-Most of nowadays parallel shared memory architectures are built according to a NUMA~\footnote{Non-Uniform Memory Access} design where the memory is physically split into several banks attached to processors.
+Most of nowadays parallel shared memory architectures are built according to a NUMA design where the memory is physically split into several banks attached to processors.
 Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
 Exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
 
@@ -336,7 +336,7 @@ These pairs can communicate together through a proprietary fabric called NUMALin
 %\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
 %\end{itemize}
 
-Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represent factors on the communication time, communicating from one core to different NUMA nodes. Distances named \textit{local} and \textit{peer} are through Intel QuickPath only.
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represents the communication time for different distances normalized to the time of a local communication. Distances named \textit{local} and \textit{peer} are through Intel QuickPath only.
 %node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \begin{table}
