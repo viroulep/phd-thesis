@@ -621,7 +621,7 @@ Both of these approaches give the runtime system a way of keeping track of where
 This information is then used to guide the way we perform task creation and load balancing.
 
 \subsection{Distribution of initial ready tasks : WSpush\_init strategies}
-We refer to \emph{initial tasks} when considering the sources of a task dependency graph.
+We refer to \emph{initial tasks} when considering the sources of a task dependency graph, usually declared at the beginning of an OpenMP parallel region.
 These tasks are basically the first ones to be marked as ready and to be distributed over the platforms' places.
 We have implemented three initial tasks distribution strategies : \verb!cyclicnuma! which distributes the tasks in a round-robin fashion over the NUMA nodes ; \verb!randnuma! which randomly distributes the tasks over the NUMA nodes and \verb!defaultnuma! which distributes the tasks according to the affinity hints provided by the application programmer using \verb!omp_set_affinity!.
 Note that unlike \verb!numactl!, the strategies we implemented consider the whole data appearing in the OpenMP task \verb!depend! clause instead of working at the page level. In other words, while the two memory pages holding an 8K-wide array would be distributed on different nodes by \verb!numactl --interleave=all!, they are always assigned to the same NUMA node when using one of our data distribution strategies.
