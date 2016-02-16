@@ -24,6 +24,8 @@
 \usepackage[section]{placeins}
 \usepackage{booktabs}
 \usepackage{tkz-graph}
+\usepackage{setspace}
+\setstretch{0.95}
 \newcommand{\arevoir}[1]{#1}
 
 \newcommand{\kaapi}{\textsc{\mbox{Xkaapi}}\xspace}
@@ -534,12 +536,12 @@ This section describes some of the key internal structures and mechanisms of the
 
 \subsubsection{The way \kaapi models the architecture.}
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[scale=0.5]{./figures/topology.pdf}
-\caption{Processors and Nodes representation}
-\label{fig:detail-topology}
-\end{figure}
+%\begin{figure}[t]
+%  \centering
+%  \includegraphics[scale=0.5]{./figures/topology.pdf}
+%\caption{Processors and Nodes representation}
+%\label{fig:detail-topology}
+%\end{figure}
 
 \kaapi sees the architecture topology as a hierarchy of \verb/places/.
 A \verb/place/ is a list of tasks associated with a subset of the machine processing units.
@@ -615,12 +617,12 @@ and distinguish two levels of hierarchy : the processor level and the NUMA node 
 We additionally implemented several strategies mixing both levels of hierarchy,
 described below.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[scale=0.45]{figures/strategies.pdf}
-  \caption{Illustration of the "sProcNum" strategy}
-\label{fig:detail-strategy}
-\end{figure}
+%\begin{figure}[t]
+%  \centering
+%  \includegraphics[scale=0.45]{figures/strategies.pdf}
+%  \caption{Illustration of the "sProcNum" strategy}
+%\label{fig:detail-strategy}
+%\end{figure}
 \begin{itemize}
   \item \verb/sProcNum/ : this strategy is illustrated in figure \ref{fig:detail-strategy}.
     First, we browse the processor's place (1). Upon failure, we browse the topology in the following order : we first browse one of the neighbor processors (2a); when all the neighbors have been visited, we browse the local NUMA place (2b); we continue by browsing all the processors' places from a random remote node (3a) and we eventually consider the place of its NUMA node (3b).
