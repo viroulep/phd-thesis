@@ -35,6 +35,7 @@
 \usepackage[color,leftbars]{changebar}
 
 \newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
+\newcommand{\PV}[1]{{\color{red}\bfseries PV: #1}}
 
 
 \newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
@@ -110,7 +111,7 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \title{Using data dependencies to improve task-based scheduling strategies on NUMA architectures}
 \author{
-  Philippe Virouleau$^{1,2,3}$ \and François Broquedis$^4$ \and Thierry Gautier$^{1,5}$
+  Philippe Virouleau$^{1,2,3}$ \and François Broquedis$^4$ \and Thierry Gautier$^{1,5}$ \and Fabrice Rastello$^{1,2,3}$
  \vspace*{-1ex}}
 \institute{
    $^1$Inria,
@@ -121,6 +122,7 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
    \email{philippe.virouleau@inria.fr}\\
    \email{francois.broquedis@imag.fr}\\
    \email{thierry.gautier@inrialpes.fr}\\
+   \email{fabrice.rastello@inria.fr}\\
 }
 \date{}
 \maketitle
@@ -379,19 +381,18 @@ This information is then processed by the underlying runtime system to decide wh
 
 \subsubsection{KASTORS Benchmark suite}
 Listing ~\ref{lulst} shows the implementation of a LU factorization 
-implemented with OpenMP task dependencies. It inspired by the SparseLU kernel from the BOTS~\cite{BOTS} benchmark suite.
-Task dependency support comes with several benefits. First, task
+implemented with OpenMP task dependencies. It is inspired by the SparseLU kernel from the BOTS~\cite{BOTS} benchmark suite.
+Task dependencies support comes with several benefits. First, task
 dependencies involve decentralized, selective synchronization operations
 that should scale better than the broad-range taskwait-based approaches.
 In some situations, this way of programming unlocks more valid execution
 scenarios than explicitly synchronized tasks, which provides the runtime
-system with many more valid task schedules to choose from. For example,
+system with many more valid task schedules to choose from. For example in the LU facorization,
 many instances of the |fwd|, |bdiv| and |bmod| computations can legally
-run concurrently with the version of the LU factorization expressing
-task dependencies.
+run concurrently when using the version with task dependencies.
 
-In this work we make experimentations with KASTORS benchamrk suite~\cite{virouleau:hal-01081974} for OpenMP tasks with dependencies.
-Factorization algorithms comes from PLASMA library are the structure is closed to algorithm presented in listing~\ref{lulst}.
+In this work we make experimentations with KASTORS benchmark suite~\cite{virouleau:hal-01081974} for OpenMP tasks with dependencies.
+Factorization algorithms come from PLASMA library are the structure is closed to algorithm presented in listing~\ref{lulst}.
 
 \begin{figure}[tbp]
 \hrule
@@ -578,7 +579,7 @@ This allows allocating memory pages when they are accessed for the first time.
 
 To better control data distribution on NUMA systems, we propose two different approaches :
 \begin{itemize}
-\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb!XXX! that make bloc cyclic data distribution for one or two dimensional arrays over MAMI~\cite{BroFurGogWacNam10IJPP};
+\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb/XXX/ may be a bloc cyclic data distribution for one or two dimensional arrays over MAMI~\cite{BroFurGogWacNam10IJPP};
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
 To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism. We extend the OpenMP runtime functions to provide a dedicated API: \verb!omp_set_affinity! to give directive to the runtime to map the next task to a specific NUMA node.
@@ -674,6 +675,7 @@ The figure shows that using a \verb/cyclicnuma/ or \verb/randnuma/ to control
 the tasks placement during initialization can improve significantly the performances
 comparing to both \kaapi baselines.
 On the contrary, using a bad distribution will have a negative impact on the performances.
+\PV{décrire defaultnuma, dire qu'on a choisi un truc qui marche pas ?}
 %TODO Un peu mal dit ?...
 
 The \verb/cyclicnuma/ distribution is the one that works best regardless of
@@ -763,7 +765,7 @@ These strategy combinations are :
   \item \verb/sRandNum/ + \verb/pNumW/ that performs random selection of node-level places.
 \end{itemize}
 
-Figure \ref{fig:eval-strat-sizes} reports their performance using a \verb/cyclicnuma/ distribution without steal restriction. 
+Figure \ref{fig:eval-strat-sizes} reports their performances using a \verb/cyclicnuma/ distribution without steal restriction.
 The figure shows the performances using the best block size for each matrix size (which is, for our setup, 256 for a matrix
 size of 16384, and 512 for the others).
 As expected, combinations of strategies taking both the architecture hierarchy and data locality into account (\verb/sNumProc/
@@ -780,7 +782,7 @@ Numerous works focus on data locality and/or topology-aware task scheduling stra
 NUMA architectures.
 Clet-Ortega et al.~\cite{DBLP:conf/europar/Clet-OrtegaCP14} studied different ways of decorating the architecture topology with task lists and how it impacts the performance of task-based applications on NUMA systems, promoting private per-threads lists of tasks browsed in a hierarchical way by work-stealing strategies.
 We somehow extended this work considering also node-level task lists. We showed considering these lists for pushing ready tasks and selecting work-stealing victims can help improving performance on NUMA systems.
-Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12} evaluated hierarchical task scheduling with respect to traditional centralized or distributed task schedulers. Creating a thread list, called \emph{sherperd}, per NUMA node allowed their hierarchical scheduler to outperforms other approaches on several task-based applications. 
+Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12} evaluated hierarchical task scheduling with respect to traditional centralized or distributed task schedulers. Creating a thread list, called \emph{shepherd}, per NUMA node allowed their hierarchical scheduler to outperforms other approaches on several task-based applications.
 Tahan et al.~\cite{DBLP:journals/corr/Tahan14} also studied the behavior of task-based OpenMP applications on NUMA systems, extending the NANOS runtime system with two NUMA-aware task schedulers called DFWSPT and DFWSRPT, taking into account the notion of task priority when pushing tasks to core-level queues. They also try to minimize the number of \emph{memory hops} when performing load balancing.
 While the same kind of studies have been conducted in other contexts~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, none of them takes advantage of the OpenMP \verb/depend/ clause, which precisely indicates which data are read and written by a given task. As advertised by the results obtained by our \verb!sNumProc+pNumWLoc! combined strategy, this information is worth taking into account when choosing a place to push ready tasks to.
 
