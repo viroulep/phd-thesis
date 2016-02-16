@@ -157,30 +157,30 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
-Because of the scalability issue of SMP, most Many-Core processors have a topology with non-uniform memory access (NUMA). If heavily used
-nowadays, such architectures are not yet fully exploited to the best of their performances.
-On such designs the memory is distributed among several nodes, and
-both bandwidth and latency depends on which processor wants to access specific data~:
-a CPU accessing its local (within the same node) memory will have a better bandwidth
-than if accessing a remote memory.
-Controlling data locality over the application lifetime is one of the key challenge to
-achieve good performances on those architectures.
+While non-uniform memory access (NUMA) architectures have been a popular way of designing large-scale shared memory machines for many years, exploiting them at their full potential remains challenging.
+On such architectures, the memory is split into several NUMA nodes and
+both bandwidth and latency depend on which processor accesses specific data :
+accessing memory allocated locally is most of the time faster than accessing data allocated to remotely-located NUMA nodes.
+Controlling data locality over the application lifetime is one of the key steps to
+achieve both good performance and scalability on these architectures.
 
-The recent extension of the OpenMP tasking model to allow dependent tasks, enables the
-runtime to have very precise information about which part of an application
-needs which data~: thanks to these dependencies, it is known which data blocks are read,
-written, or both, and by which task.
-The runtime has a lot of freedom in its scheduling strategies. This work aims
-at using the data placement information and the topology of the architecture
-to improve both data locality and tasks placement, thus achieving better performances.
+Task-based parallel programming environments like OpenMP have become very popular when it comes to program shared memory machines with hundreds of cores. Indeed, they offer ways of expressing massive fine-grain parallelism with a relatively low overhead. Most of them also come with facilities to dynamically perform load balancing of tasks over the processors. Even if such characteristics fill the need of generating more and more parallelism out of parallel applications, standard parallel programming environments still not explicitly address the problem of data locality on NUMA systems.
 
-We distinguish three key points in the scheduling policy, that we will describe later.
-We will show how we can leverage on them to influence the
-overall performances of an application, positively or negatively.
-We evaluate our work on a large NUMA machine, and compared it to previously described 
-approaches.
+The runtime system plays a central role in the execution of a task-based parallel application.
+For example, it is responsible for assigning ready tasks to the target platforms's processors. 
+It is also in charge of performing load balancing when a processor idles.
+Both these decisions should take the architecture topology into account in order to avoir NUMA-related performance penalties on the overall application performance.
 
-The layout of this paper falls into six sections as follow:
+The recent addition of data dependencies to the OpenMP tasking model provides the
+runtime system with very precise information about which part of an application accesses which variables. 
+Thanks to these dependencies, the runtime system knows which memory areas are read or written by which task. As shown in this paper, the task scheduler can rely on this information when assigning tasks to processors to implement NUMA-aware strategies.
+
+This paper describes several of these strategies we implemented inside the \kaapi runtime system.
+We identified three major steps in the task scheduler workflow that may have an impact on parallel applications on NUMA systems : the data distribution, the assignment of ready tasks to the processors and the way the task scheduler browses the architecture topology to perform load balancing.
+This paper describes and evaluates them, showing how they impact the application performance on a 192-core NUMA machine.
+We also compare them to state-of-the-art task scheduling strategies taken from related works and implemented within \kaapi.
+
+The layout of this paper falls into six sections as follows.
 In Section~\ref{sec:background}, we first give some background about NUMA architectures
 and the task programming model with data dependencies.
 We  then describe in Section~\ref{sec:contributions} the ideas, strategies and implementation details that we used to improve the runtime performances
