@@ -113,11 +113,11 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
   Philippe Virouleau$^{3,2,1}$ \and François Broquedis$^4$ \and Thierry Gautier$^{5,3}$
  \vspace*{-1ex}}
 \institute{
-   $^1$Univ. Grenoble Alpes, LIG, F-38000 Grenoble, France,
-   $^2$CNRS, LIG, F-38000 Grenoble, France,
-   $^3$Inria,
+   $^1$Univ. Grenoble Alpes, LIG, Grenoble, France,
+   $^2$CNRS, LIG, Grenoble, France,
+   $^3$INRIA,
    $^4$Grenoble Institute of Technology,
-   $^5$LIP, CNRS, Inria, UCB Lyon 1, ENS de Lyon\\
+   $^5$LIP, ENS de Lyon\\
    \email{philippe.virouleau@inria.fr}\\
    \email{francois.broquedis@imag.fr}\\
    \email{thierry.gautier@inrialpes.fr}\\
@@ -188,6 +188,20 @@ the results and how they behave with regard to previously suggested strategies.
 We will finally present some related works in section \ref{sec:related-work}
 before concluding.
 
+%\subsection{Summary}
+%Task-based programming environments stand as a promising candidate to exploit large-scale NUMA machines.
+%They give the application programmer the ability to generate the massive fine-grain parallelism that is desperately needed to occupy every processing unit of such architectures.
+%The work-stealing execution model they rely on also fill the need for balancing the application workload in a dynamic way, both tackling applications with irregular workloads and improving the overlapping of non-uniform memory access with actual computation.
+%However, exploiting NUMA architectures at their full potential requires some control on the way tasks and data are distributed over the platform, in order to avoid NUMA-related performance penalties. 
+%Preserving data locality while guaranteeing dynamic load balancing at runtime imposes an embarrassing dilemma to the runtime system that has a direct impact on :
+%\begin{itemize}   
+%\item the way data are allocated ;
+%\item the way ready tasks are originally assigned to processors ;
+%\item the way the scheduler browses the architecture topology to find a processor to steal tasks from.
+%\end{itemize}
+%
+%The following of the paper study all these aspects and how they impact on each other, and more generally how they affect the overall application performance.
+%\TG{Section un peu longue, à merger avec l'intro: typiquement cette dernière phrase mérite d'être lue avant ?}
 
 %HPC architectures evolved so rapidly that it is now common to build
 %shared-memory configurations with several dozens of cores.  The recent
@@ -343,7 +357,7 @@ Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cit
 
 \subsection{Software background}
 
-To exploit such large-scale shared memory architectures, the application programmer needs :
+To exploit  large-scale shared memory architectures, the application programmer needs:
 \begin{enumerate}
 \item to express massive fine grain parallelism to get the most out of the numerous processing units of the platform ;
 \item to control the execution of the application, especially the way computations and data are distributed over the platform, to prevent the NUMA design to have a negative impact on the overall application performance.
@@ -365,41 +379,94 @@ OpenMP 4.0 pushes the concept of task further introducing the |depend| keyword t
 Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task. 
 This information is then processed by the underlying runtime system to decide whether a task is ready for execution or should first wait for the completion of other ones.
 
-Listing 1.1 shows the implementation of a blocked matrix multiplication. It is
-taken from the official OpenMP 4.0 examples~\footnote{available at http://www.openmp.org}.
-Running this |depend| version of the program leads to the creation of a dependency graph.
-A task created on line 7 can thus be executed \emph{as soon as} the data they access has been updated by its predecessors in this graph.
-When an OpenMP thread turns idle, the runtime system browses this graph to decide which task should be executed next, according to tasks' current state and resolved dependencies.
+\subsubsection{KASTORS Benchmark suite}
+Listing ~\ref{lulst} shows the implementation of a LU factorization 
+implemented with OpenMP task dependencies. It inspired by the SparseLU kernel from the BOTS~\cite{BOTS} benchmark suite.
+Task dependency support comes with several benefits. First, task
+dependencies involve decentralized, selective synchronization operations
+that should scale better than the broad-range taskwait-based approaches.
+In some situations, this way of programming unlocks more valid execution
+scenarios than explicitly synchronized tasks, which provides the runtime
+system with many more valid task schedules to choose from. For example,
+many instances of the |fwd|, |bdiv| and |bmod| computations can legally
+run concurrently with the version of the LU factorization expressing
+task dependencies.
 
-Task dependency support comes with several benefits. 
-First, task dependencies involve decentralized, selective synchronization operations that should scale better than the broad-range taskwait-based approaches.
-In some situations, this way of programming unlocks more valid execution scenarios than explicitly synchronized tasks, which provides the runtime system with many more valid task schedules to choose from. 
-As an added benefit, information about task dependencies also enables the runtime system to optimize further, such as improving task and data placement on NUMA systems, like detailed in this paper.
+In this work we make experimentations with KASTORS benchamrk suite~\cite{virouleau:hal-01081974} for OpenMP tasks with dependencies.
+Factorization algorithms comes from PLASMA library are the structure is closed to algorithm presented in listing~\ref{lulst}.
 
-\vspace{-0.5cm}
+\begin{figure}[tbp]
+\hrule
+\begin{minipage}[t]{.43\textwidth}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true,label=lst:LU-deps]{lst:LU-deps1}
+for (k=0; k<NB; k++) {
+#pragma omp task untied shared(M)\
+    depend(inout: M[k*NB+k:BS*BS])
+  lu0(M[k*NB+k]);
 
-\begin{figure}[htbp]
-\begin{lstlisting}[caption=Blocked matrix multiplication with OpenMP task dependencies,frame=tlrb,style=smaller,label=lst:MM-deps]{lst:MM-deps}
-// Assume BS divides N perfectly
-void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
-     int i, j, k, ii, jj, kk;
-     for (i = 0; i < N; i+=BS) {
-          for (j = 0; j < N; j+=BS) {
-               for (k = 0; k < N; k+=BS) {
-                    #pragma omp task depend (in: A[i:BS][k:BS], B[k:BS][j:BS]) \
-                         depend (inout: C[i:BS][j:BS])
-                    for (ii = i; ii < i+BS; ii++)
-                         for (jj = j; jj < j+BS; jj++)
-                              for (kk = k; kk < k+BS; kk++)
-                                   C[ii][jj] = C[ii][jj] + A[ii][kk] * B[kk][jj];
-               }
-          }
-     }
+  for (j=k+1; j<NB; j++)
+#pragma omp task untied shared(M)\
+    depend(in: M[k*NB+k:BS*BS])\
+    depend(inout: M[k*NB+j:BS*BS])
+    fwd(M[k*NB+k], M[k*NB+j]);
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}[t]{.485\textwidth}
+\begin{lstlisting}[frame=none,style=smaller,label=lst:LU-deps,firstnumber=11]{lst:LU-deps2}
+  for (i=k+1; i<NB; i++)
+#pragma omp task untied shared(M)\
+    depend(in: M[k*NB+k:BS*BS])\
+    depend(inout: M[i*NB+k:BS*BS])
+    bdiv(M[k*NB+k], M[i*NB+k]);
+
+  for (i=k+1; i<NB; i++)
+    for (j=k+1; j<NB; j++)
+#pragma omp task untied shared(M)\
+   depend(in: M[i*NB+k:BS*BS])\
+   depend(in: M[k*NB+j:BS*BS])\
+   depend(inout: M[i*NB+j:BS*BS])
+    bmod(M[i*NB+k],M[k*NB+j],M[i*NB+j]);
 }
 \end{lstlisting}
+\end{minipage}
+\hrule
+\caption{LU factorization with OpenMP-4.0 task dependencies} \label{lulst}
 \end{figure}
 
-\vspace{-1cm}
+%Listing 1.1 shows the implementation of a blocked matrix multiplication. It is
+%taken from the official OpenMP 4.0 examples~\footnote{available at http://www.openmp.org}.
+%Running this |depend| version of the program leads to the creation of a dependency graph.
+%A task created on line 7 can thus be executed \emph{as soon as} the data they access has been updated by its predecessors in this graph.
+%When an OpenMP thread turns idle, the runtime system browses this graph to decide which task should be executed next, according to tasks' current state and resolved dependencies.
+%
+%Task dependency support comes with several benefits. 
+%First, task dependencies involve decentralized, selective synchronization operations that should scale better than the broad-range taskwait-based approaches.
+%In some situations, this way of programming unlocks more valid execution scenarios than explicitly synchronized tasks, which provides the runtime system with many more valid task schedules to choose from. 
+%As an added benefit, information about task dependencies also enables the runtime system to optimize further, such as improving task and data placement on NUMA systems, like detailed in this paper.
+%
+%\vspace{-0.5cm}
+%
+%\begin{figure}[htbp]
+%\begin{lstlisting}[caption=Blocked matrix multiplication with OpenMP task dependencies,frame=tlrb,style=smaller,label=lst:MM-deps]{lst:MM-deps}
+%// Assume BS divides N perfectly
+%void matmul_depend(int N, int BS, float A[N][N], float B[N][N], float C[N][N]) {
+%     int i, j, k, ii, jj, kk;
+%     for (i = 0; i < N; i+=BS) {
+%          for (j = 0; j < N; j+=BS) {
+%               for (k = 0; k < N; k+=BS) {
+%                    #pragma omp task depend (in: A[i:BS][k:BS], B[k:BS][j:BS]) \
+%                         depend (inout: C[i:BS][j:BS])
+%                    for (ii = i; ii < i+BS; ii++)
+%                         for (jj = j; jj < j+BS; jj++)
+%                              for (kk = k; kk < k+BS; kk++)
+%                                   C[ii][jj] = C[ii][jj] + A[ii][kk] * B[kk][jj];
+%               }
+%          }
+%     }
+%}
+%\end{lstlisting}
+%\end{figure}
+%
 
 \subsubsection{The way we execute task-based applications}
 
@@ -416,17 +483,17 @@ On a NUMA multicore machine, a processing unit is a core.
 A kproc creates tasks and pushes them on its own work queue, which is implemented as a stack.
 The enqueue operation is very fast : it takes around ten cycles on modern x86/64 processors~\cite{libkomp}.
 As in Cilk, a  running \kaapi task can create children tasks. 
-During the execution of a task-based application, if a kproc encounters a task that is marked as stolen, it suspends its execution and switches to
-the work stealing scheduler that waits for dependencies to be met before
-resuming the kproc execution. 
-
-Depending on the number of tasks per thread, \kaapi implements to strategies to find a ready task. 
+%During the execution of a task-based application, if a kproc encounters a task that is marked as stolen, it suspends its execution and switches to
+%the work stealing scheduler that waits for dependencies to be met before
+%resuming the kproc execution. 
+Depending on the number of tasks per thread, \kaapi implements to strategies to find a ready task.  
 If the number of tasks is lower than a threshold, \kaapi follows the Cilk's~\textit{work first principle} to report overhead
 from the work to the critical pass. In that case, the thief iterates through the victim's stack queue from 
 the least recently pushed task to the most recently one and it computes true
 data-flow dependencies for each task until ready task is found. If the number of tasks is greater than the threshold, 
 the data flow graph is built and the thief picks a tasks into the victim's list of ready task~\cite{Bleuse2014}.
 By the nature of our benchmarks, this latter strategy is de facto selected and we developed new NUMA aware strategies.
+
 
 %To find a ready task, a thief kproc iterates through the victim's queue from
 %the least recently pushed task to the most recently one and it computes true
@@ -439,19 +506,20 @@ By the nature of our benchmarks, this latter strategy is de facto selected and w
 %In practice, if the victim kproc is in a stealing state, the thief aborts the steal request and selects another victim randomly.
 %The \kaapi cooperative stealing algorithm divides the work into $k+1$ pieces when $k$ steal requests target the same processor.
 
-\subsection{Summary}
-Task-based programming environments stand as a promising candidate to exploit large-scale NUMA machines.
-They give the application programmer the ability to generate the massive fine-grain parallelism that is desperately needed to occupy every processing unit of such architectures.
-The work-stealing execution model they rely on also fill the need for balancing the application workload in a dynamic way, both tackling applications with irregular workloads and improving the overlapping of non-uniform memory access with actual computation.
-However, exploiting NUMA architectures at their full potential requires some control on the way tasks and data are distributed over the platform, in order to avoid NUMA-related performance penalties. 
-Preserving data locality while guaranteeing dynamic load balancing at runtime imposes an embarrassing dilemma to the runtime system that has a direct impact on :
-\begin{itemize}   
-\item the way data are allocated ;
-\item the way ready tasks are originally assigned to processors ;
-\item the way the scheduler browses the architecture topology to find a processor to steal tasks from.
-\end{itemize}
-
-The following of the paper study all these aspects and how they impact on each other, and more generally how they affect the overall application performance.
+%\subsection{Summary}
+%Task-based programming environments stand as a promising candidate to exploit large-scale NUMA machines.
+%They give the application programmer the ability to generate the massive fine-grain parallelism that is desperately needed to occupy every processing unit of such architectures.
+%The work-stealing execution model they rely on also fill the need for balancing the application workload in a dynamic way, both tackling applications with irregular workloads and improving the overlapping of non-uniform memory access with actual computation.
+%However, exploiting NUMA architectures at their full potential requires some control on the way tasks and data are distributed over the platform, in order to avoid NUMA-related performance penalties. 
+%Preserving data locality while guaranteeing dynamic load balancing at runtime imposes an embarrassing dilemma to the runtime system that has a direct impact on :
+%\begin{itemize}   
+%\item the way data are allocated ;
+%\item the way ready tasks are originally assigned to processors ;
+%\item the way the scheduler browses the architecture topology to find a processor to steal tasks from.
+%\end{itemize}
+%
+%The following of the paper study all these aspects and how they impact on each other, and more generally how they affect the overall application performance.
+%\TG{Section un peu longue, à merger avec l'intro: typiquement cette dernière phrase mérite d'être lue avant ?}
 
 \section{Using OpenMP tasks dependencies to improve tasks and data
   placement on NUMA machines}
