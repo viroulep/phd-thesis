@@ -155,37 +155,35 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
-Very large non-uniform memory access (NUMA) architectures are still heavily used
-nowodays, and not yet fully exploited to the best of their performances.
-On such architectures the memory is distributed among several nodes, and
-both bandwidth and latency depends on which processor want to access specific data :
-a processor that want to access its local memory node will have a better bandwidth
-than if he wanted to access a non-local memory node.
-Controlling data locality over the application lifetime is one of the key to
-achieve good performances on these architectures.
+Because of the scalability issue of SMP, most Many-Core processors have a topology with non-uniform memory access (NUMA). If heavily used
+nowadays, such architectures are not yet fully exploited to the best of their performances.
+On such designs the memory is distributed among several nodes, and
+both bandwidth and latency depends on which processor wants to access specific data~:
+a CPU accessing its local (within the same node) memory will have a better bandwidth
+than if accessing a remote memory.
+Controlling data locality over the application lifetime is one of the key challenge to
+achieve good performances on those architectures.
 
-The recent addition of data dependencies to the OpenMP tasking model enable the
-runtime to have very precise informations about which part of an application
-needs which data : thanks to these dependencies it knows which data blocks are read,
-written, or both, by which task.
-The runtime has a lot of freedom in its scheduling strategies, and this work aims
-at using both the data placement information and the topology of the architecture
-to overall improve the data locality and tasks placement, in order to achieve better performances.
+The recent extension of the OpenMP tasking model to allow dependent tasks, enables the
+run-time to have very precise information about which part of an application
+needs which data~: thanks to these dependencies, it is known which data blocks are read,
+written, or both, and by which task.
+The run-time has a lot of freedom in its scheduling strategies. This work aims
+at using the data placement information and the topology of the architecture
+to improve both data locality and tasks placement, thus achieving better performances.
 
-We distinguished three key points in the scheduling policy, this paper
-will describe them, and will show how we can leverage on them to influence the
+We distinguish three key points in the scheduling policy, that we will describe later.
+We will show how we can leverage on them to influence the
 overall performances of an application, positively or negatively.
-We evaluated our work on a large NUMA machine, and compared it to previously described 
+We evaluate our work on a large NUMA machine, and compared it to previously described 
 approaches.
 
-In the following sections, we will first give some background about NUMA architectures
-and the task programming model with data dependencies, in section \ref{sec:background}.
-We will then describe our ideas and strategies to improve the runtime performances
-for these applications in section \ref{sec:contributions},
-as well as how we implemented them in our software. Then we will present the performances
-evaluation in section \ref{sec:performances-evaluation}, where we will discuss
-the results and how they behave with regard to previously suggested strategies.
-We will finally present some related works in section \ref{sec:related-work}
+The layout of this paper falls into six sections as follow:
+In Section~\ref{sec:background}, we first give some background about NUMA architectures
+and the task programming model with data dependencies.
+We  then describe in Section~\ref{sec:contributions} the ideas, strategies and implementation details that we used to improve the run-time performances
+for these applications. Section~\ref{sec:performances-evaluation} is devoted to the presentation performances evaluation.
+We eventually present some related works in Section~\ref{sec:related-work}
 before concluding.
 
 
