@@ -127,29 +127,28 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 \maketitle
 
 \begin{abstract}
-  \vspace*{-5ex} The OpenMP 4.0 specifications extended the task parallelism
-  constructs by providing the user a more flexible way to synchronize tasks :
-  data dependencies between tasks.
+  \vspace*{-5ex} The recent addition of data dependencies to the OpenMP 4.0 standard provides the application programmer with a more flexible way of synchronizing tasks.
   Using such an approach allows both the compiler and the runtime system
   to know exactly which data are read or written by a given task, and how these
-  data will be used through the program lifetime.  Data placement and scheduling
+  data will be used through the program lifetime.  Data placement and task scheduling
   strategies have a significant impact on performances when considering
   NUMA architectures.  While numerous papers focus on these topics, none of them
   has made extensive use of the information available through dependencies.
   One can use this information to modify the behavior of the application at
-  several levels : during initialization to control data placement,
-  and during the application runtime to dynamically control both the preferred
-  task placement and stealing strategy, depending on the topology.
+  several levels : during initialization to control data placement
+  and during the application execution to dynamically control both the
+  task placement and the tasks stealing strategy, depending on the topology.
   This paper introduces several heuristics for these strategies and their
-  implementations in our OpenMP runtime XKaapi.
-  We also evaluate their performances by using several linear algebra
-  applications, executed on a 192 cores NUMA machine. We finally
+  implementations in our OpenMP runtime \kaapi.
+  We also evaluate their performances on linear algebra
+  applications executed on a 192-core NUMA machine, reporting noticeable performance improvement when considering both the architecture topology and the tasks data dependencies.
+   We finally
   compare them to strategies presented previously by related works.
 
 \smallskip
   \noindent\textbf{Keywords:}
   \emph{
-    OpenMP, task dependencies, benchmark, runtime systems, NUMA, Kaapi, scheduling, work-stealing
+    OpenMP, task dependencies, benchmark, runtime systems, NUMA, \kaapi, scheduling, work-stealing
   }
 \end{abstract}
 
@@ -774,7 +773,6 @@ On the contrary, taking into account both levels of the hierarchy (\verb/sProcNu
   \caption{Evaluating all strategies (WSselect + WSpush)}
 \label{fig:eval-all-strat}
 \end{figure}
-
 
 \subsection{Strategies performance scaling}
 
