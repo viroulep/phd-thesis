@@ -560,11 +560,12 @@ By the nature of our benchmarks, this latter strategy is de facto selected and w
 In this section, we describe how the runtime system can have a positive impact on the application execution using the information provided by data dependencies.
 The following sections describe the way we adapted the behavior of the runtime system to control data placement during the initialization phase, when data will be allocated and accessed for the first time, and how we modified the way tasks that perform the actual computations are dynamically assigned to processors while maximizing data locality.
 
-
+\vspace*{-1ex}
 \subsection{Inside the \kaapi task-based runtime system}
 
 This section describes some of the key internal structures and mechanisms of the \kaapi runtime system.
 
+\vspace*{-1ex}
 \subsubsection{The way \kaapi models the architecture.}
 
 %\begin{figure}[t]
@@ -614,7 +615,8 @@ To better control data distribution on NUMA systems, we propose two different ap
 \item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb/XXX/ may be a bloc cyclic data distribution for one or two-dimensional arrays over MAMI~\cite{BroFurGogWacNam10IJPP};
 \item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
 have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
-To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism. We extend the OpenMP runtime functions to provide a dedicated API: \verb!omp_set_affinity! to  make the runtime map the next task to a specific NUMA node.
+To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism. 
+We extend the OpenMP runtime in two ways. First, by adding functions to provide a dedicated API: \verb!omp_set_affinity! to  make the runtime map the next task to a specific NUMA node. Secondly, by extending scheduling heuristic to take into account task's dependencies to better map ready tasks.
 \end{itemize}
 Both of these approaches give the runtime system a way of keeping track of where the memory pages associated with the application data are actually stored.
 This information is then used to guide the way we perform task creation and load balancing.
@@ -671,7 +673,7 @@ Like proposed in \cite{Olivier:2012:CMW:2388996.2389085}, all these strategies c
 \section{Evaluation}
 \label{sec:performances-evaluation}
 
-\subsection{Experimental setup}
+%\subsection{Experimental setup}
 
 We ran all our experiments on the Intel192 machine described in section \ref{sec:hardware}.
 We evaluated our strategies using the KASTORS~\cite{virouleau:hal-01081974}\footnote{git available at https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag "tag-europar16"} benchmark suite.
@@ -748,11 +750,13 @@ experiments are included in the logs publicly published.
 \subsection{Overview of the strategies performances}
 
 We took a given data distribution, \verb/cyclicnuma/, and compared the different strategies, without any steal restriction.
-The performance obtained running the Cholesky application compiled with GCC 5.2.0 and executed by the corresponding libGOMP runtime system (without modification) is considered as a baseline for these experiments.
+The performance obtained running the Cholesky application 
+%compiled with GCC 5.2.0 and 
+executed by the corresponding libGOMP runtime system (without modification) is considered as a baseline for these experiments.
 Once again, even if the performances we obtained are obviously not the same, the behavior of the different strategies comparatively to each others are similar for the different applications we ran.
 Figure \ref{fig:eval-all-strat} shows the results of the experiments for the
 Cholesky application on 32K-wide matrices divided into blocks of 512$\times$512 elements (best configuration for this matrix size).
-The dashed horizontal line is the GCC performance baseline.
+The dashed horizontal line is the GCC performance baseline using parallel initialization. 
 
 It is first interesting to note that even very basic \verb/WSselect/
 and \verb/WSpush/ strategies, like \verb/sRand/+\verb/pLoc/, obtained decent performances
