@@ -93,15 +93,13 @@ des dépendances de données}
 Le récent ajout des dépendances de données à la norme OpenMP 4.0 offre
 au programmeur une manière flexible de synchroniser les tâches.
 Grâce à cela, le compilateur et le support exécutif peuvent tous les deux savoir
-exactement quelles données sont lues ou écrites par quelles tâches, et comment
-ces données peuvent éventuellement être réutilisées au cours de l'exécution du
-programme.
+exactement quelles données sont lues ou écrites par quelles tâches.
 Les performances sur architectures NUMA peuvent être fortement impactées par
 le placement des données et l'ordonnancement des tâches. Les informations présentes
 dans les dépendances de données peuvent être utilisées pour contrôler le placement physique des données,
 ainsi que pour contrôler les stratégies de placement des tâches en
 fonction de la topologie.
-Ce papier présente plusieurs heuristiques pour ces stratégies, et leurs implémentations
+Cet article présente plusieurs heuristiques pour ces stratégies, et leurs implémentations
 dans notre support exécutif OpenMP : \kaapi.
 Nous présentons également nos évaluations sur des applications d'algèbre linéaire,
 exécutées sur une machine NUMA à 192 cœurs, et comparées aux stratégies proposées
@@ -112,15 +110,15 @@ par l'état de l'art.
 	
 \section{Introduction}
 
-Bien que les architectures à temps d'accès mémoire non uniforme (NUMA) soient
-aujourd'hui l'un des choix les plus populaire pour créer des grosses machines à mémoire
-partagées, il est toujours compliqué de pouvoir les exploiter à leur plein potentiel.
+Les architectures à temps d'accès mémoire non uniforme (NUMA) sont
+aujourd'hui le choix le plus populaire pour créer des grosses machines à mémoire
+partagées.
 Compte tenu de la différence de temps d'accès en fonction de la distribution physique
 de la mémoire (une donnée proche sera accédée beaucoup plus rapidement qu'une donnée distante),
 contrôler le placement des données tout au long de l'exécution d'une application
 est donc l'un des points clés pour améliorer sa scalabilité et ses performances.
 
-Les environnements de programmation parallèle tels que OpenMP sont devenus très
+Les environnements de programmation parallèle tels que OpenMP, OpenCL, ou TBB sont devenus très
 populaires pour exploiter les machines à mémoire partagée avec plusieurs centaines de cœurs.
 Ils offrent un moyen d'exprimer beaucoup de parallélisme à grain fin, tout en
 ayant un coût relativement faible. La plupart d'entre eux fournissent également
@@ -130,22 +128,23 @@ des données sur des systèmes NUMA.
 
 L'ajout récent des dépendances de données au modèle de programmation par tâches
 d'OpenMP fourni au support exécutif des informations précises, notamment concernant
-quelle partie de l'application utilise quelle donnée.
+quelle tâche de l'application utilise quelle donnée.
 L'ordonnanceur de tâches peut donc se baser sur ces informations pour affecter
 les tâches aux processeurs, et implémenter des stratégies dédiées aux architectures
-NUMA, comme montré dans ce papier.
+NUMA, comme montré dans cet article.
 
-Ce papier décrit plusieurs stratégies que nous avons implémenté dans notre support
-exécutif \kaapi. Nous avons identifié trois points majeurs dans l'ordonnanceur qui
+Cet article décrit plusieurs stratégies que nous avons implémenté dans notre support
+exécutif \kaapi exploité à travers libKOMP~\cite{libkomp}, une interface compatible avec la norme OpenMP.
+Nous avons identifié trois points majeurs dans l'ordonnanceur qui
 peuvent impacter les applications parallèles pour systèmes NUMA : la distribution
 de données, l'assignation des tâches prête, et la manière de parcourir l'architecture
 pour effectuer l'équilibrage de charge.
 
-Ce papier les décrit et les évalue, en montrant leur impact sur les performances
+Cet article les décrit et les évalue, en montrant leur impact sur les performances
 d'applications s'exécutant sur une machine NUMA à 192 cœurs.
 Nous les comparons également aux stratégies de l'état de l'art implémentées dans \kaapi.
 
-Le plan de ce papier est le suivant : dans la partie~\ref{sec:background},
+Le plan de cet article est le suivant : dans la partie~\ref{sec:background},
 nous donnons quelques informations essentielles sur les architectures NUMA et
 le modèle de tâches avec dépendances. Ensuite dans la partie~\ref{sec:contributions}
 nous décrivons les idées, stratégies, et détails d'implémentation que nous avons
@@ -159,19 +158,11 @@ de l'art dans la partie~\ref{sec:related-work}, avant de conclure.
 \label{sec:background}
 \subsection{La couche matérielle}
 \label{sec:hardware}
-La plupart des architectures à mémoire partagée actuelles sont basées sur le modèle NUMA,
-dans lequel la mémoire est physiquement répartie sur plusieurs nœuds attachés
-aux processeurs. La plupart des vendeurs relient ces nœuds suivant une logique
-hiérarchique, ce qui permet de construire des machines à plusieurs centaines de cœurs.
-
-Le temps d'accès à de la mémoire située sur un nœud local est plus rapide que celui
-pour accéder à de la mémoire située sur un nœud distant, il est donc important
-de le prendre en compte lors de l'exécution du programme.
 
 Nous avons effectué nos expériences sur une machine SGI UV2000, constituée de
 24 nœuds NUMA, possédant chacun un processeur Intel Xeon E5-4640 à 8 cœurs,
 le tout formant un total de 192 cœurs. Nous utilisons le nom Intel192 pour faire
-référence à cette machine dans le papier.
+référence à cette machine dans l'article.
 
 \subsection{La couche logicielle}
 
@@ -193,9 +184,6 @@ le parallélisme à base de tâches avec dépendances de données depuis la vers
 Une \emph{tâche} OpenMP peut être vue comme une \emph{unité indépendante de travail} qu'un thread
 OpenMP peut exécuter. Les tâches peuvent être exécutées par un thread quelconque
 de la région parallèle.
-Gérer les tâches pendant l'exécution est bien moins coûteux que de créer et synchroniser
-des threads, le programmeur peut donc considérer que certaines parties de son code
-trop petites pour être parallélisées avec des threads peuvent l'être avec des tâches.
 
 Dans la norme OpenMP 3.0, la synchronisation des tâches est effectuée à l'aide du
 mot clé |taskwait|, imposant l'attente de la complétion de toutes les tâches
@@ -274,11 +262,6 @@ de programmation à base de tâches.
 Chaque kproc possède sa propre queue de travail dans laquelle il poussera les
 tâches qu'il créer, et qui est implémentée comme une pile,
 
-Le graphe de dépendances est construit, et lors d'un vol le voleur va choisir
-l'une des tâches dans la liste des tâches prêtes de la victime.
-C'est lors de ce vol qu'on va notamment pouvoir mettre en place des stratégies
-adaptées aux architectures NUMA.
-
 
 
 
@@ -293,7 +276,9 @@ dans les dépendances.
 \vspace*{-1ex}
 \subsection{La mécanique interne de \kaapi}
 
-Les paragraphes suivant décrivent quelques mécanismes clés du support exécutif \kaapi.
+\kaapi implémente un modèle d'exécution par vol de travail pour les programmes
+à base de tâches OpenMP, d'après le modèle présenté dans Cilk~\cite{cilk5}.
+Les paragraphes suivant décrivent quelques mécanismes clés.
 
 
 \vspace*{-1ex}
@@ -307,6 +292,11 @@ et les places au niveau du processeur (une place par cœur).
 
 
 \subsubsection{La manière de voler des tâches prêtes}
+
+Le graphe de dépendances est construit, et lors d'un vol le voleur va choisir
+l'une des tâches dans la liste des tâches prêtes de la victime.
+C'est lors de ce vol qu'on va notamment pouvoir mettre en place des stratégies
+adaptées aux architectures NUMA.
 
 L'environnement de développement dans \kaapi~\cite{Bleuse2014} repose sur des fonctions
 virtuelles pour \textit{sélectionner une victime}, \textit{sélectionner une place} dans
@@ -325,8 +315,9 @@ Ces trois fonctions sont les trois points d'entrée à préciser pour définir
 un algorithme d'ordonnancement dans \kaapi.
 
 
-\subsection{Contrôler la distribution de donnée sur les architectures NUMA}
+\subsection{Contrôler la distribution des données sur les architectures NUMA}
 
+%TODO déplacer en 2
 Contrôler le placement des données nécessite de bien connaître l'architecture NUMA.
 Les programmeurs peuvent contrôler l'allocation des données à l'aide d'outils
 dédiés, tels que \verb/numactl/~\cite{DBLP:journals/corr/abs-1101-0093}.
@@ -357,12 +348,9 @@ de l'application sont stockées, et cela peut être utiliser pour guider l'équi
 \subsection{Distribution initiale des tâches : stratégies WSpush\_init}
 
 Nous avons implémenté deux stratégies de distribution : \verb/cyclicnuma/, qui
-distribue les blocs de données en round-robin sur les nœuds NUMA, et \verb/randnuma/,
-qui distribue les blocs de données aléatoirement.
+distribue les blocs de données en round-robin sur les nœuds NUMA, et \verb/randnuma/, aléatoirement.
 Il faut noter que contrairement à \verb/numactl/, nos stratégies fonctionnent
 par blocs de données dans les clauses |depend|, et pas par pages.
-Par exemple un tableau de 8K double sera réparti sur un seul nœud avec nos
-stratégies, alors qu'il serait réparti sur plusieurs nœuds avec \verb/numactl/.
 
 
 \subsection{Distribution des tâches prêtes : stratégies WSpush}
@@ -371,9 +359,8 @@ Nous présentons quatre stratégies pour pousser les tâches prêtes dans une pl
 du système NUMA. Deux d'entre elles ne prennent pas en compte les données, les deux
 autre si, via la clause OpenMP |depend| sur les tâches.
 
-La stratégie \verb/pLoc/ permet au processeur de pousser les tâches prêtes dans
-sa propre place, tandis que la stratégie \verb/pLocNuma/ permet au processeur de
-les pousser dans la place de son nœud NUMA local.
+La stratégie \verb/pLoc/ permet au processeur de pousser localement les tâches prêtes.
+La stratégie \verb/pLocNuma/ permet au processeur de les pousser dans la place de son nœud NUMA local.
 
 La stratégie \verb/pNumaW/ pousse les tâches sur la place NUMA où les données
 écrites par la tâche se trouvent (W est l'initiale de Write).
@@ -383,9 +370,6 @@ la place du processeur courant.
 
 
 \subsection{Équilibrage dynamique de charge par vol de travail : stratégies WSselect}
-
-Cette partie décrit les stratégies de sélection que nous avons implémenté, et
-qui tienne compte de l'architecture.
 
 Les deux premières, \verb/sRand/ et \verb/sRandNuma/, sont similaires à celles étudiées
 dans~\cite{DBLP:journals/ijhpca/OlivierPWSP12}. \verb/sRand/ sélectionne une place
@@ -475,16 +459,16 @@ La ligne en pointillé représente la performance du runtime de GCC,
 libGOMP~\footnote{GCC 5.2.0}, en utilisant une initialisation parallèle.
 
 La première chose à noter est que même une combinaison de stratégies \verb/WSselect/
-\verb/WSpush/ basique telle que \verb/sRand/+\verb/pLoc/ obtient des performances
+\verb/WSpush/ basique telle que \verb/sRand/+\verb/pLoc/ (Stratégie 1) obtient des performances
 acceptables grâce à la distribution de données.
 De plus, étant donnée une stratégie de sélection (e.g. \verb/sRandNuma/), pousser
-les tâches sur le nœud NUMA où elle écrit des données (\verb/pNumaW/, \verb/pNumaWLoc/) offre
-de meilleures performances que simplement pousser les tâches sur son nœud NUMA (\verb/pLocNuma/).
+les tâches sur le nœud NUMA où elle écrit des données (stratégies 7) offre
+de meilleures performances que simplement pousser les tâches sur son nœud NUMA (stratégie 2).
 
 En considérant que les tâches sont poussées en utilisant la stratégie \verb/pNumaWLoc/,
-ne prendre en compte qu'un niveau de hiérarchie (\verb/sProc/ ou \verb/sNuma/) ne permet
+ne prendre en compte qu'un niveau de hiérarchie (stratégies 3 ou 5) ne permet
 pas d'atteindre les performances obtenues avec des stratégies naïves. En revanche,
-prendre en compte les deux niveaux de hiérarchie (\verb/sProcNuma/, \verb/sNumaProc/)
+prendre en compte les deux niveaux de hiérarchie (stratégies 4 et 6)
 permet d'obtenir de meilleures performances que les stratégies étudiées précédemment.
 
 \begin{figure}[t]
@@ -505,14 +489,7 @@ permet d'obtenir de meilleures performances que les stratégies étudiées préc
 
 Nous avons finalement sélectionné les trois combinaisons de stratégies meilleures
 que les performances de GCC pour évaluer leur scalabilité en fonction de la taille
-de la matrice en entrée. Ces trois combinaisons sont les suivantes :
-\begin{itemize}
-  \item \verb/sRand/ + \verb/pLoc/, une combinaison basique qui ne prend pas en compte la topologie.
-  \item \verb/sNumaProc/ + \verb/pNumaWLoc/, la meilleure combinaison dans notre
-    précédente évaluation.
-  \item \verb/sRandNuma/ + \verb/pNumaW/ qui sélectionne aléatoirement
-    des places au niveau NUMA.
-\end{itemize}
+de la matrice en entrée.
 
 La Figure \ref{fig:eval-strat-sizes} montre leurs performances en utilisant une distribution
 \verb/cyclicnuma/.
@@ -558,7 +535,9 @@ mais aucun ne tire partie de la clause OpenMP |depend|, qui indique précisémen
 données lues et écrites par une tâches donnée. Comme montrée par notre combinaison
 de stratégies \verb/sNumaProc+pNumaWLoc/, il est rentable de prendre en compte
 cette information lors de l'ordonnancement.
-
+Drebes et al.~\cite{LIP610333} ont caractérisé les problèmes de performances des
+algorithmes de vol de travail ignorant les spécificités des architectures NUMA,
+et proposé des améliorations mises en œuvre dans OpenStream, leur support exécutif à base de tâches.
 
 
 \section{Conclusion and future work}
@@ -570,7 +549,7 @@ qui peut être associé dynamiquement à la topologie de l'architecture.
 OpenMP a récemment évoluer pour permettre d'exprimer les dépendances de données
 entre tâches.
 
-Ce papier présente plusieurs stratégie d'exécution pour affecter efficacement
+Cet article présente plusieurs stratégie d'exécution pour affecter efficacement
 les tâches prêtes aux listes de tâches représentant l'architecture NUMA.
 Ces stratégies contrôlent à la fois la manière dont les tâches prêtes sont
 initialement réparties, ainsi que la manière dont les tâches sont volées.
