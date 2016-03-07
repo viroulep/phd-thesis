@@ -108,6 +108,7 @@ par l'état de l'art.
 \end{abstract}
 
 	
+\vspace*{-4ex}
 \section{Introduction}
 
 Les architectures à temps d'accès mémoire non uniforme (NUMA) sont
@@ -153,6 +154,7 @@ présente les évaluations de performances. Enfin nous présentons des travaux d
 de l'art dans la partie~\ref{sec:related-work}, avant de conclure.
 
 
+\vspace*{-1ex}
 \section{Description des systèmes NUMA et de leur exploitation}
 
 \label{sec:background}
@@ -265,6 +267,7 @@ tâches qu'il créer, et qui est implémentée comme une pile,
 
 
 
+\vspace*{-1ex}
 \section{Amélioration du placement des tâches et des données grâce aux dépendances}
 \label{sec:contributions}
 
@@ -291,6 +294,7 @@ NUMA (une place par nœud NUMA, regroupant l'ensemble des cœurs sur ce nœud),
 et les places au niveau du processeur (une place par cœur).
 
 
+\vspace*{-1ex}
 \subsubsection{La manière de voler des tâches prêtes}
 
 Le graphe de dépendances est construit, et lors d'un vol le voleur va choisir
@@ -315,6 +319,7 @@ Ces trois fonctions sont les trois points d'entrée à préciser pour définir
 un algorithme d'ordonnancement dans \kaapi.
 
 
+\vspace*{-1ex}
 \subsection{Contrôler la distribution des données sur les architectures NUMA}
 
 %TODO déplacer en 2
@@ -345,6 +350,7 @@ NUMA, basé sur le principe de l'allocation \emph{first-touch} de la mémoire :
 Ces deux approches permettent au support exécutif de savoir où les données
 de l'application sont stockées, et cela peut être utiliser pour guider l'équilibrage de charge.
 
+\vspace*{-1ex}
 \subsection{Distribution initiale des tâches : stratégies WSpush\_init}
 
 Nous avons implémenté deux stratégies de distribution : \verb/cyclicnuma/, qui
@@ -353,6 +359,7 @@ Il faut noter que contrairement à \verb/numactl/, nos stratégies fonctionnent
 par blocs de données dans les clauses |depend|, et pas par pages.
 
 
+\vspace*{-1ex}
 \subsection{Distribution des tâches prêtes : stratégies WSpush}
 
 Nous présentons quatre stratégies pour pousser les tâches prêtes dans une place
@@ -369,6 +376,7 @@ si la donnée est allouée sur le nœud NUMA local, alors la tâche est poussé 
 la place du processeur courant.
 
 
+\vspace*{-1ex}
 \subsection{Équilibrage dynamique de charge par vol de travail : stratégies WSselect}
 
 Les deux premières, \verb/sRand/ et \verb/sRandNuma/, sont similaires à celles étudiées
@@ -394,6 +402,7 @@ de hiérarchie :
 
 
 
+\vspace*{-1ex}
 \section{Évaluation de performances}
 \label{sec:performances-evaluation}
 Toutes nos expériences ont été effectuées sur la machine Intel192 décrite en partie~\ref{sec:hardware}.
@@ -401,49 +410,35 @@ Nous avons évalué nos stratégies sur deux applications tirées des benchmarks
 KASTORS~\cite{virouleau:hal-01081974}\footnote{git disponible ici : https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag \emph{paper-hierarchy}} :
 une factorisation QR par bloc (\verb/dgeqrf_taskdep/), et une factorisation de
 Cholesky par block (\verb/dpotrf_taskdep/).
-
 Ces applications utilisent des routines BLAS et LAPACK fournies par OpenBLAS 2.15.
 Nous avons utilisé la librairie OpenMP compatible avec GCC libKOMP~\cite{libkomp} basée
 sur le support exécutif \kaapi\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git,
 branche \emph{viroulea/public/paper}}.
-
 Nos traces et résultats sont également disponibles en ligne\footnote{https://github.com/viroulep/results-paper-hierarchy} afin que notre analyse
 soit reproductible par une tierce personne.
 
 
+\vspace*{-1ex}
 \subsection{Impact de la distribution de données}
 
 Dans un premier temps nous avons évalué l'impact de la distribution de données sur
-les performance de l'application. Nous avons fait cette évaluation sur plusieurs
+les performance de la factorisation de Cholesky. Nous avons fait cette évaluation sur plusieurs
 tailles de matrices et tailles de bloc, ainsi que sur plusieurs combinaisons
-de stratégies WSpush et WSselect. La Figure~\ref{fig:eval-distrib} montre les
-résultats obtenus pour la factorisation de Cholesky, sur des matrices de largeur
-32K et des blocs de tailles 512$\times$512. Nous avons observé des comportements
-similaires pour d'autres tailles de matrices (16K à 64K), et tailles de bloc (256 à 1024).
+de stratégies WSpush et WSselect. Nous avons comparé ces résultats aux performances de GCC (via libGOMP),
+en utilisant, ou pas, une initialisation parallèle, ainsi que \verb/numactl/.
 
-La ligne en double pointillé représente la performance de base de GCC en utilisant
-une initialisation séquentielle. La ligne du centre en pointillé représente la
-même expérience en utilisant \verb/numactl/. La ligne supérieure représente la
-performance de base de GCC en utilisant l'initialisation parallèle.
-
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[scale=0.5]{figures/graph_distrib.pdf}
-  \caption{Évaluation de la distribution de données pour plusieurs stratégies (WSselect + WSpush)}
-\label{fig:eval-distrib}
-\end{figure}
-
-L'utilisation de \verb/numactl/ permet une amélioration significative des performances
-par rapport à l'initialisation séquentielle.
-En revanche l'initialisation parallèle, qu'elle soit contrôlée (\verb/cyclicnuma/,
-\verb/randnuma/), ou non (GCC init-para), est nécessaire pour améliorer de
-manière importante les performances.
+La conclusion de ces expériences est que l'initialisation parallèle est nécessaire
+pour obtenir les meilleures performances possibles avec libGOMP, et que sans elle l'utilisation
+de \verb/numactl/ est impérative pour obtenir des performances acceptables.
+Pour \kaapi, l'utilisation d'une distribution contrôlée de données (\verb/cyclicnuma/,
+\verb/randnuma/) permet aux stratégies indépendantes de la hiérarchie de dépasser
+les meilleures performances de libGOMP. L'utilisation de stratégies hiérarchiques
+permet d'obtenir au mieux un gain d'environ 15\% par rapport aux meilleures performances de libGOMP.
 
 La distribution \verb/cyclicnuma/ sera utilisée comme stratégie par défaut pour
 les expériences suivantes, étant donné qu'elle offre les meilleures performances.
 
-
+\vspace*{-1ex}
 \subsection{Aperçu des performances des différentes stratégies}
 
 Nous avons choisi une distribution de données, \verb/cyclicnuma/, et comparé les
