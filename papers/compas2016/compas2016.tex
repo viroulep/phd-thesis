@@ -124,18 +124,17 @@ populaires pour exploiter les machines à mémoire partagée avec plusieurs cent
 Ils offrent un moyen d'exprimer beaucoup de parallélisme à grain fin, tout en
 ayant un coût relativement faible. La plupart d'entre eux fournissent également
 un moyen d'équilibrer dynamiquement la charge de travail sur tous les processeurs,
-mais les plus standard ne fournissent pas de moyen explicite de gérer la localité
+mais aucun d'entre eux ne fournis de moyen de gérer la localité
 des données sur des systèmes NUMA.
 
 L'ajout récent des dépendances de données au modèle de programmation par tâches
-d'OpenMP fourni au support exécutif des informations précises, notamment concernant
-quelle tâche de l'application utilise quelle donnée.
-L'ordonnanceur de tâches peut donc se baser sur ces informations pour affecter
-les tâches aux processeurs, et implémenter des stratégies dédiées aux architectures
+d'OpenMP fourni au support exécutif des informations précises, notamment sur les
+accès mémoires des tâches de l'application.
+L'ordonnanceur de tâches peut implémenter des stratégies dédiées aux architectures
 NUMA, comme montré dans cet article.
 
 Cet article décrit plusieurs stratégies que nous avons implémenté dans notre support
-exécutif \kaapi exploité à travers libKOMP~\cite{libkomp}, une interface compatible avec la norme OpenMP.
+exécutif \kaapi exploité à travers libKOMP~\cite{libkomp}, une interface pour la norme OpenMP.
 Nous avons identifié trois points majeurs dans l'ordonnanceur qui
 peuvent impacter les applications parallèles pour systèmes NUMA : la distribution
 de données, l'assignation des tâches prête, et la manière de parcourir l'architecture
@@ -158,30 +157,24 @@ de l'art dans la partie~\ref{sec:related-work}, avant de conclure.
 \section{Description des systèmes NUMA et de leur exploitation}
 
 \label{sec:background}
-\subsection{La couche matérielle}
-\label{sec:hardware}
 
 Nous avons effectué nos expériences sur une machine SGI UV2000, constituée de
 24 nœuds NUMA, possédant chacun un processeur Intel Xeon E5-4640 à 8 cœurs,
 le tout formant un total de 192 cœurs. Nous utilisons le nom Intel192 pour faire
 référence à cette machine dans l'article.
 
-\subsection{La couche logicielle}
-
 Afin d'exploiter les grosses architectures à mémoire partagée, le programmeur a besoin :
-\begin{enumerate}
-    \item d'exprimer beaucoup de parallélisme à grain fin, pour profiter au maximum du nombre
-      important de processeurs disponibles;
-    \item de contrôler l'exécution de l'application, en particulier la manière dont sont distribuées
-      les données.
-\end{enumerate}
+d'une part d'exprimer beaucoup de parallélisme à grain fin, pour profiter au
+maximum du nombre important de processeurs disponibles; d'autre part de contrôler
+l'exécution de l'application, en particulier la manière dont sont distribuées
+les données.
 
 Les environnements de programmation parallèle à base de tâches fournissent un moyen
 d'exprimer le parallélisme à grain fin. OpenMP~\cite{openmp40}, le standard utilisé
 en pratique pour la programmation des architectures à mémoire partagée, supporte
 le parallélisme à base de tâches avec dépendances de données depuis la version 4.0.
 
-\subsubsection{Un aperçu du modèle de tâches d'OpenMP}
+\subsection{Un aperçu du modèle de tâches d'OpenMP}
 
 Une \emph{tâche} OpenMP peut être vue comme une \emph{unité indépendante de travail} qu'un thread
 OpenMP peut exécuter. Les tâches peuvent être exécutées par un thread quelconque
@@ -252,7 +245,7 @@ autre tâche.
 %\end{figure}
 
 
-\subsubsection{Notre manière d'exécuter les programmes à base de tâches}
+\subsection{Notre manière d'exécuter les programmes à base de tâches}
 
 Le support exécutif que nous développons, \kaapi, implémente un modèle d'exécution par vol
 de travail pour les programmes à base de tâches OpenMP. Ce modèle a été présenté
@@ -264,6 +257,32 @@ de programmation à base de tâches.
 Chaque kproc possède sa propre queue de travail dans laquelle il poussera les
 tâches qu'il créer, et qui est implémentée comme une pile,
 
+\vspace*{-1ex}
+\subsection{Contrôler la distribution des données sur les architectures NUMA}
+
+%TODO déplacer en 2
+Contrôler le placement des données nécessite de bien connaître l'architecture NUMA.
+Les programmeurs peuvent contrôler l'allocation des données à l'aide d'outils
+dédiés, tels que \verb/numactl/~\cite{DBLP:journals/corr/abs-1101-0093}.
+
+Par exemple l'option \verb/--interleave=all/ permet de répartir toutes les pages
+sur l'architecture suivant une politique de round-robin sur tous les nœuds NUMA.
+Cette politique est largement utilisé avec du parallélisme dynamique,
+car elle répartie le trafic mémoire sur tous les contrôleurs mémoire, rendant
+tous les processeurs "\emph{équitablement mauvais}" par rapport aux accès mémoire.
+
+Nous proposons deux approches différentes pour distribuer la mémoire sur les systèmes
+NUMA, basé sur le principe de l'allocation \emph{first-touch} de la mémoire : la première
+en donnant la possibilité d'allouer explicitement la donnée sur un nœud NUMA
+spécifique de la machine, via une API que nous fournissons~\cite{Durand2013,BroFurGogWacNam10IJPP};
+la seconde en donnant la possibilité de marquer certaines portions de code comme
+étant du code d'initialisation, et le support exécutif se charge de la distribution
+des tâches créées dans cette portion.
+Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085} ont utilisés cette
+approche avec des restrictions sur l'exécution des tâches créées par l'application.
+
+Ces deux approches permettent au support exécutif de savoir où les données
+de l'application sont stockées, et cela peut être utilisé pour guider l'équilibrage de charge.
 
 
 
@@ -284,9 +303,6 @@ dans les dépendances.
 Les paragraphes suivant décrivent quelques mécanismes clés.
 
 
-\vspace*{-1ex}
-\subsubsection{Modélisation de l'architecture}
-
 \kaapi modélise la topologie de l'architecture comme une hiérarchie de \verb/places/.
 Une \verb/place/ est en fait une liste de tâches associées à un ensemble de cœurs.
 La plupart du temps \kaapi considère deux niveaux de places : les places de niveau
@@ -294,15 +310,10 @@ NUMA (une place par nœud NUMA, regroupant l'ensemble des cœurs sur ce nœud),
 et les places au niveau du processeur (une place par cœur).
 
 
-\vspace*{-1ex}
-\subsubsection{La manière de voler des tâches prêtes}
-
 Le graphe de dépendances est construit, et lors d'un vol le voleur va choisir
 l'une des tâches dans la liste des tâches prêtes de la victime.
-C'est lors de ce vol qu'on va notamment pouvoir mettre en place des stratégies
-adaptées aux architectures NUMA.
 
-L'environnement de développement dans \kaapi~\cite{Bleuse2014} repose sur des fonctions
+L'environnement de développement dans \kaapi~\cite{DBLP:journals/corr/BleuseGLMT14} repose sur des fonctions
 virtuelles pour \textit{sélectionner une victime}, \textit{sélectionner une place} dans
 laquelle pousser une tâche prête, et \textit{pousser} un ensemble de tâches initialement
 prêtes.
@@ -319,42 +330,12 @@ Ces trois fonctions sont les trois points d'entrée à préciser pour définir
 un algorithme d'ordonnancement dans \kaapi.
 
 
-\vspace*{-1ex}
-\subsection{Contrôler la distribution des données sur les architectures NUMA}
-
-%TODO déplacer en 2
-Contrôler le placement des données nécessite de bien connaître l'architecture NUMA.
-Les programmeurs peuvent contrôler l'allocation des données à l'aide d'outils
-dédiés, tels que \verb/numactl/~\cite{DBLP:journals/corr/abs-1101-0093}.
-
-Par exemple l'option \verb/--interleave=all/ permet de répartir toutes les pages
-sur l'architecture suivant une politique de round-robin sur tous les nœuds NUMA.
-Cette politique est largement utilisé avec du parallélisme dynamique sur systèmes
-NUMA, car elle répartie le trafic mémoire sur tous les contrôleurs mémoire, rendant
-tous les processeurs "\emph{équitablement mauvais}" par rapport aux accès mémoire.
-
-Nous proposons deux approches différentes pour distribuer la mémoire sur les systèmes
-NUMA, basé sur le principe de l'allocation \emph{first-touch} de la mémoire :
-\begin{itemize}
-  \item Soit le programmeur peut allouer explicitement la donnée sur un nœud NUMA
-    spécifique de la machine, via une API que nous fournissons~\cite{Durand2013}.
-    Cela peut être par exemple une distribution cyclique par bloc, ou par bloc à
-    deux dimensions comme MAMI~\cite{BroFurGogWacNam10IJPP}.
-  \item ou alors le programmeur peut marquer certaines portions de code comme
-    étant du code d'initialisation, et le support exécutif se charge de la distribution
-    des tâches créées dans cette portion.
-    Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085} ont utilisés cette
-    approche avec des restrictions sur l'exécution des tâches créées par l'application.
-\end{itemize}
-
-Ces deux approches permettent au support exécutif de savoir où les données
-de l'application sont stockées, et cela peut être utiliser pour guider l'équilibrage de charge.
 
 \vspace*{-1ex}
 \subsection{Distribution initiale des tâches : stratégies WSpush\_init}
 
 Nous avons implémenté deux stratégies de distribution : \verb/cyclicnuma/, qui
-distribue les blocs de données en round-robin sur les nœuds NUMA, et \verb/randnuma/, aléatoirement.
+distribue les tâches en round-robin sur les nœuds NUMA, et \verb/randnuma/, aléatoirement.
 Il faut noter que contrairement à \verb/numactl/, nos stratégies fonctionnent
 par blocs de données dans les clauses |depend|, et pas par pages.
 
@@ -382,7 +363,6 @@ la place du processeur courant.
 Les deux premières, \verb/sRand/ et \verb/sRandNuma/, sont similaires à celles étudiées
 dans~\cite{DBLP:journals/ijhpca/OlivierPWSP12}. \verb/sRand/ sélectionne une place
 processeur aléatoire, et \verb/sRandNuma/ sélectionne une place NUMA aléatoire.
-
 Nous avons également implémenté plusieurs stratégies prenant en compte les deux niveaux
 de hiérarchie :
 
@@ -405,7 +385,7 @@ de hiérarchie :
 \vspace*{-1ex}
 \section{Évaluation de performances}
 \label{sec:performances-evaluation}
-Toutes nos expériences ont été effectuées sur la machine Intel192 décrite en partie~\ref{sec:hardware}.
+Toutes nos expériences ont été effectuées sur la machine Intel192 décrite en partie~\ref{sec:background}.
 Nous avons évalué nos stratégies sur deux applications tirées des benchmarks
 KASTORS~\cite{virouleau:hal-01081974}\footnote{git disponible ici : https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag \emph{paper-hierarchy}} :
 une factorisation QR par bloc (\verb/dgeqrf_taskdep/), et une factorisation de
@@ -428,12 +408,15 @@ de stratégies WSpush et WSselect. Nous avons comparé ces résultats aux perfor
 en utilisant, ou pas, une initialisation parallèle, ainsi que \verb/numactl/.
 
 La conclusion de ces expériences est que l'initialisation parallèle est nécessaire
-pour obtenir les meilleures performances possibles avec libGOMP, et que sans elle l'utilisation
-de \verb/numactl/ est impérative pour obtenir des performances acceptables.
+pour obtenir les meilleures performances possibles avec libGOMP, et atteignant 1750 Gflops en moyenne.
+Sans initialisation parallèle, libGOMP n'atteint pas 300 Gflops, et l'utilisation de
+\verb/numactl/ est impérative pour voir un réel gain de performances, avec une moyenne à 1140 Gflops.
+
 Pour \kaapi, l'utilisation d'une distribution contrôlée de données (\verb/cyclicnuma/,
 \verb/randnuma/) permet aux stratégies indépendantes de la hiérarchie de dépasser
-les meilleures performances de libGOMP. L'utilisation de stratégies hiérarchiques
-permet d'obtenir au mieux un gain d'environ 15\% par rapport aux meilleures performances de libGOMP.
+les meilleures performances de libGOMP (respectivement 1814, 1779 Gflops).
+L'utilisation de stratégies hiérarchiques permet d'atteindre les meilleures performances
+de l'application, avec une moyenne de 1980 Gflops.
 
 La distribution \verb/cyclicnuma/ sera utilisée comme stratégie par défaut pour
 les expériences suivantes, étant donné qu'elle offre les meilleures performances.
@@ -469,6 +452,7 @@ permet d'obtenir de meilleures performances que les stratégies étudiées préc
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_all_strat.pdf}
+\vspace*{-3ex}
   \caption{Évaluation des toutes les stratégies (WSselect + WSpush)}
 \label{fig:eval-all-strat}
 \end{figure}
@@ -478,6 +462,7 @@ permet d'obtenir de meilleures performances que les stratégies étudiées préc
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_details_strat.pdf}
+\vspace*{-2ex}
 \caption{Évaluation d'une sélection de stratégies sur plusieurs tailles}
 \label{fig:eval-strat-sizes}
 \end{figure}
@@ -535,7 +520,7 @@ algorithmes de vol de travail ignorant les spécificités des architectures NUMA
 et proposé des améliorations mises en œuvre dans OpenStream, leur support exécutif à base de tâches.
 
 
-\section{Conclusion and future work}
+\section{Conclusion et travaux à venir}
 
 Les environnements de programmation à base de tâches tels qu'OpenMP sont devenus
 un moyen standard de programmer des systèmes NUMA à large échelle.
@@ -565,7 +550,7 @@ que la coopération entre le compilateur et le support exécutif peut améliorer
 significativement les performances et la scalabité des applications à base de tâches.
 
 \vspace*{-2ex}
-\section*{Acknowledgments}
+\section*{Remerciements}
 
 PIA ELCI - Projet financé par le gouvernement français pour le développement
 des applications hautes performances.
