@@ -28,7 +28,7 @@
 \usepackage{booktabs}
 \usepackage{tkz-graph}
 \usepackage{setspace}
-%\setstretch{0.95}
+\setstretch{0.95}
 
 
 
@@ -136,11 +136,7 @@ NUMA, comme montré dans cet article.
 Cet article décrit plusieurs stratégies que nous avons implémenté dans notre support
 exécutif \kaapi exploité à travers libKOMP~\cite{libkomp}, une interface pour la norme OpenMP.
 Nous avons identifié trois points majeurs dans l'ordonnanceur qui
-peuvent impacter les applications parallèles pour systèmes NUMA : la distribution
-de données, l'assignation des tâches prête, et la manière de parcourir l'architecture
-pour effectuer l'équilibrage de charge.
-
-Cet article les décrit et les évalue, en montrant leur impact sur les performances
+peuvent impacter les applications parallèles pour systèmes NUMA. Cet article les décrit et les évalue, en montrant leur impact sur les performances
 d'applications s'exécutant sur une machine NUMA à 192 cœurs.
 Nous les comparons également aux stratégies de l'état de l'art implémentées dans \kaapi.
 
@@ -260,7 +256,6 @@ tâches qu'il créer, et qui est implémentée comme une pile,
 \vspace*{-1ex}
 \subsection{Contrôler la distribution des données sur les architectures NUMA}
 
-%TODO déplacer en 2
 Contrôler le placement des données nécessite de bien connaître l'architecture NUMA.
 Les programmeurs peuvent contrôler l'allocation des données à l'aide d'outils
 dédiés, tels que \verb/numactl/~\cite{DBLP:journals/corr/abs-1101-0093}.
@@ -398,7 +393,6 @@ Nos traces et résultats sont également disponibles en ligne\footnote{https://g
 soit reproductible par une tierce personne.
 
 
-\vspace*{-1ex}
 \subsection{Impact de la distribution de données}
 
 Dans un premier temps nous avons évalué l'impact de la distribution de données sur
@@ -421,7 +415,6 @@ de l'application, avec une moyenne de 1980 Gflops.
 La distribution \verb/cyclicnuma/ sera utilisée comme stratégie par défaut pour
 les expériences suivantes, étant donné qu'elle offre les meilleures performances.
 
-\vspace*{-1ex}
 \subsection{Aperçu des performances des différentes stratégies}
 
 Nous avons choisi une distribution de données, \verb/cyclicnuma/, et comparé les
@@ -455,38 +448,32 @@ permet d'obtenir de meilleures performances que les stratégies étudiées préc
 \vspace*{-3ex}
   \caption{Évaluation des toutes les stratégies (WSselect + WSpush)}
 \label{fig:eval-all-strat}
+\vspace*{-5ex}
 \end{figure}
 
 \subsection{Scalabilité des performances des stratégies}
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[scale=0.5]{figures/graph_details_strat.pdf}
-\vspace*{-2ex}
-\caption{Évaluation d'une sélection de stratégies sur plusieurs tailles}
-\label{fig:eval-strat-sizes}
-\end{figure}
 
-Nous avons finalement sélectionné les trois combinaisons de stratégies meilleures
-que les performances de GCC pour évaluer leur scalabilité en fonction de la taille
-de la matrice en entrée.
+Nous avons finalement sélectionné les trois combinaisons de stratégies offrant de meilleures
+performances que libGOMP pour évaluer leur scalabilité en fonction de la taille
+de la matrice en entrée, sur les applications de factorisation QR et de Cholesky. Il s'agit des stratégies 1,
+4, et 7 présentent sur la Figure \ref{fig:eval-all-strat} (nous avons ignoré la 6, étant donnée
+qu'elle offrait des performances équivalentes à la 4, sans introduire une différence suffisante de stratégie).
+Nous avons choisi la meilleure taille de bloc pour une taille de matrice et une application donnée.
 
-La Figure \ref{fig:eval-strat-sizes} montre leurs performances en utilisant une distribution
-\verb/cyclicnuma/.
-Les performances ont été obtenues en utilisant la meilleure taille de bloc pour
-chacune des tailles de matrice (qui est dans notre cas 256 pour une taille de 16384,
-et 512 pour les autres).
 
-Comme attendu, utiliser une combinaison de stratégies qui prend en compte à la fois
-la localité des données et la hiérarchie de l'architecture (\verb/sNumaProc/ + \verb/pNumaWLoc/)
-permet d'obtenir les meilleures performances.
-La seule exception apparait pour les petites tailles de matrices (16384), où il
-n'y a peut être tout simplement pas assez de travail pour tirer partie de ces stratégies. 
+Quelque soit la taille, utiliser une combinaison de stratégies qui prend en compte à la fois
+la localité des données et la hiérarchie de l'architecture (stratégie 4),
+permet d'obtenir les meilleures performances par rapport aux deux autres stratégies.
+Ce gain est significatif : pour Cholesky la stratégie 4 améliore de 7\% à 9\% les
+performances obtenue par la stratégie 1, et pour QR ce gain varie entre 11\% et 19\%,
+en fonction de la taille de matrice.
 
-On peut également noter que la simple utilisation d'une distribution des données
-utilisées par les tâches permet d'obtenir des performances convenables avec une
-combinaison de stratégies basique (\verb/sRand/ + \verb/pLoc/).
+La seule exception apparait pour les petites tailles de matrices (16384), où les
+trois stratégies sont équivalentes, et où il n'y a peut être tout simplement pas
+assez de travail pour tirer partie de la hiérarchie ou de la localité des données.
 
+\vspace*{-1ex}
 \section{État de l'art}
 \label{sec:related-work}
 
