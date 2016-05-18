@@ -1,0 +1,160 @@
+\documentclass{Styles/llncs}
+%\documentclass[12pt,letterpaper]{article}
+\usepackage{times}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{boxedminipage}
+\usepackage{xspace}
+\usepackage{listings}
+\usepackage{listingsutf8}
+\usepackage{verbatim}
+\usepackage{parcolumns}
+\usepackage{color}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+%Prevents floating item to "jump" between sections
+\usepackage[section]{placeins}
+\usepackage{booktabs}
+\newcommand{\arevoir}[1]{#1}
+
+\newcommand{\kaapi}{\textsc{\mbox{kaapi}}\xspace}
+
+\newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
+
+\usepackage{xcolor}
+\usepackage{todonotes}
+\usepackage[color,leftbars]{changebar}
+
+\newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
+\newcommand{\cfsectpage}[1]{(\textit{cf.} section~\ref{#1}, page~\pageref{#1})}
+\providecommand{\figureref}[1]{\figname~\ref{#1}}
+\providecommand{\cftab}[1]{(\textit{cf.} tableau~\ref{#1})}
+\newcommand{\cmd}[1]{{\upshape\texttt{\symbol{"5C}#1}}}
+
+\newenvironment{remarque}
+{\description \item[Remarque:] \ \slshape}
+{\enddescription}
+
+\makeatletter
+\newbox\sf@box
+\newenvironment{SubFloat}[2][]%
+  {\def\sf@one{#1}%
+   \def\sf@two{#2}%
+   \setbox\sf@box\hbox
+     \bgroup}%
+  { \egroup
+   \ifx\@empty\sf@two\@empty\relax
+     \def\sf@two{\@empty}
+   \fi
+   \ifx\@empty\sf@one\@empty\relax
+     \subfloat[\sf@two]{\box\sf@box}%
+   \else
+     \subfloat[\sf@one][\sf@two]{\box\sf@box}%
+   \fi}
+\makeatother
+\renewcommand\floatpagefraction{.9}
+\renewcommand\topfraction{.9}
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+\renewcommand{\ttdefault}{pcr}
+\lstset{
+	tabsize=4,
+%	frame=single,
+	breaklines=true,
+	basicstyle=\ttfamily,
+	frame=tb,
+	framerule=0.2pt,
+%	frameround={tttt},
+	showstringspaces=false,
+	language=c,
+%	linewidth=0.95\textwidth,
+	keywordstyle=\color{black}\bfseries,
+%	keywordstyle=\color{blue},
+	commentstyle=\color{OliveGreen},
+	stringstyle=\color{red}\itshape,
+	inputencoding=utf8/latin1,
+	numbers=left,
+	numberstyle=\tiny,
+	numbersep=5pt,
+% OMP define
+emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
+emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
+emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
+emph={[5]cw, affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
+    %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
+}
+\lstdefinestyle{smaller}{basicstyle=\scriptsize\ttfamily}
+\lstMakeShortInline|
+
+\newcommand{\benchs}{KASTORS }
+
+\sloppy
+
+\begin{document}
+
+\title{TODO}
+\author{
+  Philippe Virouleau \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
+ \vspace*{-1ex}}
+\institute{
+   Inria,
+   Univ. Grenoble Alpes,  CNRS, Grenoble Institute of Technology, LIG, Grenoble, France
+   LIP, ENS de Lyon, France\\
+   \email{firstname.lastname@inria.fr}\\
+   \email{thierry.gautier@inrialpes.fr}\\
+}
+\date{}
+\maketitle
+
+\begin{abstract}
+  \vspace*{-5ex} TODO
+
+\smallskip
+  \noindent\textbf{Keywords:}
+  \emph{
+    OpenMP, task dependencies, affinity, runtime systems, NUMA
+  }
+\end{abstract}
+
+
+\section{Introduction}
+
+TODO
+
+\section{Relation between OpenMP and NUMA architectures}
+TODO
+\section{Example where we need support}
+
+TODO
+\section{Extend the flexibility for the user}
+
+TODO
+\section{Implem and results}
+
+TODO~\cite{kaapi}
+\section{Related work}
+
+TODO
+\section*{Acknowledgments}
+
+
+This work is integrated and supported by the ELCI  project, a French FSN ("Fond pour la Société Numérique")
+project that associates academic and industrial partners to design and provide software environment for very high performance
+computing.
+  \small \bibliographystyle{Styles/iplain}
+%\nocite{*}
+\bibliography{Bib/paper}
+
+\end{document}
