@@ -131,22 +131,35 @@ emph={[5]cw, affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
-TODO
+TODO inclure l'absence de possibilité pour placer les données
 
-\section{Relation between OpenMP and NUMA architectures}
-TODO
-\section{Example where we need support}
+\section{Motivation: examples where we need support}
 
 TODO
-\section{Extend the flexibility for the user}
 
-TODO
+- trouver une application qui nécessite cela, typiquement une application itérative type stencil
+  -> done, jacobi, on peut comparer taskdep+affinity vs taskdep vs for, affini est meilleurs
+  -> dpot, si le runtime peut être malin, c'est tout aussi simple que le programmeur indique explicitement quelle dépendance est "importante"
+- une clause qui permet de contrôler l’affinité tâche / donnée ou tâche / ressources est importante pour les perf
+- le comité discute de cela
+
+\section{Contributions}
+
+2/ contribution du papier
+- implémentation d’une clause affinity dans clang et modification du runtime associé
+- scheduler affinity aware (europar)
+- définition de stratégie de scheduling de tâches dans région parallèle pour permettre de gérer l’affinité en utilisant la politique first touch de l’OS
+
 \section{Implem and results}
+
+Ici on peut refaire tourner jacobi, dpotrf, dgeqrf, avec toute la couche "affinity" de clang.
 
 TODO~\cite{kaapi}
 \section{Related work}
 
 TODO
+
+
 \section*{Acknowledgments}
 
 
