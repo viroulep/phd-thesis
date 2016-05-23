@@ -131,7 +131,23 @@ emph={[5]cw, affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \section{Introduction}
 
-TODO inclure l'absence de possibilité pour placer les données
+OpenMP became one of the major standard to program applications on various hardware. Nowadays the standard defines features to be able to exploit all functional units into multi-cores machine with several accelerator. OpenMP becomes de facto unavoidable in the software stacks necessary for a super computer. 
+ In this paper we relate our experiences to reach high performance execution of OpenMP numerical applications on NUMA machine. If the standard has made a big step in order to provide a state-of-the-art solution for expressing parallelism of dynamic applications thanks to the tasks and especially dependencies between tasks features, few support exists to express and control the affinity between tasks and data.
+ 
+The recently added places concept in the OpenMP version 4.0 in July 2013 mainly concern the capacity to defines execution places of threads among the embedded parallel region. Using first touch allocation policy as portable solution to control memory binding, it is possible to rely on OpenMP places to control thread affinity with respect to the memory.
+Nevertheless, if this solution exists it remains cumbersome with inherent shortages: It does not ensures clarity in the program between computations and memory access; Design of library remains complex due to non composable non functional properties; It does not provide robust solution when load is high unbalanced between threads of different parallel regions. 
+This is while the ARB is under discussing a new \textit{affinity} clause to pass information to the runtime in order to ensure locality between tasks and some ressources. 
+
+In this paper, we presents our proposition to let the programmer to express affinity between tasks and memory. We present our \textit{affinity} clause to express it and we show that it is syntactically close to ARB discussion. We also explain how we have let our OpenMP runtime manages such finer information in order to better execute program. This concerns the organisation of scheduling data structure as well as the scheduler algorithm. 
+
+The contribution of this paper is:
+\begin{itemize}
+\item A proposition to express in OpenMP affinity between tasks and memory.
+\item A runtime extension to handle such informations to reach better performance.
+\item A complete integration in clang-3.8 branch.
+\end{itemize}
+
+Some preliminary experimental results demonstrates the capacity to manage finer information such as handle by affinity of task and memory. By analyzing our experimental results, we note OpenMP depend tasks based programs, with assumption that all accessed memory regions are encoded in dependencies, can be automatically scheduled with the same level of performance without adding clause to specify affinity. 
 
 \section{Motivation: examples where we need support}
 
