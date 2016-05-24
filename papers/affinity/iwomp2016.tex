@@ -547,7 +547,86 @@ As we can see, for both executions the time spent to compute all the operations 
 
 \section{Related work}
 
-TODO
+\section{Related Work}
+\label{sec:related_work}
+
+\TG{Related work de iwomp 2013. A reprendre ne garder que le gestion des queues etc.}\\
+
+Many research projects have been carried out to improve execution of
+OpenMP applications on NUMA machines.
+
+The HPCTools group at the University of Houston has been working in
+this area for a long time, proposing compile-time techniques that can
+help improving memory affinity on hierarchical architectures like
+distributed shared memory
+platforms~\cite{Marowka:2004:OAD:1064428.1064431}. Huang et
+al.~\cite{Huang-Chapman-locality-OpenMP} proposed OpenMP extensions to
+deal with memory affinity on NUMA machines, like ways of explicitly
+aligning tasks and data inside logical partitions of the architecture
+called \textit{locations}. While the proposed extension is interesting
+to deal with regular memory-bound applications, it does not tackle
+the problems induced by irregular workloads.
+
+Olivier et
+al.~\cite{Olivier-pre-queue-Bronis,Olivier:2012:CMW:2388996.2389085}
+introduced node-level queues of OpenMP tasks, called \textit{locality
+  domains}, to ensure tasks and data locality on NUMA systems. The
+runtime system does not maintain affinity information between tasks
+and data during execution. Data placement is implicitly obtained
+considering that the tasks access memory pages that were allocated
+using the \textit{first-touch} allocation policy. The authors thus
+ensure locality by always scheduling a task on the same locality
+domain, preventing application programmers to experiment with other
+memory bindings.
+
+The INRIA Runtime group at the University of Bordeaux proposed the
+ForestGOMP runtime system~\cite{BroAumGogThiWacNam10IPDPS} that comes
+with an API to express affinities between OpenMP parallel regions and
+dynamically allocated data. ForestGOMP implements load balancing of
+nested OpenMP parallel regions by moving branches of the corresponding
+tree of user-level threads on a hierarchical way. Memory affinity
+information is gathered at runtime and can be taken into account when
+performing load balancing. Our work extends this approach to deal with
+parallel loops while ensuring load balancing in a different way.
+
+Mahéo et al.~\cite{Maheo-MPC-OpenMP} used similar techniques to
+speed up hybrid MPI/OpenMP synchronizations on hierarchical
+architectures, including NUMA machines. Both our work and theirs build
+upon the same concepts and can be stated as complementary.
+
+Subramanian and Eager~\cite{Subramaniam:1994} introduce an affinity
+loop scheduler for unbalanced workload. They study iterative
+applications involving series of parallel loops in which \textit{"the
+  execution times of any particular iteration do not vary widely from
+  one execution of the loop to the
+  next"}\cite{Subramaniam:1994}. Their proposition is based upon a
+two-phase algorithm: first, the iterations are equally divided between
+the processors; then the scheduler dynamically adapts the workload by
+making idle processors steal a constant fraction ($1/P$) of the
+remaining iterations from occupied ones. In~\cite{Yong97}, Yong
+\textit{et al.}  extends the work of Subramanian and Eager by
+providing new ways of adapting the workload considering an history of
+previous executions of a particular parallel loop.
+
+Taking advantage of the temporal coherency of the simulation is a very
+interesting idea but cannot be used in all situations. For instance,
+it would not be effective on applications involving several parallel
+loops with varying workloads, like the PMA application we used to
+evaluate our \textit{adaptive} loop scheduler. The first phase of our
+scheduling strategy is similar to the one introduced by Subramanian
+\textit{et al.}, as \textit{adaptive} equally pre-distributes the loop
+iterations over the processors, which is a compromise between
+balancing the workload of the loop and preserving the affinity across
+several executions of the same loop. However, the second phase of our
+algorithm is different from the one implemented by Subramanian's
+adaptive loop scheduler. Indeed, \textit{adaptive} relies on a
+work-stealing algorithm~\cite{Frigo:1998:ICM:277652.277725} in which
+idle processors steal half of the remaining iterations from a
+randomly-selected victim. With such an approach, our \textit{adaptive}
+loop scheduler does not require to maintain a global view of the
+workloads associated to each processor, unlike
+proposition~\cite{Subramaniam:1994}.
+
 
 
 \section*{Acknowledgments}
