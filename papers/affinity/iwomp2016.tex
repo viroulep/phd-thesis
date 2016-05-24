@@ -25,7 +25,7 @@
 \usepackage{booktabs}
 \newcommand{\arevoir}[1]{#1}
 
-\newcommand{\kaapi}{\textsc{\mbox{kaapi}}\xspace}
+\newcommand{\kaapi}{\textsc{\mbox{XKaapi}}\xspace}
 
 \newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
 
@@ -163,26 +163,41 @@ TODO
 
 \section{Contributions}
 
-2/ contribution du papier
-- implémentation d’une clause affinity dans clang et modification du runtime associé
-- scheduler affinity aware (europar)
-- définition de stratégie de scheduling de tâches dans région parallèle pour permettre de gérer l’affinité en utilisant la politique first touch de l’OS
+In this section, we describe the details of our propositions, starting with the
+language extension description, followed by our runtime extensions we implemented
+to take advantage of this information.
+
 
 
 \subsection{Language extension}
 
 We propose an extension to precisely control the \emph{affinity} of a task with a specific part of the architecture hierarchy.
-The task can request to be executed close to:
+
+The two main components of NUMA architectures are cores and nodes, and one of
+the key to get performances out of NUMA architectures is to ensure tasks are
+executing close to their data.
+Therefore we identified three different kinds of \emph{affinity} the programmer
+may need to express, which are the following:
 \begin{itemize}
     \item A physical core.
-    \item A NUMA node (by one of the cores on the node)
-    \item A data (the task want to be executed on the node where the data is physically allocated)
+
+      The runtime should try to schedule the task on the specified physical core.
+
+    \item A NUMA node
+
+      The runtime should try to schedule the task on any of the physical cores on
+      the given NUMA node.
+
+    \item A data
+
+      The runtime should try to schedule the task on any of the physical cores on
+      the NUMA node on which the given data has been physically allocated.
 \end{itemize}
 
 Additionally, the programmer can specify if this affinity is \emph{strict} (the task must be executed on the given resource), or not.
 
-The proposed syntax for the clause is the following:
-
+Since this extension is aimed for the tasking construct, we implemented it as a new
+clause for the \emph{task} directive. The proposed syntax for the clause is the following:
 FIXME: on renomme "depend" en "data" ?
 \begin{lstlisting}
 affinity([numa,core,data]: expr[, strict])
@@ -203,15 +218,53 @@ omp_get_num_cores(void);
 omp_get_core_num(void);
 \end{lstlisting}
 
-TODO continuer la description de ce que j'ai fait dans le compilo
+We implemented these propositions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
+
 
 \subsection{Runtime extension}
 
-TODO décrire les extensions côté runtime, une description de la vision de la "machine" depuis kaapi.
+We implemented extensions in the OpenMP runtime developed in our team, \libXKOMP~\cite{libkomp} (TODO cite),
+which is based on the \kaapi~\cite{Bleuse2014} runtime system (TODO cite).
 
-Parler de comment on a implémenté le "omp\_get\_numa\_from\_data".
+\kaapi is a task-based runtime system, using workstealing has a general scheduling strategy.
+Here is a brief description of some of its key internal structures and machanisms.
 
-\section{Implem and results}
+\subsubsection{The way \kaapi models the architecture.}
+
+\kaapi sees the architecture topology as a hierarchy of \verb/places/.
+A \verb/place/ is a list of tasks associated with a subset of the machine processing units.
+\kaapi's places are very similar to the notion of \emph{shepherd} introduced in \cite{DBLP:journals/ijhpca/OlivierPWSP12}, or ForestGOMP's \emph{runqueues}~\cite{BroFurGogWacNam10IJPP}.
+\kaapi most of the time only considers two levels of places : node-level places,
+which are bound to the set of processors contained in a NUMA node, and processor-level places, which are bound to a single processor of the platform.
+This way, at the processor level one \verb/place/ is associated to each of the physical cores, and
+at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes.
+
+
+\subsubsection{The way \kaapi enables ready tasks and steals them.}
+
+The scheduling framework in \kaapi~\cite{Bleuse2014} relies on virtual functions
+for \textit{selecting a victim} and \textit{selecting a place} to push a ready task.
+When a processor becomes idle, the runtime system calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browse the topology to find a place from which stealing a task from the place task queue.
+%There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
+%Once a place is selected, the processor will take a ready task from its queue.
+
+\subsubsection{Implementation of the affinity}
+
+Before the creation of a task, if it has an affinity clause, an internal function
+will be called to set the appropriate parameters in the ICVs.
+
+During task creation, these parameters will be set in the task description.
+
+When a task becomes ready to be executed, the function responsible for the \textit{selection of the place} to push
+the task will look at the affinity and select the appropriate place.
+\kaapi relies on the \verb/get_mempolicy/ function to identify the NUMA node on which a data is allocated.
+
+As described earlier, an affinity can be \emph{strict} or not; to implement this we used
+a private queue per place. If the affinity is strict, the task is pushed to the place's private queue.
+During the \textit{victim selection}, a thread may only steal from the place's
+public queue (in case of a place attached to a  NUMA node, every thread on this node can steal from the private queue).
+
+\section{Usage example and experimentation results}
 
 TODO Décrire les différentes variantes
 (affinity, initialisation etc)
@@ -225,10 +278,6 @@ conclusion: type d'application (stencil) très dépendant de la localisation de 
 -> ne pas mettre d'affinité/d'initialisation implique que les tâches auront de gros temps d'accès à leurs données
 -> régler le problème du block-for avec initialisation, si itérations dans le "bon" ordre ça se passe bien.
 
-TODO: j'ai oublié de faire tourner la version "non-strict" de task-affinity !
-
-
-TODO~\cite{kaapi}
 \section{Related work}
 
 TODO
