@@ -6,6 +6,8 @@
 \usepackage[T1]{fontenc}
 
 \usepackage{url}
+\usepackage{amsmath}
+
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{subcaption}
@@ -98,6 +100,21 @@ emph={[5]cw, affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
 \lstdefinestyle{smaller}{basicstyle=\scriptsize\ttfamily}
 \lstMakeShortInline|
 
+
+%% For IFP algorithm
+\usepackage[algoruled]{algorithm2e}
+\usepackage{algorithmic}
+\SetKwRepeat{Do}{do}{while}%
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,patterns,plotmarks,shapes,snakes,er,3d,automata,backgrounds,topaths,trees,petri,mindmap}
+\usetikzlibrary{patterns}
+\usepgflibrary{patterns}
+\usepackage{pgf}
+\usepackage{pgfplots}
+
+
+
 \newcommand{\benchs}{KASTORS }
 
 \sloppy
@@ -106,12 +123,13 @@ emph={[5]cw, affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
 
 \title{TODO}
 \author{
-  Philippe Virouleau \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
+  Philippe Virouleau \and Adrien Roussel$^{*}$ \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
  \vspace*{-1ex}}
 \institute{
    Inria,
    Univ. Grenoble Alpes,  CNRS, Grenoble Institute of Technology, LIG, Grenoble, France
    LIP, ENS de Lyon, France\\
+   $^{*}$ IFPEN, Rueil Malmaison\\
    \email{firstname.lastname@inria.fr}\\
    \email{thierry.gautier@inrialpes.fr}\\
 }
@@ -151,17 +169,65 @@ The contribution of this paper is threefold:
 
 The remainder of this paper is organized as follows : blablabla.
 
+\begin{figure}[tc]
+%\begin{center}
+\begin{minipage}[c]{0.4\linewidth}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true]{bicgstab}
+ $\textbf{Compute}$ $r_0 = b - Ax_{0}$
+ $r^{*}_{0}$ arbitrary
+ $p_0 = r_0$
+ $j=0$
+ do {
+	$\alpha_j = \dfrac{(r_j, r^*_0)}{(Ap_j,r^*_0)}$
+	$s_j = r_j - \alpha_j A p_j$
+	$ \omega_j = (As_j, s_j) / (As_j, As_j)$
+	$x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$
+	$r_{j+1} = s_j - \omega_j A s_j$
+	$\beta_j = \dfrac{(r_{j+1},r^*_0)}{(r_j,r^*_0)} \times \dfrac{\alpha_j}{\omega_j}$
+	$p_{j+1} = r_{j+1} + \beta_j ( p_j - \omega_j A p_j )$
+	$j = j + 1$
+ } while ( !convergence)
+\end{lstlisting}
+\centerline{BiCGStab algorithm}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.5\linewidth}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{bicgstab}
+$\textbf{Compute}$ $r_0 = b - Ax_{0}$
+
+#pragma omp parallel
+#pragma omp single
+do {
+	$t_j = Ap_j$
+	$s_j = r_j - \alpha_j A p_j$
+	$ \omega_j = (As_j, s_j) / (As_j, As_j)$
+	$x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$
+	$r_{j+1} = s_j - \omega_j A s_j$
+	$\beta_j = \dfrac{(r_{j+1},r^*_0)}{(r_j,r^*_0)} \times \dfrac{\alpha_j}{\omega_j}$
+	$p_{j+1} = r_{j+1} + \beta_j ( p_j - \omega_j A p_j )$
+	$j = j + 1$
+while ( !convergence)
+\end{lstlisting}
+\centerline{Parallelization}
+\end{minipage}
+%\end{center}
+\caption{BiCGStab Algorithm. Left: Mathematical formulation of the algorithm. Right: Sketch of the parallel program using a high level API interface.} \label{lst:bicgstab}
+\end{figure}
 \section{Motivation: examples where we need support}
 
-TODO
+The high memory throughput  of NUMA architectures~\cite{} have been introduced at the price of non uniformity in memory latency. Local memory access has lower latency than accessing data on remote memory bank. To get the most performance, computational works should ideally only access to local memory. 
 
+A lot of projects in HPC projects are dealing with sparse linear solver as fundamental building block.
+Let us consider the classical BiCGStab~\cite{} algorithm, a classical method for solving sparse linear algebra system. Listing of figure~\ref{lst:bicgstab} sketches the algorithm (left part). $A$ is the sparse matrice, $p_j$, $s_j$, $r_j$ are vectors. The algorithm is structured around a the main loop  that iterates until convergence. At each iteration, the algorithm performs global access to data in (sparse) matrix vector products ($A p_j$ at line 6 and $A s_j$ at line 8) as well in several dot products.
+
+Parallelization of BiCGStab has been presented in several related works~\cite{,}. The algorithm of figure~\ref{lst:bicgstab} is parallelize using one parallel region surrounding the main loop.
+\\Open
 - trouver une application qui nécessite cela, typiquement une application itérative type stencil
   -> done, jacobi, on peut comparer taskdep+affinity vs taskdep vs for, affini est meilleurs
   -> dpot, si le runtime peut être malin, c'est tout aussi simple que le programmeur indique explicitement quelle dépendance est "importante"
 - une clause qui permet de contrôler l’affinité tâche / donnée ou tâche / ressources est importante pour les perf
 - le comité discute de cela
 
-\section{Contributions}
+\section{Affinity in OpenMP directives}
 
 2/ contribution du papier
 - implémentation d’une clause affinity dans clang et modification du runtime associé
@@ -172,7 +238,101 @@ TODO
 
 Ici on peut refaire tourner jacobi, dpotrf, dgeqrf, avec toute la couche "affinity" de clang.
 
-TODO~\cite{kaapi}
+\subsection{Parallel linear algebra algorithms}
+
+\subsubsection{Sparse Matrix Vector product (SpMV operation)}
+
+In this section, we present two major algorithms of linear algebra. We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools. In such a decomposition, a matrix A is split in several sub-domains of several rows. A sub-graph is assigned to each partition, where internal nodes refers to block diagonal entries and off diagonal elements are stored in external matrix data structure. To ensure an efficient data distribution on numa nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting dictated by graph partitioning, and local parts of the vectors are distributed too. Sparse matrix are stored in CSR format.
+
+Let us consider now the operation $A * x = b$, where A is a sparse matrix, x is the input vector and b the output result. Considering the above data partitioning, the multiplication operation can be written as following :
+
+\begin{figure}[tc]
+\begin{center}
+\begin{minipage}[c]{0.6\linewidth}
+\small{
+\textbf{Compute} $Y =  A\times X$
+$A$ matrix in CSR format\\
+}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{bicgstab}
+for (i=0; i < $n_{partitions}$; ++i)
+{
+	A.mult_Internal(X[i], Y[i]); 
+	A.mult_External(Y[i], X);
+}
+\end{lstlisting}
+\end{minipage}\hfill
+\end{center}
+\caption{SpMV Algorithm} \label{lst:spmv}
+\end{figure}
+
+The algorithm can easily be parallelized, by assigning the computations of a partition to a core. To avoid bus contention on the external copy for each sub-domain from their neighbours, we give a local copy of the vector $x$ to each numa node before SpMV computations for this test. Each partition computations are encapsulated in an independent task, so the number of inserted tasks per SpMV operation is the number of partitions. In our experiment, we push $500$ iterates of SpMV operations and look at the computation time on $p$ threads, where $p= {2,4,8,10,12,16,32,48,64,92,128,160,192}$. Results are gathered in Figures \ref{figs:spmv:1000}, \ref{figs:spmv:2000}, \ref{figs:spmv:3000}, where the executions differs from the use of runtime systems. "XKaapi" stand for the use of XKaapi runtime system, and "Intel" the use of Intel runtime. For this experiment, we take matrices coming from the Finite Volume discretization of a 2D Laplace problem on several mesh sizes.  
+
+\begin{figure}
+  \centering
+    \begin{tikzpicture}[scale=0.9]
+      %\begin{loglogaxis}[legend style = { legend pos = north east}]
+      \begin{axis}[%ybar,
+                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128,160,192},
+                   legend style = {area legend,legend pos = north east,},
+                   xtick = data,
+                   xticklabel style={/pgf/number format/1000 sep=},
+                   width=1\textwidth,
+                   xlabel=\textsc{cores},
+                   ylabel=\textsc{time (seconds)}]  
+        \addplot table[x=th,y=1000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
+        \addplot table[x=th,y=1000]{data/RuntimeSystems/iWomp/Spmv_kaapi.dat.csv};
+        \legend{Intel,XKaapi};
+      \end{axis}
+    \end{tikzpicture}
+    \caption{Mesh size: 1000x1000}
+    \label{figs:spmv:1000}
+\end{figure}
+
+\begin{figure}
+  \centering
+    \begin{tikzpicture}[scale=0.9]
+      \begin{axis}[%ybar,
+                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128,160,192},
+                   legend style = {area legend,legend pos = north east,},
+                   xtick = data,
+                   xticklabel style={/pgf/number format/1000 sep=},
+                   width=1\textwidth,
+                   xlabel=\textsc{cores},
+                   ylabel=\textsc{time (seconds)}] 
+        \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
+        \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_kaapi.dat.csv};
+        \legend{Intel,XKaapi};
+      \end{axis}
+    \end{tikzpicture}
+    \caption{Mesh size: 2000x2000}
+    \label{figs:spmv:2000}
+\end{figure}
+
+\begin{figure}
+  \centering
+    \begin{tikzpicture}[scale=0.9]
+      %\begin{loglogaxis}[legend style = { legend pos = north east}]
+      \begin{axis}[%ybar,
+                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128,160,192},
+                   legend style = {area legend,legend pos = north east,},
+                   xtick = data,
+                   xticklabel style={/pgf/number format/1000 sep=},
+                   width=1\textwidth,
+                   xlabel=\textsc{cores},
+                   ylabel=\textsc{time (seconds)}] 
+        \addplot table[x=th,y=3000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
+        \addplot table[x=th,y=3000]{data/RuntimeSystems/iWomp/Spmv_kaapi.dat.csv};
+        \legend{Intel,XKaapi};
+      \end{axis}
+    \end{tikzpicture}
+    \caption{Mesh size: 3000x3000}
+    \label{figs:spmv:3000}
+\end{figure}
+
+As we can see, for both executions the time spent to compute all the operations decreases. However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific numa node where the output data is allocated to avoid massive data retrieving.
+
+
+
 \section{Related work}
 
 TODO
