@@ -89,10 +89,10 @@
 	numbersep=5pt,
 % OMP define
 emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
-emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={[2]in,inout,out,cw,data,numa,core}, emphstyle={[2]\color{BrickRed}\bfseries},
 emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
-emph={[5]cw, affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
+emph={[5]affinity, omp_get_numa_num, omp_get_core_num, omp_get_num_cores, omp_get_num_numas, omp_get_numa_from_data}, emphstyle={[5]\color{DarkViolet}\bfseries},
     %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
 }
 \lstdefinestyle{smaller}{basicstyle=\scriptsize\ttfamily}
@@ -168,9 +168,65 @@ TODO
 - scheduler affinity aware (europar)
 - définition de stratégie de scheduling de tâches dans région parallèle pour permettre de gérer l’affinité en utilisant la politique first touch de l’OS
 
+
+\subsection{Language extension}
+
+We propose an extension to precisely control the \emph{affinity} of a task with a specific part of the architecture hierarchy.
+The task can request to be executed close to:
+\begin{itemize}
+    \item A physical core.
+    \item A NUMA node (by one of the cores on the node)
+    \item A data (the task want to be executed on the node where the data is physically allocated)
+\end{itemize}
+
+Additionally, the programmer can specify if this affinity is \emph{strict} (the task must be executed on the given resource), or not.
+
+The proposed syntax for the clause is the following:
+
+FIXME: on renomme "depend" en "data" ?
+\begin{lstlisting}
+affinity([numa,core,data]: expr[, strict])
+\end{lstlisting}
+
+In order to dynamically get information about the current team hierarchy, we also propose
+the following API functions:
+
+\begin{lstlisting}
+//Get the number of NUMA nodes in the team
+omp_get_num_numas(void);
+//Get the NUMA node the task is currently executed on
+omp_get_numa_num(void);
+//Get the NUMA node the data has been allocated on
+omp_get_numa_from_data(void *data);
+//FIXME: les deux appels suivant sont en fait get_num_threads etc
+omp_get_num_cores(void);
+omp_get_core_num(void);
+\end{lstlisting}
+
+TODO continuer la description de ce que j'ai fait dans le compilo
+
+\subsection{Runtime extension}
+
+TODO décrire les extensions côté runtime, une description de la vision de la "machine" depuis kaapi.
+
+Parler de comment on a implémenté le "omp\_get\_numa\_from\_data".
+
 \section{Implem and results}
 
-Ici on peut refaire tourner jacobi, dpotrf, dgeqrf, avec toute la couche "affinity" de clang.
+TODO Décrire les différentes variantes
+(affinity, initialisation etc)
+
+décrire choix des tailles+tailles de bloc
+
+graph
+
+conclusion: type d'application (stencil) très dépendant de la localisation de ses voisins
+-> le côté strict permet de garantir que les tâches ne bougent pas
+-> ne pas mettre d'affinité/d'initialisation implique que les tâches auront de gros temps d'accès à leurs données
+-> régler le problème du block-for avec initialisation, si itérations dans le "bon" ordre ça se passe bien.
+
+TODO: j'ai oublié de faire tourner la version "non-strict" de task-affinity !
+
 
 TODO~\cite{kaapi}
 \section{Related work}
