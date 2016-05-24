@@ -90,7 +90,7 @@
 % OMP define
 emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
 emph={[2]in,inout,out,cw,data,numa,core}, emphstyle={[2]\color{BrickRed}\bfseries},
-emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
+emph={[3]tied,untied,shared, firstprivate, private}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
 emph={[5]affinity, omp_get_numa_num, omp_get_core_num, omp_get_num_cores, omp_get_num_numas, omp_get_numa_from_data}, emphstyle={[5]\color{DarkViolet}\bfseries},
     %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
@@ -132,12 +132,12 @@ emph={[5]affinity, omp_get_numa_num, omp_get_core_num, omp_get_num_cores, omp_ge
 \section{Introduction}
 
 OpenMP has become a major standard to program parallel applications on a wide variety of parallel platforms ranging from desktop notebooks to high-end supercomputers. It provides keywords to express fine grain task-based parallelism that boost the applications performance and scalability on large scale shared memory machines. In particular, tasking in OpenMP helps the programmers parallelize applications with irregular workload, letting the runtime system in charge of performing load balancing through task scheduling in a dynamic way. However, very little support exists to express and to control the affinity between tasks and data on systems with a decentralized memory layout, like \emph{Non-Uniform Memory Architectures} (NUMA). On such systems, the memory is physically split into several banks, also called \emph{NUMA nodes}, which leads to different memory latencies and throughputs depending on the location of the memory bank a core is accessing data from. To get the most performance out of such architectures, OpenMP runtime systems thus need to be extended to make the task scheduler aware of both the underlying hardware and the relation that exists between a task and the data it accesses.
- 
+
  We relate in this paper our experiences to reach high performance out of OpenMP numerical applications on 192-core NUMA machine. The recently-added \emph{places} concept in the OpenMP 4.0 specification provides ways of binding OpenMP parallel regions to user-defined partitions of the machine. This basically ends up binding the threads of the corresponding region to a set of cores. Thus, relying on the first-touch memory allocation policy as a portable solution to control memory binding, OpenMP places can help to control thread affinity with respect to the memory.
 %Nevertheless, if this solution exists it remains cumbersome with inherent shortages: it does not ensure clarity in the program between computations and memory access; Design of library remains complex due to non-composable non functional properties; It does not provide robust solution when load is high unbalanced between threads of different parallel regions.
-However, the concept behind OpenMP places needs to be extended to improve the performance of task-based applications, as tasks are most of the time scheduled over threads in a dynamic way according to a work-stealing execution model.  This is why the OpenMP \emph{Architecture Review Board} is currently discussing the introduction of a new \textit{affinity} feature to make the runtime system aware of the affinities between the tasks and the data they access. 
+However, the concept behind OpenMP places needs to be extended to improve the performance of task-based applications, as tasks are most of the time scheduled over threads in a dynamic way according to a work-stealing execution model.  This is why the OpenMP \emph{Architecture Review Board} is currently discussing the introduction of a new \textit{affinity} feature to make the runtime system aware of the affinities between the tasks and the data they access.
 
-In this paper, we present how we control task and data placement inside our OpenMP runtime system, implementing an \emph{affinity} clause which syntax is very close to the one currently discussed by the ARB. We also explain how we manage such information at runtime in order to improve the execution of task-based OpenMP programs on NUMA systems, with a particular focus on the scheduling data structure and the scheduling algorithm. 
+In this paper, we present how we control task and data placement inside our OpenMP runtime system, implementing an \emph{affinity} clause which syntax is very close to the one currently discussed by the ARB. We also explain how we manage such information at runtime in order to improve the execution of task-based OpenMP programs on NUMA systems, with a particular focus on the scheduling data structure and the scheduling algorithm.
 
 The contribution of this paper is threefold:
 \begin{itemize}
@@ -265,6 +265,88 @@ During the \textit{victim selection}, a thread may only steal from the place's
 public queue (in case of a place attached to a  NUMA node, every thread on this node can steal from the private queue).
 
 \section{Usage example and experimentation results}
+
+\subsection{Implementation in benchmarks}
+
+We looked into our jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
+The application is a 2D stencil computational kernel that is repeatedly applied until
+convergence is detected. We used a blocked version of this algorithm.
+This blocked version uses tasks for data initialization, and either \emph{for} constructs or
+\emph{dependent tasks} constructs.
+Each operation on a point of the matrix depends on its neighbouring blocks,
+therefore the blocks should be physically evenly distributed among the nodes,
+and the computational tasks should be located close to these data.
+
+Knowing the number of cores in the team, the matrix size, and the block size, we computed a mapping
+between multiple neighbouring blocks and the different cores.
+
+We used the affinity clause to achieve two goals:
+\begin{itemize}
+    \item Ensure the physical distribution of the data during initialization
+    \item Ensure tasks stay close to their dependencies during computation, by putting it on its partition's core.
+\end{itemize}
+
+We implemented both a strict affinity and a non-strict affinity version.
+
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption=Usage example of the affinity clause for initialization,frame=tlrb,style=smaller,label=lst:init-aff]{lst:init-aff}
+for (j = 0; j < ny; j+= block_size)
+  for (i = 0; i < nx; i+= block_size) {
+    #pragma omp task firstprivate(i,j) private(ii,jj)\
+       affinity(core:GET_PARTITION(i, j, block_size, nx, ny, square_len), 1)
+    {
+      for (jj=j; jj<j+block_size; ++jj)
+        for (ii=i; ii<i+block_size; ++ii) {
+          if (ii == 0 || ii == nx - 1 || jj == 0 || jj == ny - 1)
+            (*unew)[ii][jj] = (*f)[ii][jj];
+          else
+            (*unew)[ii][jj] = 0.0;
+        }
+    }
+  }
+\end{lstlisting}
+\end{figure}
+
+TODO virer un des deux
+
+\begin{figure}[htbp]
+\begin{lstlisting}[caption=Usage example of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
+// Compute a new estimate.
+for (int j = 0; j < ny; j += block_size) {
+  for (int i = 0; i < nx; i += block_size) {
+    int xdm1 = i == 0 ? 0 : block_size;
+    int xdp1 = i == nx-block_size ? 0 : block_size;
+    int ydp1 = j == ny-block_size ? 0 : block_size;
+    int ydm1 = j == 0 ? 0 : block_size;
+    #pragma omp task shared(u_, unew_) \
+                     depend(out: unew[i: block_size][j: block_size]) \
+                     depend(in: f[i: block_size][j: block_size], \
+                                u[i: block_size][j: block_size], \
+                                u[(i - xdm1): block_size][j: block_size], \
+                                u[i: block_size][(j + ydp1): block_size], \
+                                u[i: block_size][(j - ydm1): block_size], \
+                                u[(i + xdp1): block_size][j: block_size]) \
+                     affinity(core:GET_PARTITION(i, j, block_size, nx, ny,
+                                                 square_len), 1)
+    compute_estimate(i/block_size, j/block_size, u_, unew_, f_, dx, dy,
+                     nx, ny, block_size);
+  }
+}
+\end{lstlisting}
+\end{figure}
+
+\subsection{Experiments results}
+
+We compared four version of the application with both Clang's OpenMP runtime
+and \kaapi runtime:
+
+\begin{itemize}
+  \item Blocked with \emph{for} construct used for computation.
+  \item Blocked with dependent \emph{tasks}
+  \item Blocked with \emph{for}, using affinity during initialization
+  \item Blocked with dependent \emph{tasks}, using affinity
+\end{itemize}
 
 TODO Décrire les différentes variantes
 (affinity, initialisation etc)
