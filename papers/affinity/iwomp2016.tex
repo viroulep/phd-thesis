@@ -169,7 +169,7 @@ The contribution of this paper is threefold:
 
 The remainder of this paper is organized as follows : blablabla.
 
-\begin{figure}[tc]
+\begin{figure}[t]
 %\begin{center}
 \begin{minipage}[c]{0.4\linewidth}
 \begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true]{bicgstab}
@@ -239,7 +239,7 @@ to take advantage of this information.
 Dire ici comment et à quoi correspond la numérotation des nœuds numa et des ids.
 Je pense qu'il faut dire :
 - OMP\_PLACES= => list de places sur les cores de la machine\\
-- \texttt{#pragma omp parallel} utilise OMP\_PLACES / OMP\_PROC\_BIND pour attribuer un cpuset à chaque thread de la région
+- \texttt{\#pragma omp parallel} utilise OMP\_PLACES / OMP\_PROC\_BIND pour attribuer un cpuset à chaque thread de la région
 
 \TG{Donc a priori le core id == thread id au sens \texttt{omp\_get\_thread\_num()} dans une région parallèle => replacer l'utilisation de core par thread !}
 
@@ -459,7 +459,7 @@ In this section, we present two major algorithms of linear algebra. We split dat
 
 Let us consider now the operation $A * x = b$, where A is a sparse matrix, x is the input vector and b the output result. Considering the above data partitioning, the multiplication operation can be written as following :
 
-\begin{figure}[tc]
+\begin{figure}[t]
 \begin{center}
 \begin{minipage}[c]{0.6\linewidth}
 \small{
