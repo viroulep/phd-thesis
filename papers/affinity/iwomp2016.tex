@@ -457,49 +457,47 @@ conclusion: type d'application (stencil) très dépendant de la localisation de 
 
 In this section, we present two major algorithms of linear algebra. We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools. In such a decomposition, a matrix A is split in several sub-domains of several rows. A sub-graph is assigned to each partition, where internal nodes refers to block diagonal entries and off diagonal elements are stored in external matrix data structure. To ensure an efficient data distribution on numa nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting dictated by graph partitioning, and local parts of the vectors are distributed too. Sparse matrix are stored in CSR format.
 
-Let us consider now the operation $A * x = b$, where A is a sparse matrix, x is the input vector and b the output result. Considering the above data partitioning, the multiplication operation can be written as following :
+Let us consider now the operation $A \times X = Y$, where A is a sparse matrix, x is the input vector and b the output result. Considering the above data partitioning, the multiplication operation can be written as in figure~\ref{lst:spmv}.
 
 \begin{figure}[tc]
 \begin{center}
-\begin{minipage}[c]{0.6\linewidth}
+\begin{minipage}[c]{0.9\linewidth}
 \small{
-\textbf{Compute} $Y =  A\times X$
-$A$ matrix in CSR format\\
 }
-\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{bicgstab}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{spmv}
+$\textbf{Compute} Y =  A\times X$
+$A$ sparse matrix, see text for discussion
+$X$ vectors, $X[i]$ sub vector associated to partition $i$
+$Y$ same as $X$
+/* omp parallel region outside the function */
 for (i=0; i < $n_{partitions}$; ++i)
 {
-	A.mult_Internal(X[i], Y[i]); 
-	A.mult_External(Y[i], X);
+	#pragma omp task depend(in:X[i]) depend(out:Y[i]) \
+		affinity(thread:i,0)
+	/* store result in Y[i] */
+	csr_mult( A.interior[i], X[i], Y[i]); 
+
+	for (j=0; j < $A.neighbor\_of[i]$; ++j)
+		#pragma omp task depend(in: X[j]) reduction(+: Y[i]) \
+		     affinity( thread: i, 0)
+		/* add result in Y[i]  */
+		csr_mult_addin(A.interior[i][j], X[j], X[i]);
 }
 \end{lstlisting}
 \end{minipage}\hfill
 \end{center}
-\caption{SpMV Algorithm} \label{lst:spmv}
+\caption{OpenMP SpMV Algorithm} \label{lst:spmv}
 \end{figure}
 
-The algorithm can easily be parallelized, by assigning the computations of a partition to a core. To avoid bus contention on the external copy for each sub-domain from their neighbours, we give a local copy of the vector $x$ to each numa node before SpMV computations for this test. Each partition computations are encapsulated in an independent task, so the number of inserted tasks per SpMV operation is the number of partitions. In our experiment, we push $500$ iterates of SpMV operations and look at the computation time on $p$ threads, where $p= {2,4,8,10,12,16,32,48,64,92,128,160,192}$. Results are gathered in Figures \ref{figs:spmv:1000}, \ref{figs:spmv:2000}, \ref{figs:spmv:3000}, where the executions differs from the use of runtime systems. "XKaapi" stand for the use of XKaapi runtime system, and "Intel" the use of Intel runtime. For this experiment, we take matrices coming from the Finite Volume discretization of a 2D Laplace problem on several mesh sizes.  
+Affinity are constrained by assigning the tasks to a thread following an owner compute rules: a task is mapped on the thread holding the output subvector $Y[i]$ (lines 8 and 14). 
+%To avoid bus contention on the external copy for each sub-domain from their neighbours, we give a local copy of the vector $x$ to each numa node before SpMV computations for this test. TG: du fait des copies sans entrelacement par du calcul, il doit y avoir plus de contention
+Each partition computations are encapsulated in an independent task, so the number of inserted tasks per SpMV operation is the number of partitions. 
+In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{figs:spmv:3000} with an increasing number of threads $p$, where $p= {2,4,8,10,12,16,32,48,64,92,128,160,192}$. 
+re the executions differs from the use of runtime systems. "XKaapi" stand for the use of XKaapi runtime system, and "Intel" the use of Intel runtime. For this experiment, we take matrices coming from the Finite Volume discretization of a 2D Laplace problem on several mesh sizes.  Reported graph is for mesh of size $2000 \times 2000$.
 
-\begin{figure}
-  \centering
-    \begin{tikzpicture}[scale=0.9]
-      %\begin{loglogaxis}[legend style = { legend pos = north east}]
-      \begin{axis}[%ybar,
-                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128,160,192},
-                   legend style = {area legend,legend pos = north east,},
-                   xtick = data,
-                   xticklabel style={/pgf/number format/1000 sep=},
-                   width=1\textwidth,
-                   xlabel=\textsc{cores},
-                   ylabel=\textsc{time (seconds)}]  
-        \addplot table[x=th,y=1000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
-        \addplot table[x=th,y=1000]{data/RuntimeSystems/iWomp/Spmv_kaapi.dat.csv};
-        \legend{Intel,XKaapi};
-      \end{axis}
-    \end{tikzpicture}
-    \caption{Mesh size: 1000x1000}
-    \label{figs:spmv:1000}
-\end{figure}
+As we can see, for both executions the time spent to compute all the operations decreases. However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific numa node where the output data is allocated to avoid massive data retrieving.
+\TG{A reprendre: expliquer que intel runtime > increase because 2 numa nodes if p>8}
+\TG{Pourquoi cela tend à diminuer ensuite ?}
 
 \begin{figure}
   \centering
@@ -521,28 +519,6 @@ The algorithm can easily be parallelized, by assigning the computations of a par
     \label{figs:spmv:2000}
 \end{figure}
 
-\begin{figure}
-  \centering
-    \begin{tikzpicture}[scale=0.9]
-      %\begin{loglogaxis}[legend style = { legend pos = north east}]
-      \begin{axis}[%ybar,
-                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128,160,192},
-                   legend style = {area legend,legend pos = north east,},
-                   xtick = data,
-                   xticklabel style={/pgf/number format/1000 sep=},
-                   width=1\textwidth,
-                   xlabel=\textsc{cores},
-                   ylabel=\textsc{time (seconds)}] 
-        \addplot table[x=th,y=3000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
-        \addplot table[x=th,y=3000]{data/RuntimeSystems/iWomp/Spmv_kaapi.dat.csv};
-        \legend{Intel,XKaapi};
-      \end{axis}
-    \end{tikzpicture}
-    \caption{Mesh size: 3000x3000}
-    \label{figs:spmv:3000}
-\end{figure}
-
-As we can see, for both executions the time spent to compute all the operations decreases. However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific numa node where the output data is allocated to avoid massive data retrieving.
 
 
 \section{Related work}
