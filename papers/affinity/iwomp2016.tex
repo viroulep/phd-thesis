@@ -31,6 +31,7 @@
 
 \newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
 \newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
+\newcommand{\FB}[1]{{\color{orange}\bfseries FB: #1}}
 
 \usepackage{xcolor}
 \usepackage{todonotes}
@@ -227,6 +228,13 @@ FIXME: décrire jacobi ?
 - une clause qui permet de contrôler l’affinité tâche / donnée ou tâche / ressources est importante pour les perf
 - le comité discute de cela
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.6]{graphs/jacobi_scale_iomp_komp.pdf}
+  \caption{Jacobi's base performances}
+\label{fig:eval-jacobi}
+\end{figure}
+
 \section{Extending OpenMP to support affinities}
 
 In this section, we describe the details of our proposition, starting with the
@@ -294,7 +302,7 @@ omp_get_num_nodes(void);
 //Get the NUMA node the task is currently executed on
 omp_get_node_num(void);
 //Get the NUMA node the data has been allocated on
-omp_get_node_from_data(void *data);
+omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
 These functions allow to query information about the hardware topology. On machines without NUMA support we consider that all the threads are on a single NUMA node.
@@ -303,7 +311,7 @@ We also added the following runtime API function that mimics the \textit{affinit
 \begin{lstlisting}
 //Set the affinity information to the next created tasks
 omp_set_task_affinity( 
-     omp_affinitykind_t, uintptr_t data, int strict );
+     omp_affinitykind_t, uintptr_t ptr, int strict);
 \end{lstlisting}
 The scope of the function call is the next created task in the current \textit{task region}.
 This function takes an \texttt{omp\_affinitykind\_t} value (either \texttt{omp\_affinity\_thread}, \texttt{omp\_affinity\_numa} or \texttt{omp\_affinity\_data}) to specify which kind of affinity control is applied. \texttt{value} is either an integer that represents an identifier to the NUMA node, an identifier to a thread or an address in the process address space used to select the affinity NUMA node \textbf{when} the task becomes ready for execution.
@@ -312,12 +320,12 @@ We implemented these extensions in the Clang compiler, based on the 3.8 version\
 \TG{Dire qu'ils ne sont réellement implémentés que dans libKOMP.}
 
 
-\subsection{Runtime extension}
+\subsection{Extension of the task scheduler to support affinity}
 
 We implemented extensions in the OpenMP runtime developed in our team, \libXKOMP~\cite{Durand2013,libkomp},
 which is based on the \kaapi~\cite{Bleuse2014,parco2015} runtime system.
-\kaapi is a task-based runtime system, using workstealing has a general scheduling strategy.
-Here is a brief description of some of its key internal structures and machanisms.
+\kaapi is a task-based runtime system, using workstealing as a general scheduling strategy.
+This section gives a a brief description of some of its key internal structures and mechanisms.
 
 \subsubsection{The way \kaapi models the architecture.}
 \kaapi sees the architecture topology as a hierarchy of \verb/locality domains/.
@@ -337,53 +345,56 @@ When a processor becomes idle, the runtime system calls a function, called  \ver
 %There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
 %Once a place is selected, the processor will take a ready task from its queue.
 
-\subsubsection{Implementation of the affinity}
-We extend the internal control variables in order to add affinity property. Runtime API functions can get and set this internal control variable \textit{affinity-var}. There is one copy per data environment. The variable is composed of two fields: a \texttt{omp\_affinitykind\_t} value and an integer large enough to encode a pointer.
+\subsubsection{Implementation of the support for affinity}
+We extended the set of internal control variables (ICV) with an \textit{affinity-var} property, and provided some runtime API functions to get and to set this ICV. As ICVs are inherited from the generating implicit task of the parallel region to each task this region generates, \textit{affinity-var} can be considered as a per-task variable. The variable is composed of two fields: an \texttt{omp\_affinitykind\_t} value and an integer large enough to encode a pointer.
 
-The scope of this \textit{affinity} ICV value is until the next task generating construct in the OpenMP task region of the encountering thread~\cite{openmp40}\TG{Qui vérifie le vocabulaire "task region of the encountering thread" : tâche courante en cours d'exécution}. 
-On a task generating construct, if it has an affinity clause, the runtime set the appropriate kind of affinity and the integer value in the ICVs.
+%The scope of this \textit{affinity} ICV value is the task lifetime. until the next task generating construct in the OpenMP task region of the encountering thread~\cite{openmp40}\TG{Qui vérifie le vocabulaire "task region of the encountering thread" : tâche courante en cours d'exécution}. 
+
+When a task construct using the \textit{affinity} clause is encountered, the runtime sets the appropriate kind of affinity and the integer value in the ICVs.
 During task creation, these parameters will be set in the internal task descriptor.
 
 When a task becomes ready to be executed, the function responsible for the \textit{selection of the place} to push
-the task will look at the affinity and select the appropriate locality domain. The capacity to deferred the evaluation of the affinity until the task becomes ready allows the runtime to take better decision.
-\kaapi relies on the \verb/get_mempolicy/ function to identify the NUMA node on which a data is allocated.
+the task will look at the affinity and select the appropriate locality domain. The capacity to defer the evaluation of the affinity until the task becomes ready allows the runtime to rely on the \verb/get_mempolicy/ function to identify the NUMA node on which a data is allocated.
 
-As described earlier, an affinity can be \emph{strict} or not; to implement this we used
+As described earlier, an affinity can be \emph{strict} or not. To implement this we used
 a private queue per locality domain. If the affinity is strict, the task is pushed to the locality domain's private queue.
 During the \textit{victim selection}, a thread may only steal from the locality domain's
 public queue (in case of a locality domain attached to a NUMA node, every thread on this node can steal from the private queue).
 
-\section{Usage example and experimentation results}
+\section{Examples of use and experimentation results}
 
 \subsection{Implementation in benchmarks}
 
-We looked into our jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
+We looked into our Jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
 The application is a 2D stencil computational kernel that is repeatedly applied until
 convergence is detected. We used a blocked version of this algorithm.
-This blocked version uses tasks for data initialization, and either \emph{for} constructs or
-\emph{dependent tasks} constructs.
-Each operation on a point of the matrix depends on its neighbouring blocks,
+We used both a \emph{dependent tasks} based implementation and a \emph{for} based implementation.
+Each operation on a point of the matrix depends on its neighboring blocks,
 therefore the blocks should be physically evenly distributed among the nodes,
 and the computational tasks should be located close to these data.
 
-Knowing the number of cores in the team, the matrix size, and the block size, we computed a mapping
-between multiple neighbouring blocks and the different cores.
+Knowing the number of cores in the team, the matrix size and the block size, we computed a mapping
+between multiple neighboring blocks and the different cores.
 
 We used the affinity clause to achieve two goals:
 \begin{itemize}
-    \item Ensure the physical distribution of the data during initialization
-    \item Ensure tasks stay close to their dependencies during computation, by putting it on its partition's core.
+    \item first, to ensure the physical distribution of the data during initialization:
+      in the dependent tasks version, each memory block is touched for the first time
+      in the initialization task, therefore pinning the task to a thread ensures
+      the memory will be physically allocated on its NUMA node.
+    \item second, to ensure tasks stay close to their dependencies during computation, by putting them on their block's thread.
 \end{itemize}
+
 
 We implemented both a strict affinity and a non-strict affinity version.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[caption=Usage example of the affinity clause for initialization,frame=tlrb,style=smaller,label=lst:init-aff]{lst:init-aff}
+\begin{lstlisting}[caption=Example of use of the affinity clause for initialization,frame=tlrb,style=smaller,label=lst:init-aff]{lst:init-aff}
 for (j = 0; j < ny; j+= block_size)
   for (i = 0; i < nx; i+= block_size) {
     #pragma omp task firstprivate(i,j) private(ii,jj)\
-       affinity(core:GET_PARTITION(i, j, block_size, nx, ny, square_len), 1)
+       affinity(core:GET_PARTITION(i, j, block_size, nx, ny), 1)
     {
       for (jj=j; jj<j+block_size; ++jj)
         for (ii=i; ii<i+block_size; ++ii) {
@@ -400,7 +411,7 @@ for (j = 0; j < ny; j+= block_size)
 TODO virer un des deux
 
 \begin{figure}[htbp]
-\begin{lstlisting}[caption=Usage example of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
+\begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
 // Compute a new estimate.
 for (int j = 0; j < ny; j += block_size) {
   for (int i = 0; i < nx; i += block_size) {
@@ -416,8 +427,7 @@ for (int j = 0; j < ny; j += block_size) {
                                 u[i: block_size][(j + ydp1): block_size], \
                                 u[i: block_size][(j - ydm1): block_size], \
                                 u[(i + xdp1): block_size][j: block_size]) \
-                     affinity(core:GET_PARTITION(i, j, block_size, nx, ny,
-                                                 square_len), 1)
+                     affinity(core:GET_PARTITION(i, j, block_size, nx, ny), 1)
     compute_estimate(i/block_size, j/block_size, u_, unew_, f_, dx, dy,
                      nx, ny, block_size);
   }
@@ -425,24 +435,27 @@ for (int j = 0; j < ny; j += block_size) {
 \end{lstlisting}
 \end{figure}
 
-\subsection{Experiments results}
+\subsection{Experimental results}
 
-We compared four version of the application with both Clang's OpenMP runtime
-and \kaapi runtime:
+We compared several blocked versions of the application with both the Clang's OpenMP runtime
+and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses \emph{for} constructs during initialization and computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies for initialization and computation. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}.
 
-\begin{itemize}
-  \item Blocked with \emph{for} construct used for computation.
-  \item Blocked with dependent \emph{tasks}
-  \item Blocked with \emph{for}, using affinity during initialization
-  \item Blocked with dependent \emph{tasks}, using affinity
-\end{itemize}
+The initialization part of the \textit{jacobi\_block\_for\_affinity} uses tasks
+instead of the regular \emph{for} construct, so that we could use the affinity clause.
+The computation part of the algorithm has not been changed, there is no affinity
+during the computation.
 
 TODO Décrire les différentes variantes
 (affinity, initialisation etc)
 
 décrire choix des tailles+tailles de bloc
 
-graph
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.6]{graphs/jacobi_scale.pdf}
+  \caption{Jacobi's performances overview}
+\label{fig:eval-jacobi}
+\end{figure}
 
 conclusion: type d'application (stencil) tres dependant de la localisation de ses voisins
 -> le cote strict permet de garantir que les taches ne bougent pas
