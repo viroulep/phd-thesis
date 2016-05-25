@@ -369,7 +369,9 @@ public queue (in case of a locality domain attached to a NUMA node, every thread
 
 \section{Examples of use and experimentation results}
 
-\subsection{Implementation in benchmarks}
+\subsection{Implementation in applications}
+
+\subsubsection{Jacobi kernel}
 
 We looked into our Jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
 The application is a 2D stencil computational kernel that is repeatedly applied until
@@ -441,6 +443,17 @@ for (int j = 0; j < ny; j += block_size) {
 \end{lstlisting}
 \end{figure}
 
+\subsubsection{Sparse Matrix Vector product}
+
+In this section, we present the \textit{sparse matrix vector product} algorithms arising in the BiCGStab iterative algorithm. The main goal is to ensure that tasks will have local accesses to their data among the iterations.
+We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools.
+
+In such a decomposition, a matrix A is split in several sub-domains of several rows: OpenMP independent tasks are responsible for computing sub part of the output vector. We ensure the task affinity using the common methodology in this paper: first data are allocated while taking care to evenly distribute them among the NUMA nodes, while the workload is balanced among the cores; then we annotate tasks to constrain the scheduling.
+
+To ensure an efficient data distribution on NUMA nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting is dictated by partitions. Local parts of the vectors are distributed too (sparse matrix are stored in CSR format). Moreover, output vector bloc associated with a part of the matrix is allocated on the same NUMA node as the partition itself.
+
+Affinity of computational tasks are constrained by assigning them where partitions of the matrix are stored. This is very similar to the owner compute rule from HPF~\cite{HPF}: a task is mapped on the thread holding the output subvector $Y[i]$ (line 9 of figure~\ref{fig:spmv} (a)).
+
 \subsection{Experimental platform description}
 \label{sec:idchire}
 
@@ -506,13 +519,6 @@ and the data locality.
 
 \subsubsection{Sparse Matrix Vector product (SpMV operation)}
 
-In this section, we present \textit{sparse matrix vector product} algorithms arising in the BiCGStab iterative algorithm. The main goal is to ensure that tasks will accesses to their data among the iteration.
-We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools. 
-
-In such a decomposition, a matrix A is split in several sub-domains of several rows: OpenMP independent tasks are responsible to compute sub part of the output vector. The way we ensure affinity follows the common methodology in this paper: first data are allocated taking care to distribute them among the NUMA while the workload is balanced among the core; then we annotate tasks to constrain the scheduling.
-
-To ensure an efficient data distribution on numa nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting dictated by partitions, and local parts of the vectors are distributed too (sparse matrix are stored in CSR format). Moreover, output vector bloc associated with a part of the matrix is allocated on the same NUMA node than the partition itself.
-
 \begin{figure}[t]
 \begin{minipage}[b]{0.5\linewidth}
 \small{
@@ -552,9 +558,6 @@ for (i=0; i < $n_{partitions}$; ++i)
 \end{minipage}
 \caption{SpMV experiment}\label{fig:spmv}
 \end{figure}
-
-Affinity of computational tasks are constrained by assigning them where partitions of the matrix are stored. This is very similar to the owner compute rule from HPF~\cite{HPF}: a task is mapped on the thread holding the output subvector $Y[i]$ (line 9 of figure~\ref{fig:spmv} (a)).
-\PV{Faire bouger la partie description au dessus, dans la partie "implementation" ?}
 
 In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{fig:spmv} (b)  using various number of cores $p$.The matrix here correspond to a  Finite Volume discretization of a 2D Laplace problem on a square mesh of size $2000\times 2000$.
 We run the same code compiled and executed with Clang-3.8 and its standard OpenMP runtime (label  \texttt{Clang}), GCC-5.2 with libGOMP (\texttt{GCC}) and our modified Clang-3.8 compiler with our OpenMP runtime libKOMP (\texttt{Komp}).
