@@ -32,6 +32,7 @@
 \newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
 \newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
 \newcommand{\FB}[1]{{\color{orange}\bfseries FB: #1}}
+\newcommand{\PV}[1]{{\color{purple}\bfseries PV: #1}}
 
 \usepackage{xcolor}
 \usepackage{todonotes}
@@ -169,6 +170,7 @@ The contribution of this paper is threefold:
 %Francois : je sais pas s'il faut le mettre dans l'intro ça.
 %Some preliminary experimental results demonstrate the capacity to manage finer information such as handle by affinity of task and memory. By analyzing our experimental results, we note OpenMP depend tasks based programs, with assumption that all accessed memory regions are encoded in dependencies, can be automatically scheduled with the same level of performance without adding clause to specify affinity.
 
+\PV{TODO, l'annonce du plan}
 The remainder of this paper is organized as follows : blablabla.
 
 %\begin{figure}[t]
@@ -214,26 +216,31 @@ The remainder of this paper is organized as follows : blablabla.
 %%\end{center}
 %\caption{BiCGStab Algorithm. Left: Mathematical formulation of the algorithm. Right: Sketch of the parallel program using a high level API interface.} \label{lst:bicgstab}
 %\end{figure}
+
 \section{Motivation: examples where we need support}
 
 The high memory throughput  of NUMA architectures~\cite{} have been introduced at the price of non uniformity in memory latency. On such architectures, accessing local memory access induces lower latency than accessing data on a remote memory bank. To get the most performance, computational units of work, like \emph{threads} and \emph{tasks}, should ideally only access local memory.
 
-Many projects from the High Performance Computing research area deal with sparse linear solvers as fundamental building blocks.
-Let us consider the BiCGStab~\cite{} algorithm, a classical method for solving sparse linear algebra systems. Listing of figure~\ref{lst:bicgstab} sketches the algorithm (left part). $A$ is the sparse matrix, $p_j$, $s_j$, $r_j$ are vectors. The algorithm is structured around a main loop that iterates until convergence. At each iteration, the algorithm performs global access to data in (sparse) matrix vector products ($A p_j$ at line 6 and $A s_j$ at line 8) as well in several dot products.
+%Iteratif, creux, ça repose sur du matrix vecteur traité dans les résultats.
 
-Parallelization of BiCGStab has been presented in several related works~\cite{,}. The algorithm of figure~\ref{lst:bicgstab} has been parallelized using one parallel region surrounding the main loop.
-FIXME: décrire jacobi ?
-\\Open
-- trouver une application qui nécessite cela, typiquement une application itérative type stencil
-  -> done, jacobi, on peut comparer taskdep+affinity vs taskdep vs for, affini est meilleurs
-- une clause qui permet de contrôler l’affinité tâche / donnée ou tâche / ressources est importante pour les perf
-- le comité discute de cela
+Many projects from the High Performance Computing research area deal with sparse linear solvers as fundamental building blocks.
+For instance, let us consider the BiCGStab~\cite{Saad:2003:IMS:829576} algorithm, a classical method for solving sparse linear algebra systems.  Such algorithm is structured around a main loop that iterates until convergence. At each iteration, the algorithm performs global access to data in (sparse) matrix vector products as well as many global reduction such that dot products. Data locality among iterations is fundamental for performances. Especially for the sparse matrix products arising during computation: we present in section~\ref{sec:experiment} preliminary results using our extended compiler.
+
+Another class of algorithms needing special care regarding data locality is the Stencil algorithm.
+These algorithms consist of multiple timesteps during which every element of an
+array is updated using the value of its neighbors. Figure~\ref{fig:eval-jacobi-before} shows
+the base performances of our Jacobi kernel, a stencil algorithm, evaluated on a
+192 cores NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
+We can see that the performances of either
+task-based version is very poor. The reason behind this is that tasks are not
+scheduled close to their data, and we will discuss this in details in Section~\ref{sec:experiment}.
+
 
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.6]{graphs/jacobi_scale_iomp_komp.pdf}
   \caption{Jacobi's base performances}
-\label{fig:eval-jacobi}
+\label{fig:eval-jacobi-before}
 \end{figure}
 
 \section{Extending OpenMP to support affinities}
@@ -242,25 +249,6 @@ In this section, we describe the details of our proposition, starting with the
 language extension description, followed by our runtime extensions we implemented
 to take advantage of this information.
 
-\subsection{Modeling the architecture}
-
-In order to express an affinity to a resource, one must first define how to identify these
-resources within the current team.
-
-The environment variables \verb/OMP_PLACES/ and \verb/OMP_PROC_BIND/ can already
-be use to define a list of places mapped on the underlying architecture, and on which the program will be executed.
-
-We suggest to use the same approach with the variable \verb/OMP_NUMA_PLACES/,
-defining a list of NUMA nodes on which the program will be executed.
-
-TODO en discuter !
-
-\TG{Important ici}
-
-Pour les bancs NUMA, il faut procéder de la même manière : 
-OMP\_NUMA\_PLACES => ensemble de bancs NUMA à utiliser. A voir si ensemble d'ensemble ou non.
-Dans le programme numaid i => ième banc numa dans OMP\_NUMA\_PLACES.
-Si OMP\_NUMA\_PLACES pas définit => par défaut == ensemble des bancs NUMA.
 
 \subsection{Extension of the OpenMP Task directive}
 
@@ -287,9 +275,23 @@ Additionally, the programmer can specify if this affinity is \emph{strict}, whic
 
 Since this extension is aimed for the tasking construct, we implemented it as a new
 clause for the OpenMP \emph{task} directive. The proposed syntax for the clause is the following:
+
+\PV{nitpick: est-ce qu'on laisse "numa" ou on passe à "node" ?}
 \begin{lstlisting}
 affinity([numa,thread,data]: expr[, strict])
 \end{lstlisting}
+
+\PV{review needed}
+When \emph{expr} refers to a thread id, it should refer to the thread id within
+the \verb/OMP_PLACES/ defined for the current team. For example if the places for the
+current team are \verb/"{0},{1},{2}"/, thread with id 0 is \verb/"{0}"/,
+however if the places are \verb/"{2},{5},{8}"/, thread with id 0 is \verb/"{2}"/.
+
+When \emph{expr} refers to a NUMA node id, it should refer to the node id within
+the set of NUMA nodes deduced from the \verb/OMP_PLACES/.
+
+Two successive parallel regions with the same number of threads and the same places have
+the same set of NUMA nodes.
 
 If the \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the amount of resources.
 In the case of an affinity to a data, if the NUMA node associated to the data can't be determined, it defaults to the first NUMA node of the team.
@@ -298,6 +300,8 @@ In the case of an affinity to a data, if the NUMA node associated to the data ca
 In order to dynamically get information about the current team hierarchy, we also propose
 the following runtime API functions:
 \begin{lstlisting}
+TODO valide dans une région parallèle
+Dans deux régions successives, meme nombre de threads, meme places => tu as le même ensemble de noeuds numa
 //Get the number of NUMA nodes in the team
 omp_get_num_nodes(void);
 //Get the NUMA node the task is currently executed on
@@ -383,7 +387,9 @@ We used the affinity clause to achieve two goals:
       in the dependent tasks version, each memory block is touched for the first time
       in the initialization task, therefore pinning the task to a thread ensures
       the memory will be physically allocated on its NUMA node.
+      Listing~\ref{lst:init-aff} shows an example of the blocks initialization.
     \item second, to ensure tasks stay close to their dependencies during computation, by putting them on their block's thread.
+      Listing~\ref{lst:compute-aff} shows an example use of affinity during computation.
 \end{itemize}
 
 
@@ -395,7 +401,7 @@ We implemented both a strict affinity and a non-strict affinity version.
 for (j = 0; j < ny; j+= block_size)
   for (i = 0; i < nx; i+= block_size) {
     #pragma omp task firstprivate(i,j) private(ii,jj)\
-       affinity(core:GET_PARTITION(i, j, block_size, nx, ny), 1)
+       affinity(thread:GET_PARTITION(i, j, block_size, nx, ny), 1)
     {
       for (jj=j; jj<j+block_size; ++jj)
         for (ii=i; ii<i+block_size; ++ii) {
@@ -428,7 +434,7 @@ for (int j = 0; j < ny; j += block_size) {
                                 u[i: block_size][(j + ydp1): block_size], \
                                 u[i: block_size][(j - ydm1): block_size], \
                                 u[(i + xdp1): block_size][j: block_size]) \
-                     affinity(core:GET_PARTITION(i, j, block_size, nx, ny), 1)
+                     affinity(thread:GET_PARTITION(i, j, block_size, nx, ny), 1)
     compute_estimate(i/block_size, j/block_size, u_, unew_, f_, dx, dy,
                      nx, ny, block_size);
   }
@@ -436,7 +442,12 @@ for (int j = 0; j < ny; j += block_size) {
 \end{lstlisting}
 \end{figure}
 
+\subsection{Experimental platform description}
+\label{sec:idchire}
+\TG{TODO}
+
 \subsection{Experimental results}
+\label{sec:experiment}
 
 \subsubsection{Jacobi iteration}
 
@@ -448,15 +459,15 @@ instead of the regular \emph{for} construct, so that we could use the affinity c
 The computation part of the algorithm has not been changed, there is no affinity
 during the computation.
 
-TODO Décrire les différentes variantes
-(affinity, initialisation etc)
-
 décrire choix des tailles+tailles de bloc
+
+Matrix size and blocksizes have been chosen so that partitioning easily match
+the number of threads up to 128.
 
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.6]{graphs/jacobi_scale.pdf}
-  \caption{Jacobi's performances overview}
+  \caption{Jacobi's performances overview using \libXKOMP, with a Matrix size of 49152, and blocksizes of 1024 or 2048}
 \label{fig:eval-jacobi}
 \end{figure}
 
@@ -515,8 +526,6 @@ for (i=0; i < $n_{partitions}$; ++i)
 \caption{SpMV experiment}\label{fig:spmv}
 \end{figure}
 
-
-
 Affinity of computational tasks are constrained by assigning them where partitions of the matrix are stored. This is very similar to the owner compute rule from HPF~\cite{HPF}: a task is mapped on the thread holding the output subvector $Y[i]$ (line 9 of figure~\ref{fig:spmv} (a)).
 
 In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{fig:spmv} (b)  using various number of cores $p$.The matrix here correspond to a  Finite Volume discretization of a 2D Laplace problem on a square mesh of size $2000\times 2000$.
@@ -528,7 +537,6 @@ On our machine a NUMA node is composed of $8$ cores. When $p >8$ then the progra
 \TG{Comment sont initialisés les données !}
 However, the computation times are still decreasing because computations related on a domain are always done on the same core due to scheduling policies offered by \texttt{Clang} and \texttt{GCC}.
 However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific NUMA node allows to ensure the temporal affinity among the iterations.
-
 
 
 \section{Related Work}
@@ -554,6 +562,10 @@ TODO: préciser ici
 While the proposed extension is interesting
 to deal with regular memory-bound applications, it does not tackle
 the problems induced by irregular workloads.
+
+TODO paragraphe sur Andi
+
+différence: modèle, travail niveau runtime et scheduling, pas de flexibilité niveau langage
 
 Olivier et
 al.~\cite{Olivier:2012:CMW:2388996.2389085}
