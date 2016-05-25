@@ -31,6 +31,7 @@
 
 \newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
 \newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
+\newcommand{\FB}[1]{{\color{orange}\bfseries FB: #1}}
 
 \usepackage{xcolor}
 \usepackage{todonotes}
@@ -357,29 +358,29 @@ public queue (in case of a locality domain attached to a NUMA node, every thread
 
 \subsection{Implementation in benchmarks}
 
-We looked into our jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
+We looked into our Jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
 The application is a 2D stencil computational kernel that is repeatedly applied until
 convergence is detected. We used a blocked version of this algorithm.
 This blocked version uses tasks for data initialization, and either \emph{for} constructs or
-\emph{dependent tasks} constructs.
-Each operation on a point of the matrix depends on its neighbouring blocks,
+\emph{dependent tasks} constructs for computation.\FB{C'est plus vrai ça, si? Ca me paraitrait plus logique d'initialiser les donnees des version for avec un for.} 
+Each operation on a point of the matrix depends on its neighboring blocks,
 therefore the blocks should be physically evenly distributed among the nodes,
 and the computational tasks should be located close to these data.
 
-Knowing the number of cores in the team, the matrix size, and the block size, we computed a mapping
-between multiple neighbouring blocks and the different cores.
+Knowing the number of cores in the team, the matrix size and the block size, we computed a mapping
+between multiple neighboring blocks and the different cores.
 
 We used the affinity clause to achieve two goals:
 \begin{itemize}
-    \item Ensure the physical distribution of the data during initialization
-    \item Ensure tasks stay close to their dependencies during computation, by putting it on its partition's core.
+    \item first, to ensure the physical distribution of the data during initialization ;
+    \item second, to ensure tasks stay close to their dependencies during computation, by putting them on their partition's cores.
 \end{itemize}
 
 We implemented both a strict affinity and a non-strict affinity version.
 
 
 \begin{figure}[htbp]
-\begin{lstlisting}[caption=Usage example of the affinity clause for initialization,frame=tlrb,style=smaller,label=lst:init-aff]{lst:init-aff}
+\begin{lstlisting}[caption=Example of use of the affinity clause for initialization,frame=tlrb,style=smaller,label=lst:init-aff]{lst:init-aff}
 for (j = 0; j < ny; j+= block_size)
   for (i = 0; i < nx; i+= block_size) {
     #pragma omp task firstprivate(i,j) private(ii,jj)\
@@ -400,7 +401,7 @@ for (j = 0; j < ny; j+= block_size)
 TODO virer un des deux
 
 \begin{figure}[htbp]
-\begin{lstlisting}[caption=Usage example of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
+\begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
 // Compute a new estimate.
 for (int j = 0; j < ny; j += block_size) {
   for (int i = 0; i < nx; i += block_size) {
@@ -425,17 +426,10 @@ for (int j = 0; j < ny; j += block_size) {
 \end{lstlisting}
 \end{figure}
 
-\subsection{Experiments results}
+\subsection{Experimental results}
 
-We compared four version of the application with both Clang's OpenMP runtime
-and \kaapi runtime:
-
-\begin{itemize}
-  \item Blocked with \emph{for} construct used for computation.
-  \item Blocked with dependent \emph{tasks}
-  \item Blocked with \emph{for}, using affinity during initialization
-  \item Blocked with dependent \emph{tasks}, using affinity
-\end{itemize}
+We compared several blocked versions of the application with both the Clang's OpenMP runtime
+and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses for constructs for computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}.\FB{Expliquer ce que ça veut dire affinity pour une boucle for?}
 
 TODO Décrire les différentes variantes
 (affinity, initialisation etc)
