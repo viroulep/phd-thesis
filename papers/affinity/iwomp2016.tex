@@ -249,25 +249,6 @@ In this section, we describe the details of our proposition, starting with the
 language extension description, followed by our runtime extensions we implemented
 to take advantage of this information.
 
-\subsection{Modeling the architecture}
-
-In order to express an affinity to a resource, one must first define how to identify these
-resources within the current team.
-
-The environment variables \verb/OMP_PLACES/ and \verb/OMP_PROC_BIND/ can already
-be use to define a list of places mapped on the underlying architecture, and on which the program will be executed.
-
-We suggest to use the same approach with the variable \verb/OMP_NUMA_PLACES/,
-defining a list of NUMA nodes on which the program will be executed.
-
-TODO en discuter !
-
-\TG{Important ici}
-
-Pour les bancs NUMA, il faut procéder de la même manière : 
-OMP\_NUMA\_PLACES => ensemble de bancs NUMA à utiliser. A voir si ensemble d'ensemble ou non.
-Dans le programme numaid i => ième banc numa dans OMP\_NUMA\_PLACES.
-Si OMP\_NUMA\_PLACES pas définit => par défaut == ensemble des bancs NUMA.
 
 \subsection{Extension of the OpenMP Task directive}
 
@@ -294,9 +275,23 @@ Additionally, the programmer can specify if this affinity is \emph{strict}, whic
 
 Since this extension is aimed for the tasking construct, we implemented it as a new
 clause for the OpenMP \emph{task} directive. The proposed syntax for the clause is the following:
+
+\PV{nitpick: est-ce qu'on laisse "numa" ou on passe à "node" ?}
 \begin{lstlisting}
 affinity([numa,thread,data]: expr[, strict])
 \end{lstlisting}
+
+\PV{review needed}
+When \emph{expr} refers to a thread id, it should refer to the thread id within
+the \verb/OMP_PLACES/ defined for the current team. For example if the places for the
+current team are \verb/"{0},{1},{2}"/, thread with id 0 is \verb/"{0}"/,
+however if the places are \verb/"{2},{5},{8}"/, thread with id 0 is \verb/"{2}"/.
+
+When \emph{expr} refers to a NUMA node id, it should refer to the node id within
+the set of NUMA nodes deduced from the \verb/OMP_PLACES/.
+
+Two successive parallel regions with the same number of threads and the same places have
+the same set of NUMA nodes.
 
 If the \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the amount of resources.
 In the case of an affinity to a data, if the NUMA node associated to the data can't be determined, it defaults to the first NUMA node of the team.
