@@ -216,6 +216,7 @@ while (!convergence)
 \caption{BiCGStab Algorithm. Left: Mathematical formulation of the algorithm. Right: Sketch of the parallel program using a high level API interface.} \label{lst:bicgstab}
 \end{figure}
 \section{Motivation: examples where we need support}
+\label{sec:motivation}
 
 The high memory throughput  of NUMA architectures~\cite{} have been introduced at the price of non uniformity in memory latency. On such architectures, accessing local memory access induces lower latency than accessing data on a remote memory bank. To get the most performance, computational units of work, like \emph{threads} and \emph{tasks}, should ideally only access local memory.
 
@@ -300,8 +301,6 @@ In the case of an affinity to a data, if the NUMA node associated to the data ca
 In order to dynamically get information about the current team hierarchy, we also propose
 the following runtime API functions:
 \begin{lstlisting}
-TODO valide dans une région parallèle
-Dans deux régions successives, meme nombre de threads, meme places => tu as le même ensemble de noeuds numa
 //Get the number of NUMA nodes in the team
 omp_get_num_nodes(void);
 //Get the NUMA node the task is currently executed on
@@ -310,7 +309,8 @@ omp_get_node_num(void);
 omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
-These functions allow to query information about the hardware topology. On machines without NUMA support we consider that all the threads are on a single NUMA node.
+These functions allow to query information about the hardware topology, and are only permitted
+in a parallel region. On machines without NUMA support we consider that all the threads are on a single NUMA node.
 
 We also added the following runtime API function that mimics the \textit{affinity} clause:
 \begin{lstlisting}
@@ -322,7 +322,8 @@ The scope of the function call is the next created task in the current \textit{t
 This function takes an \texttt{omp\_affinitykind\_t} value (either \texttt{omp\_affinity\_thread}, \texttt{omp\_affinity\_numa} or \texttt{omp\_affinity\_data}) to specify which kind of affinity control is applied. \texttt{value} is either an integer that represents an identifier to the NUMA node, an identifier to a thread or an address in the process address space used to select the affinity NUMA node \textbf{when} the task becomes ready for execution.
 
 We implemented these extensions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
-\TG{Dire qu'ils ne sont réellement implémentés que dans libKOMP.}
+
+Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following Section.
 
 
 \subsection{Extension of the task scheduler to support affinity}
@@ -346,7 +347,7 @@ at the NUMA node level one \verb/locality domain/ is associated to each of the N
 
 The scheduling framework in \kaapi~\cite{Bleuse2014,parco2015} relies on virtual functions
 for \textit{selecting a victim} and \textit{selecting a place} to push a ready task.
-When a processor becomes idle, the runtime system calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browse the topology to find a locality domain from which stealing a task from the domain's task queue.
+When a processor becomes idle, the runtime system calls a function to browse the topology to find a locality domain, and steal a task from its task queue.
 %There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
 %Once a place is selected, the processor will take a ready task from its queue.
 
@@ -415,8 +416,6 @@ for (j = 0; j < ny; j+= block_size)
 \end{lstlisting}
 \end{figure}
 
-TODO virer un des deux
-
 \begin{figure}[htbp]
 \begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
 // Compute a new estimate.
@@ -446,17 +445,22 @@ for (int j = 0; j < ny; j += block_size) {
 \label{sec:experiment}
 
 We compared several blocked versions of the application with both the Clang's OpenMP runtime
-and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses \emph{for} constructs during initialization and computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies for initialization and computation. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}.
+and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses \emph{for} constructs during initialization and computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies for initialization and computation. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}. The last enhanced version is the
+\textit{jacobi\_block\_taskdep\_affinity\_nonstrict}, which uses strict initialization, but non-strict affinity for tasks during computation.
 
 The initialization part of the \textit{jacobi\_block\_for\_affinity} uses tasks
-instead of the regular \emph{for} construct, so that we could use the affinity clause.
+instead of the regular \emph{for} construct, so that we could use the affinity clause and precisely
+set which thread initialize which data.
 The computation part of the algorithm has not been changed, there is no affinity
 during the computation.
 
-décrire choix des tailles+tailles de bloc
+Matrix size and block sizes have been chosen so that partitioning easily match
+the number of threads up to 128. Experiments have been made with a block size of 1024
+or 2048, and with a matrix size of 49152.
 
-Matrix size and blocksizes have been chosen so that partitioning easily match
-the number of threads up to 128.
+Base performances comparison between Clang's runtime and \kaapi are available in Figure~\ref{fig:eval-jacobi-before} in Section~\ref{sec:motivation}.
+
+Figure~\ref{fig:eval-jacobi} focuses on results for \kaapi used through \libXKOMP.
 
 \begin{figure}[t]
   \centering
@@ -465,10 +469,28 @@ the number of threads up to 128.
 \label{fig:eval-jacobi}
 \end{figure}
 
-conclusion: type d'application (stencil) tres dependant de la localisation de ses voisins
--> le cote strict permet de garantir que les taches ne bougent pas
--> ne pas mettre d'affinite/d'initialisation implique que les taches auront de gros temps d'acces a leurs donnees
--> régler le problème du block-for avec initialisation, si iterations dans le "bon" ordre ça se passe bien.
+A general comment on these results is that the application globally does not scale well, whichever runtime or version is used.
+The program is memory bound and there is not much we can do beside ensuring computation occurs
+close to the data, in order to minimize the impact of memory bandwidth.
+In all these results, only the use of the \emph{affinity} extension prevent
+a severe decrease in performances when increasing the number of threads.
+always compute faster when more threads are added to the team.
+
+Basic dependent \emph{tasks} version offers really poor performances, the basic
+\emph{for} version is a bit better but still has important degradation with an
+important number of threads.
+\PV{inclure une explication, peut être que les chunks récupérés sont pas "cools" niveau voisinages ?}
+
+Interestingly, using a strict affinity during initialization is beneficial for both \emph{for} and \emph{task} version.
+
+As described in Section~\ref{sec:motivation}, the Jacobi kernel is a stencil algorithm
+and is very sensible to data locality and cache reuse. It explains why the
+version using dependent tasks with strict affinity achieves better performances than the non-strict version,
+where tasks may be stolen from a remote node, therefore ruining the cache reusability
+and the data locality.
+
+\PV{conclusion for + affinity vs task + affinity avec les derniers résultats demain matin}
+
 
 \subsection{Parallel linear algebra algorithms}
 
