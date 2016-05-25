@@ -125,7 +125,7 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 
 \begin{document}
 
-\title{TODO}
+\title{Description, Implementation and Evaluation of an affinity clause for task directives}
 \author{
   Philippe Virouleau \and Adrien Roussel$^{*}$ \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
  \vspace*{-1ex}}
@@ -443,12 +443,17 @@ for (int j = 0; j < ny; j += block_size) {
 
 \subsection{Experimental platform description}
 \label{sec:idchire}
-\TG{TODO}
+
+The machine we experimented on is an SGI UV2000 platform made of 24 NUMA nodes.
+Each NUMA node holds an 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
+
+The memory topology is organized by pairs of NUMA nodes connected together through Intel QuickPath Interconnect.
+These pairs can communicate together through a proprietary fabric called NUMALink6 with up to two hops.
 
 \subsection{Experimental results}
 \label{sec:experiment}
 
-\subsubsection{Jacobi iteration}
+\subsubsection{Jacobi kernel}
 
 We compared several blocked versions of the application with both the Clang's OpenMP runtime
 and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses \emph{for} constructs during initialization and computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies for initialization and computation. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}. The last enhanced version is the
@@ -519,9 +524,9 @@ $X,Y$ vectors
 /* omp parallel region outside the function */
 for (i=0; i < $n_{partitions}$; ++i)
 {
-	#pragma omp task depend(in: X[]) depend(out: Y[i]) \
-		affinity(data: Y[i], 1)
-	csr_mult( A.part[i], X, Y[i]); 
+        #pragma omp task depend(in: X[]) depend(out: Y[i]) \
+                affinity(data: Y[i], 1)
+        csr_mult( A.part[i], X, Y[i]); 
 }
 \end{lstlisting}
 \centerline{(a) OpenMP SpMV Algorithm} 
@@ -533,9 +538,9 @@ for (i=0; i < $n_{partitions}$; ++i)
                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128, 160,192},
                    legend style = {area legend,legend pos = north east,},
                    xtick = data,
-                   xticklabel style={/pgf/number format/100 sep=},
+                   xticklabel style={/pgf/number format/.cd},
                    width=1\textwidth,
-                   xlabel=\textsc{cores},
+                   xlabel=\textsc{threads},
                    ylabel=\textsc{time (seconds)}] 
         \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
         \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_gcc520.dat.csv};
@@ -549,6 +554,7 @@ for (i=0; i < $n_{partitions}$; ++i)
 \end{figure}
 
 Affinity of computational tasks are constrained by assigning them where partitions of the matrix are stored. This is very similar to the owner compute rule from HPF~\cite{HPF}: a task is mapped on the thread holding the output subvector $Y[i]$ (line 9 of figure~\ref{fig:spmv} (a)).
+\PV{Faire bouger la partie description au dessus, dans la partie "implementation" ?}
 
 In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{fig:spmv} (b)  using various number of cores $p$.The matrix here correspond to a  Finite Volume discretization of a 2D Laplace problem on a square mesh of size $2000\times 2000$.
 We run the same code compiled and executed with Clang-3.8 and its standard OpenMP runtime (label  \texttt{Clang}), GCC-5.2 with libGOMP (\texttt{GCC}) and our modified Clang-3.8 compiler with our OpenMP runtime libKOMP (\texttt{Komp}).
@@ -564,8 +570,6 @@ However, XKaapi runtime systems offers more powerful results because of the use 
 \section{Related Work}
 \label{sec:related_work}
 
-\TG{Citer le travail d'Andy sur OpenStream}
-
 Many research projects have been carried out to improve execution of
 OpenMP applications on NUMA machines.
 
@@ -579,15 +583,13 @@ deal with memory affinity on NUMA machines, like ways of explicitly
 aligning tasks and data inside logical partitions of the architecture
 called \textit{locations}.
 
-TODO: préciser ici
 
-While the proposed extension is interesting
-to deal with regular memory-bound applications, it does not tackle
-the problems induced by irregular workloads.
-
-TODO paragraphe sur Andi
-
-différence: modèle, travail niveau runtime et scheduling, pas de flexibilité niveau langage
+Drebes et al.~\cite{Drebes:2014:TDS:2658949.2641764} proposed scheduling
+techniques to control both the data placement and the task placement, in order to
+take advantage of the data locality. They implemented these techniques
+in dataflow programming model named OpenStream.
+Their approach is focused at a scheduler level, and does not provide
+flexibility to the user regarding data placement.
 
 Olivier et
 al.~\cite{Olivier:2012:CMW:2388996.2389085}
@@ -609,6 +611,17 @@ nested OpenMP parallel regions by moving branches of the corresponding
 tree of user-level threads on a hierarchical way. Memory affinity
 information is gathered at runtime and can be taken into account when
 performing load balancing.
+
+\section{Conclusion}
+
+\PV{il faut faire ça...}
+
+On a proposé une série d'extension, implémenté ça dans un compilo et un runtime,
+montré que ça marchait pour des applications rentrant dans les catégories ayant
+motivé les travaux.
+
+future works ?
+
 
 \section*{Acknowledgments}
 
