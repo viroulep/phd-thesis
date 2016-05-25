@@ -228,6 +228,13 @@ FIXME: décrire jacobi ?
 - une clause qui permet de contrôler l’affinité tâche / donnée ou tâche / ressources est importante pour les perf
 - le comité discute de cela
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.6]{graphs/jacobi_scale_iomp_komp.pdf}
+  \caption{Jacobi's base performances}
+\label{fig:eval-jacobi}
+\end{figure}
+
 \section{Extending OpenMP to support affinities}
 
 In this section, we describe the details of our proposition, starting with the
@@ -295,7 +302,7 @@ omp_get_num_nodes(void);
 //Get the NUMA node the task is currently executed on
 omp_get_node_num(void);
 //Get the NUMA node the data has been allocated on
-omp_get_node_from_data(void *data);
+omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
 These functions allow to query information about the hardware topology. On machines without NUMA support we consider that all the threads are on a single NUMA node.
@@ -304,7 +311,7 @@ We also added the following runtime API function that mimics the \textit{affinit
 \begin{lstlisting}
 //Set the affinity information to the next created tasks
 omp_set_task_affinity( 
-     omp_affinitykind_t, uintptr_t data, int strict );
+     omp_affinitykind_t, uintptr_t ptr, int strict);
 \end{lstlisting}
 The scope of the function call is the next created task in the current \textit{task region}.
 This function takes an \texttt{omp\_affinitykind\_t} value (either \texttt{omp\_affinity\_thread}, \texttt{omp\_affinity\_numa} or \texttt{omp\_affinity\_data}) to specify which kind of affinity control is applied. \texttt{value} is either an integer that represents an identifier to the NUMA node, an identifier to a thread or an address in the process address space used to select the affinity NUMA node \textbf{when} the task becomes ready for execution.
@@ -361,8 +368,7 @@ public queue (in case of a locality domain attached to a NUMA node, every thread
 We looked into our Jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
 The application is a 2D stencil computational kernel that is repeatedly applied until
 convergence is detected. We used a blocked version of this algorithm.
-This blocked version uses tasks for data initialization, and either \emph{for} constructs or
-\emph{dependent tasks} constructs for computation.\FB{C'est plus vrai ça, si? Ca me paraitrait plus logique d'initialiser les donnees des version for avec un for.} 
+We used both a \emph{dependent tasks} based implementation and a \emph{for} based implementation.
 Each operation on a point of the matrix depends on its neighboring blocks,
 therefore the blocks should be physically evenly distributed among the nodes,
 and the computational tasks should be located close to these data.
@@ -372,9 +378,13 @@ between multiple neighboring blocks and the different cores.
 
 We used the affinity clause to achieve two goals:
 \begin{itemize}
-    \item first, to ensure the physical distribution of the data during initialization ;
-    \item second, to ensure tasks stay close to their dependencies during computation, by putting them on their partition's cores.
+    \item first, to ensure the physical distribution of the data during initialization:
+      in the dependent tasks version, each memory block is touched for the first time
+      in the initialization task, therefore pinning the task to a thread ensures
+      the memory will be physically allocated on its NUMA node.
+    \item second, to ensure tasks stay close to their dependencies during computation, by putting them on their block's thread.
 \end{itemize}
+
 
 We implemented both a strict affinity and a non-strict affinity version.
 
@@ -384,7 +394,7 @@ We implemented both a strict affinity and a non-strict affinity version.
 for (j = 0; j < ny; j+= block_size)
   for (i = 0; i < nx; i+= block_size) {
     #pragma omp task firstprivate(i,j) private(ii,jj)\
-       affinity(core:GET_PARTITION(i, j, block_size, nx, ny, square_len), 1)
+       affinity(core:GET_PARTITION(i, j, block_size, nx, ny), 1)
     {
       for (jj=j; jj<j+block_size; ++jj)
         for (ii=i; ii<i+block_size; ++ii) {
@@ -417,8 +427,7 @@ for (int j = 0; j < ny; j += block_size) {
                                 u[i: block_size][(j + ydp1): block_size], \
                                 u[i: block_size][(j - ydm1): block_size], \
                                 u[(i + xdp1): block_size][j: block_size]) \
-                     affinity(core:GET_PARTITION(i, j, block_size, nx, ny,
-                                                 square_len), 1)
+                     affinity(core:GET_PARTITION(i, j, block_size, nx, ny), 1)
     compute_estimate(i/block_size, j/block_size, u_, unew_, f_, dx, dy,
                      nx, ny, block_size);
   }
@@ -429,14 +438,24 @@ for (int j = 0; j < ny; j += block_size) {
 \subsection{Experimental results}
 
 We compared several blocked versions of the application with both the Clang's OpenMP runtime
-and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses for constructs for computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}.\FB{Expliquer ce que ça veut dire affinity pour une boucle for?}
+and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses \emph{for} constructs during initialization and computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies for initialization and computation. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}.
+
+The initialization part of the \textit{jacobi\_block\_for\_affinity} uses tasks
+instead of the regular \emph{for} construct, so that we could use the affinity clause.
+The computation part of the algorithm has not been changed, there is no affinity
+during the computation.
 
 TODO Décrire les différentes variantes
 (affinity, initialisation etc)
 
 décrire choix des tailles+tailles de bloc
 
-graph
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.6]{graphs/jacobi_scale.pdf}
+  \caption{Jacobi's performances overview}
+\label{fig:eval-jacobi}
+\end{figure}
 
 conclusion: type d'application (stencil) tres dependant de la localisation de ses voisins
 -> le cote strict permet de garantir que les taches ne bougent pas
