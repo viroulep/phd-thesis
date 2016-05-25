@@ -122,6 +122,7 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 
 \sloppy
 
+
 \begin{document}
 
 \title{TODO}
@@ -172,49 +173,50 @@ The contribution of this paper is threefold:
 \PV{TODO, l'annonce du plan}
 The remainder of this paper is organized as follows : blablabla.
 
-\begin{figure}[t]
-%\begin{center}
-\begin{minipage}[c]{0.4\linewidth}
-\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true]{bicgstab}
- $\textbf{Compute}$ $r_0 = b - Ax_{0}$
- $r^{*}_{0}$ arbitrary
- $p_0 = r_0$
- $j=0$
- do {
-	$\alpha_j = \dfrac{(r_j, r^*_0)}{(Ap_j,r^*_0)}$
-	$s_j = r_j - \alpha_j A p_j$
-	$ \omega_j = (As_j, s_j) / (As_j, As_j)$
-	$x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$
-	$r_{j+1} = s_j - \omega_j A s_j$
-	$\beta_j = \dfrac{(r_{j+1},r^*_0)}{(r_j,r^*_0)} \times \dfrac{\alpha_j}{\omega_j}$
-	$p_{j+1} = r_{j+1} + \beta_j ( p_j - \omega_j A p_j )$
-	$j = j + 1$
- } while (!convergence)
-\end{lstlisting}
-\centerline{BiCGStab algorithm}
-\end{minipage}\hfill
-\begin{minipage}[c]{0.5\linewidth}
-\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{bicgstab}
-$\textbf{Compute}$ $r_0 = b - Ax_{0}$
+%\begin{figure}[t]
+%%\begin{center}
+%\begin{minipage}[c]{0.4\linewidth}
+%\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true]{bicgstab}
+% $\textbf{Compute}$ $r_0 = b - Ax_{0}$
+% $r^{*}_{0}$ arbitrary
+% $p_0 = r_0$
+% $j=0$
+% do {
+%	$\alpha_j = \dfrac{(r_j, r^*_0)}{(Ap_j,r^*_0)}$
+%	$s_j = r_j - \alpha_j A p_j$
+%	$ \omega_j = (As_j, s_j) / (As_j, As_j)$
+%	$x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$
+%	$r_{j+1} = s_j - \omega_j A s_j$
+%	$\beta_j = \dfrac{(r_{j+1},r^*_0)}{(r_j,r^*_0)} \times \dfrac{\alpha_j}{\omega_j}$
+%	$p_{j+1} = r_{j+1} + \beta_j ( p_j - \omega_j A p_j )$
+%	$j = j + 1$
+% } while (!convergence)
+%\end{lstlisting}
+%\centerline{BiCGStab algorithm}
+%\end{minipage}\hfill
+%\begin{minipage}[c]{0.5\linewidth}
+%\begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{bicgstab}
+%$\textbf{Compute}$ $r_0 = b - Ax_{0}$
+%
+%#pragma omp parallel
+%#pragma omp single
+%do {
+%	$t_j = Ap_j$
+%	$s_j = r_j - \alpha_j A p_j$
+%	$ \omega_j = (As_j, s_j) / (As_j, As_j)$
+%	$x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$
+%	$r_{j+1} = s_j - \omega_j A s_j$
+%	$\beta_j = \dfrac{(r_{j+1},r^*_0)}{(r_j,r^*_0)} \times \dfrac{\alpha_j}{\omega_j}$
+%	$p_{j+1} = r_{j+1} + \beta_j ( p_j - \omega_j A p_j )$
+%	$j = j + 1$
+%} while (!convergence)
+%\end{lstlisting}
+%\centerline{Parallelization}
+%\end{minipage}
+%%\end{center}
+%\caption{BiCGStab Algorithm. Left: Mathematical formulation of the algorithm. Right: Sketch of the parallel program using a high level API interface.} \label{lst:bicgstab}
+%\end{figure}
 
-#pragma omp parallel
-#pragma omp single
-do {
-	$t_j = Ap_j$
-	$s_j = r_j - \alpha_j A p_j$
-	$ \omega_j = (As_j, s_j) / (As_j, As_j)$
-	$x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$
-	$r_{j+1} = s_j - \omega_j A s_j$
-	$\beta_j = \dfrac{(r_{j+1},r^*_0)}{(r_j,r^*_0)} \times \dfrac{\alpha_j}{\omega_j}$
-	$p_{j+1} = r_{j+1} + \beta_j ( p_j - \omega_j A p_j )$
-	$j = j + 1$
-while (!convergence)
-\end{lstlisting}
-\centerline{Parallelization}
-\end{minipage}
-%\end{center}
-\caption{BiCGStab Algorithm. Left: Mathematical formulation of the algorithm. Right: Sketch of the parallel program using a high level API interface.} \label{lst:bicgstab}
-\end{figure}
 \section{Motivation: examples where we need support}
 \label{sec:motivation}
 
@@ -223,9 +225,7 @@ The high memory throughput  of NUMA architectures~\cite{} have been introduced a
 %Iteratif, creux, ça repose sur du matrix vecteur traité dans les résultats.
 
 Many projects from the High Performance Computing research area deal with sparse linear solvers as fundamental building blocks.
-Let us consider the BiCGStab~\cite{} algorithm, a classical method for solving sparse linear algebra systems. Listing of figure~\ref{lst:bicgstab} sketches the algorithm (left part). $A$ is the sparse matrix, $p_j$, $s_j$, $r_j$ are vectors. The algorithm is structured around a main loop that iterates until convergence. At each iteration, the algorithm performs global access to data in (sparse) matrix vector products ($A p_j$ at line 6 and $A s_j$ at line 8) as well in several dot products.
-
-Parallelization of BiCGStab has been presented in several related works~\cite{,}. The algorithm of figure~\ref{lst:bicgstab} has been parallelized using one parallel region surrounding the main loop.
+For instance, let us consider the BiCGStab~\cite{Saad:2003:IMS:829576} algorithm, a classical method for solving sparse linear algebra systems.  Such algorithm is structured around a main loop that iterates until convergence. At each iteration, the algorithm performs global access to data in (sparse) matrix vector products as well as many global reduction such that dot products. Data locality among iterations is fundamental for performances. Especially for the sparse matrix products arising during computation: we present in section~\ref{sec:experiment} preliminary results using our extended compiler.
 
 Another class of algorithms needing special care regarding data locality is the Stencil algorithm.
 These algorithms consist of multiple timesteps during which every element of an
@@ -441,8 +441,14 @@ for (int j = 0; j < ny; j += block_size) {
 \end{lstlisting}
 \end{figure}
 
+\subsection{Experimental platform description}
+\label{sec:idchire}
+\TG{TODO}
+
 \subsection{Experimental results}
 \label{sec:experiment}
+
+\subsubsection{Jacobi iteration}
 
 We compared several blocked versions of the application with both the Clang's OpenMP runtime
 and the \kaapi runtime. The \textit{jacobi\_block\_for} version uses \emph{for} constructs during initialization and computation, while the \textit{jacobi\_block\_taskdep} version generates tasks with dependencies for initialization and computation. Each version comes with or without using the \emph{affinity} extension we propose. We refer to these enhanced versions as \textit{jacobi\_block\_for\_affinity} and \textit{jacobi\_block\_taskdep\_affinity}. The last enhanced version is the
@@ -492,80 +498,73 @@ and the data locality.
 \PV{conclusion for + affinity vs task + affinity avec les derniers résultats demain matin}
 
 
-\subsection{Parallel linear algebra algorithms}
 
 \subsubsection{Sparse Matrix Vector product (SpMV operation)}
 
-In this section, we present two major algorithms of linear algebra. We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools. In such a decomposition, a matrix A is split in several sub-domains of several rows. A sub-graph is assigned to each partition, where internal nodes refers to block diagonal entries and off diagonal elements are stored in external matrix data structure. To ensure an efficient data distribution on numa nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting dictated by graph partitioning, and local parts of the vectors are distributed too. Sparse matrix are stored in CSR format.
+In this section, we present \textit{sparse matrix vector product} algorithms arising in the BiCGStab iterative algorithm. The main goal is to ensure that tasks will accesses to their data among the iteration.
+We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools. 
 
-Let us consider now the operation $A \times X = Y$, where A is a sparse matrix, x is the input vector and b the output result. Considering the above data partitioning, the multiplication operation can be written as in figure~\ref{lst:spmv}.
+In such a decomposition, a matrix A is split in several sub-domains of several rows: OpenMP independent tasks are responsible to compute sub part of the output vector. The way we ensure affinity follows the common methodology in this paper: first data are allocated taking care to distribute them among the NUMA while the workload is balanced among the core; then we annotate tasks to constrain the scheduling.
+
+To ensure an efficient data distribution on numa nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting dictated by partitions, and local parts of the vectors are distributed too (sparse matrix are stored in CSR format). Moreover, output vector bloc associated with a part of the matrix is allocated on the same NUMA node than the partition itself.
 
 \begin{figure}[t]
-\begin{center}
-\begin{minipage}[c]{0.9\linewidth}
+\begin{minipage}[b]{0.5\linewidth}
 \small{
 }
 \begin{lstlisting}[frame=none,style=smaller,showlines=true,mathescape=true,firstnumber=1]{spmv}
 $\textbf{Compute} Y =  A\times X$
-$A$ sparse matrix, see text for discussion
-$X$ vectors, $X[i]$ sub vector associated to partition $i$
-$Y$ same as $X$
+$A$ sparse matrix
+$X,Y$ vectors
 /* omp parallel region outside the function */
 for (i=0; i < $n_{partitions}$; ++i)
 {
-	#pragma omp task depend(in:X[i]) depend(out:Y[i]) \
-		affinity(thread:i,0)
-	/* store result in Y[i] */
-	csr_mult( A.interior[i], X[i], Y[i]); 
-
-	for (j=0; j < $A.neighbor\_of[i]$; ++j)
-		#pragma omp task depend(in: X[j]) reduction(+: Y[i]) \
-		     affinity( thread: i, 0)
-		/* add result in Y[i]  */
-		csr_mult_addin(A.interior[i][j], X[j], X[i]);
+	#pragma omp task depend(in: X[]) depend(out: Y[i]) \
+		affinity(data: Y[i], 1)
+	csr_mult( A.part[i], X, Y[i]); 
 }
 \end{lstlisting}
+\centerline{(a) OpenMP SpMV Algorithm} 
 \end{minipage}\hfill
-\end{center}
-\caption{OpenMP SpMV Algorithm} \label{lst:spmv}
-\end{figure}
-
-Affinity are constrained by assigning the tasks to a thread following an owner compute rules: a task is mapped on the thread holding the output subvector $Y[i]$ (lines 8 and 14). 
-%To avoid bus contention on the external copy for each sub-domain from their neighbors, we give a local copy of the vector $x$ to each numa node before SpMV computations for this test. TG: du fait des copies sans entrelacement par du calcul, il doit y avoir plus de contention
-Each partition computations are encapsulated in an independent task, so the number of inserted tasks per SpMV operation is the number of partitions. 
-In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{figs:spmv:3000} with an increasing number of threads $p$, where $p= {2,4,8,10,12,16,32,48,64,92,128,160,192}$. 
-re the executions differs from the use of runtime systems. "XKaapi" stand for the use of XKaapi runtime system, and "Intel" the use of Intel runtime. For this experiment, we take matrices coming from the Finite Volume discretization of a 2D Laplace problem on several mesh sizes.  Reported graph is for mesh of size $2000 \times 2000$.
-
-As we can see, for both executions the time spent to compute all the operations decreases. However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific numa node where the output data is allocated to avoid massive data retrieving.
-\TG{A reprendre: expliquer que intel runtime > increase because 2 numa nodes if p>8}
-\TG{Pourquoi cela tend à diminuer ensuite ?}
-
-\begin{figure}
-  \centering
-    \begin{tikzpicture}[scale=0.9]
+\begin{minipage}[b]{0.5\linewidth}
+      \begin{tikzpicture}[scale=1.]
+\tikzstyle{every node}=[font=\scriptsize]
       \begin{axis}[%ybar,
-                   symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128,160,192},
+                  symbolic x coords = {2,4,8,10,12,14,16,32,48,64,92,128, 160,192},
                    legend style = {area legend,legend pos = north east,},
                    xtick = data,
-                   xticklabel style={/pgf/number format/1000 sep=},
+                   xticklabel style={/pgf/number format/100 sep=},
                    width=1\textwidth,
                    xlabel=\textsc{cores},
                    ylabel=\textsc{time (seconds)}] 
         \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_omp.dat.csv};
+        \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_gcc520.dat.csv};
         \addplot table[x=th,y=2000]{data/RuntimeSystems/iWomp/Spmv_kaapi.dat.csv};
-        \legend{Intel,XKaapi};
+        \legend{Clang,GCC,Komp};
       \end{axis}
     \end{tikzpicture}
-    \caption{Mesh size: 2000x2000}
-    \label{figs:spmv:2000}
+\centerline{(b) Results on 192 cores NUMA machine.}
+\end{minipage}
+\caption{SpMV experiment}\label{fig:spmv}
 \end{figure}
 
+Affinity of computational tasks are constrained by assigning them where partitions of the matrix are stored. This is very similar to the owner compute rule from HPF~\cite{HPF}: a task is mapped on the thread holding the output subvector $Y[i]$ (line 9 of figure~\ref{fig:spmv} (a)).
+
+In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{fig:spmv} (b)  using various number of cores $p$.The matrix here correspond to a  Finite Volume discretization of a 2D Laplace problem on a square mesh of size $2000\times 2000$.
+We run the same code compiled and executed with Clang-3.8 and its standard OpenMP runtime (label  \texttt{Clang}), GCC-5.2 with libGOMP (\texttt{GCC}) and our modified Clang-3.8 compiler with our OpenMP runtime libKOMP (\texttt{Komp}).
+
+Up to 8 cores, all the execution times decrease in the same way for the three configurations \texttt{Clang}, \texttt{GCC} and \texttt{Komp}: differences between them is not visible.
+When the number of cores exceed $8$, the \texttt{Clang} and \texttt{GCC} have execution times that increase before to decrease with a growing number of cores.
+On our machine a NUMA node is composed of $8$ cores. When $p >8$ then the program has to use several NUMA nodes. For both \texttt{Clang} and \texttt{GCC} this is due to the misplacement of tasks on NUMA nodes where accessed memory is allocated.
+\TG{Comment sont initialisés les données !}
+However, the computation times are still decreasing because computations related on a domain are always done on the same core due to scheduling policies offered by \texttt{Clang} and \texttt{GCC}.
+However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific NUMA node allows to ensure the temporal affinity among the iterations.
 
 
 \section{Related Work}
 \label{sec:related_work}
 
-\TG{Related work de iwomp 2013. A reprendre ne garder que le gestion des queues etc.}\\
+\TG{Citer le travail d'Andy sur OpenStream}
 
 Many research projects have been carried out to improve execution of
 OpenMP applications on NUMA machines.
@@ -610,7 +609,6 @@ nested OpenMP parallel regions by moving branches of the corresponding
 tree of user-level threads on a hierarchical way. Memory affinity
 information is gathered at runtime and can be taken into account when
 performing load balancing.
-
 
 \section*{Acknowledgments}
 
