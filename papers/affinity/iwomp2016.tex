@@ -146,26 +146,21 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 OpenMP 4.0 introduced dependent tasks, which give the programmer a way to
 express fine grain parallelism that can be dynamically mapped to the architecture
 topology at runtime.
-Controlling data locality is one of the keys to performance when targeting NUMA architectures,
-and on this topic, OpenMP does not provide a lot of flexibility to the programmer yet,
-which leaves the responsibility to the runtime to make choices regarding tasks
-placements.
-
-In this paper, we will present motivating class of applications which would benefit
-from having such control and flexibility.
-
+Controlling data locality is one of the key factors to reach a high level of performance when targeting NUMA architectures.
+On this topic, OpenMP does not provide a lot of flexibility to the programmer yet,
+which lets the runtime decide where a task should be executed.
+In this paper, we present a class of applications which would benefit
+from having such a control and flexibility over tasks and data placement.
 We also propose our own interpretation of the new \emph{affinity} clause for the \emph{task} directive,
 which is being discussed by the OpenMP \emph{Architecture Review Board}.
 This clause enables the programmer to give hints to the runtime about
 tasks placement during the program execution, which can be used to control the data
 mapping on the architecture. In our proposal, the programmer can express affinity between a task and
 the following resources: a thread, a NUMA node, and a data.
-
-We will present an implementation of this proposal in the Clang-3.8 compiler,
+We then present an implementation of this proposal in the Clang-3.8 compiler,
 and an implementation of the corresponding extensions in our OpenMP runtime \libXKOMP.
-
-Finally, we will present a preliminary evaluation of this work on a 192 cores NUMA architecture,
-showing good improvements in the behavior of the applications.
+Finally, we present a preliminary evaluation of this work running two task-based OpenMP kernels on a 192-core NUMA architecture,
+that shows noticeable improvements both in terms on performance and scalability.
 \smallskip
   \noindent\textbf{Keywords:}
   \emph{
@@ -668,8 +663,8 @@ a data.
 We implemented this proposal in the Clang-3.8 compiler, and implemented the
 corresponding extensions in our OpenMP runtime \libXKOMP.
 
-Finally, we did a preliminary evaluation of this work on a 192-core NUMA architecture,
-showing good improvements in the behavior of the applications.
+Finally, we performed a preliminary evaluation of this work running two task-based OpenMP kernels on a 192-core NUMA architecture,
+that showed noticeable improvements both in terms on performance and scalability.
 
 In the next future, our focus will move to compile-time techniques able to infer and
 attach valuable information to tasks, like an estimation of a task operational intensity,
