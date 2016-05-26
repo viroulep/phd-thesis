@@ -170,8 +170,7 @@ The contribution of this paper is threefold:
 %Francois : je sais pas s'il faut le mettre dans l'intro ça.
 %Some preliminary experimental results demonstrate the capacity to manage finer information such as handle by affinity of task and memory. By analyzing our experimental results, we note OpenMP depend tasks based programs, with assumption that all accessed memory regions are encoded in dependencies, can be automatically scheduled with the same level of performance without adding clause to specify affinity.
 
-\PV{TODO, l'annonce du plan}
-The remainder of this paper is organized as follows : blablabla.
+The remainder of this paper is organized as follows. Section 2 introduces some motivating examples of applications that suffer from the lack of affinity support on NUMA machines. Section 3 details our proposal from the extension to the OpenMP specification to its actual implementation inside both the Clang compiler and our own OpenMP runtime system. Section 4 presents the performance evaluation of two OpenMP kernels that were enhanced to support affinity and were executed on a 192-core NUMA machine. We eventually present some related work in section 5 before concluding in section 6.
 
 %\begin{figure}[t]
 %%\begin{center}
