@@ -570,8 +570,7 @@ We run the same code compiled and executed with Clang-3.8 and its standard OpenM
 Up to 8 cores, all the execution times decrease in the same way for the three configurations \texttt{Clang}, \texttt{GCC} and \texttt{Komp}: differences between them is not visible.
 When the number of cores exceed $8$, the \texttt{Clang} and \texttt{GCC} have execution times that increase before to decrease with a growing number of cores.
 On our machine a NUMA node is composed of $8$ cores. When $p >8$ then the program has to use several NUMA nodes. For both \texttt{Clang} and \texttt{GCC} this is due to the misplacement of tasks on NUMA nodes where accessed memory is allocated.
-Data are split to fit on local memory of each NUMA node. Vector are split in several parts
-parts, which are allocated on different NUMA nodes by using initialization tasks placement, relying on the OS first-touch policy.
+Data are split to fit on local memory of each NUMA node. Vector are split in several parts, which are allocated on different NUMA nodes by using initialization tasks placement, relying on the OS first-touch policy.
 Matrices are split and also allocated by the use of initialization tasks, so that it matches the
 same NUMA nodes on which the corresponding sub-vector has been allocated.
 Despite this tasks misplacement, the computation times are still decreasing because computations related to a domain are always done on the same core due to scheduling policies offered by \texttt{Clang} and \texttt{GCC}.
