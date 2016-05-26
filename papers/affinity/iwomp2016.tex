@@ -501,20 +501,23 @@ a severe decrease in performances when increasing the number of threads.
 always compute faster when more threads are added to the team.
 
 Basic dependent \emph{tasks} version offers really poor performances, the basic
-\emph{for} version is a bit better but still has important degradation with an
-important number of threads.
-\PV{inclure une explication, peut être que les chunks récupérés sont pas "cools" niveau voisinages ?}
+\emph{for} version is a bit better but still has room for improvement.
+The two high results for the \emph{for} versions in Figure~\ref{fig:eval-jacobi-before} and~\ref{fig:eval-jacobi}
+are obtained for a number of threads of 48 and 96: these numbers are not powers
+of 2 (whereas all the other number of threads are), and are not automatically perfectly mapped on the topology. For these
+numbers the mapping of the blocks on the architecture is not a perfect square,
+therefore each thread needs data from more neighbors, and a slight shift in
+initial iterations placement leads to worse performances.
 
-Interestingly, using a strict affinity during initialization is beneficial for both \emph{for} and \emph{task} version.
+Interestingly, using a strict affinity during initialization is beneficial for both \emph{for} and \emph{task} version:
+we can ensure a balanced mapping of the data over the whole hierarchy, even with
+non square numbers.
 
 As described in Section~\ref{sec:motivation}, the Jacobi kernel is a stencil algorithm
 and is very sensible to data locality and cache reuse. It explains why the
 version using dependent tasks with strict affinity achieves better performances than the non-strict version,
 where tasks may be stolen from a remote node, therefore ruining the cache reusability
-and the data locality.
-
-\PV{conclusion for + affinity vs task + affinity avec les derniers résultats demain matin}
-
+and the data locality (this is especially true with bigger blocks).
 
 
 \subsubsection{Sparse Matrix Vector product (SpMV operation)}
