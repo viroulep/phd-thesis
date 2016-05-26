@@ -276,9 +276,8 @@ Additionally, the programmer can specify if this affinity is \emph{strict}, whic
 Since this extension is aimed for the tasking construct, we implemented it as a new
 clause for the OpenMP \emph{task} directive. The proposed syntax for the clause is the following:
 
-\PV{nitpick: est-ce qu'on laisse "numa" ou on passe à "node" ?}
 \begin{lstlisting}
-affinity([numa,thread,data]: expr[, strict])
+affinity([node,thread,data]: expr[, strict])
 \end{lstlisting}
 
 \PV{review needed}
@@ -619,13 +618,34 @@ performing load balancing.
 
 \section{Conclusion}
 
-\PV{il faut faire ça...}
+OpenMP 4.0 introduced dependent tasks, which give the programmer a way to
+express fine grain parallelism that can be dynamically mapped to the architecture
+topology at runtime.
+Controlling data locality is one of the keys to performance when targeting NUMA architectures,
+and on this topic OpenMP does not provide a lot of flexibility to the programmer yet,
+which leaves the responsibility to the runtime to make choices regarding tasks
+placements.
 
-On a proposé une série d'extension, implémenté ça dans un compilo et un runtime,
-montré que ça marchait pour des applications rentrant dans les catégories ayant
-motivé les travaux.
+In this paper we presented motivating class of applications which would benefit
+from having such control and flexibility.
 
-future works ?
+We proposed a new \emph{affinity} clause for the \emph{task} directive.
+It enables the programmer to give hints to the runtime about
+tasks placement during the program execution, which can be used to control the data
+mapping. The programmer can express affinity between a task and the following resources: a thread, a NUMA node, and
+a data.
+
+We implemented this proposal in the Clang-3.8 compiler, and implemented the
+corresponding extensions in our OpenMP runtime \libXKOMP.
+
+And finally we did a preliminary evaluation of this work on a 192 cores NUMA architecture,
+showing good improvements in the behaviour of the applications.
+
+In our future works our focus will move to compile-time techniques able to infer and
+attach valuable information to tasks, like an estimation of a task operational intensity,
+that could guide some of the runtime system's decisions regarding task scheduling, load balancing, and data placement.
+We strongly believe a tight cooperation between the compiler and the runtime system
+is a key step to enhance the performance and scalability of task-based programs on large-scale platforms.
 
 
 \section*{Acknowledgments}
