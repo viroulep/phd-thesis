@@ -142,7 +142,30 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 \maketitle
 
 \begin{abstract}
-  \vspace*{-5ex} TODO
+  \vspace*{-5ex}
+OpenMP 4.0 introduced dependent tasks, which give the programmer a way to
+express fine grain parallelism that can be dynamically mapped to the architecture
+topology at runtime.
+Controlling data locality is one of the keys to performance when targeting NUMA architectures,
+and on this topic OpenMP does not provide a lot of flexibility to the programmer yet,
+which leaves the responsibility to the runtime to make choices regarding tasks
+placements.
+
+In this paper we will present motivating class of applications which would benefit
+from having such control and flexibility.
+
+We also propose our own interpretation of the new \emph{affinity} clause for the \emph{task} directive,
+which is being discussed by the OpenMP \emph{Architecture Review Board}.
+This clause enables the programmer to give hints to the runtime about
+tasks placement during the program execution, which can be used to control the data
+mapping on the architecture. In our proposal, the programmer can express affinity between a task and
+the following resources: a thread, a NUMA node, and a data.
+
+We will present an implementation of this proposal in the Clang-3.8 compiler,
+and an implementation of the corresponding extensions in our OpenMP runtime \libXKOMP.
+
+Finally we will present a preliminary evaluation of this work on a 192 cores NUMA architecture,
+showing good improvements in the behaviour of the applications.
 \smallskip
   \noindent\textbf{Keywords:}
   \emph{
@@ -394,7 +417,7 @@ We used the affinity clause to achieve two goals:
       the memory will be physically allocated on its NUMA node.
       Listing~\ref{lst:init-aff} shows an example of the blocks initialization.
     \item second, to ensure tasks stay close to their dependencies during computation, by putting them on their block's thread.
-      Listing~\ref{lst:compute-aff} shows an example use of affinity during computation.
+      %Listing~\ref{lst:compute-aff} shows an example use of affinity during computation.
 \end{itemize}
 
 
@@ -420,30 +443,30 @@ for (j = 0; j < ny; j+= block_size)
 \end{lstlisting}
 \end{figure}
 
-\begin{figure}[htbp]
-\begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
-// Compute a new estimate.
-for (int j = 0; j < ny; j += block_size) {
-  for (int i = 0; i < nx; i += block_size) {
-    int xdm1 = i == 0 ? 0 : block_size;
-    int xdp1 = i == nx-block_size ? 0 : block_size;
-    int ydp1 = j == ny-block_size ? 0 : block_size;
-    int ydm1 = j == 0 ? 0 : block_size;
-    #pragma omp task shared(u_, unew_) \
-                     depend(out: unew[i: block_size][j: block_size]) \
-                     depend(in: f[i: block_size][j: block_size], \
-                                u[i: block_size][j: block_size], \
-                                u[(i - xdm1): block_size][j: block_size], \
-                                u[i: block_size][(j + ydp1): block_size], \
-                                u[i: block_size][(j - ydm1): block_size], \
-                                u[(i + xdp1): block_size][j: block_size]) \
-                     affinity(thread:GET_PARTITION(i, j, block_size, nx, ny), 1)
-    compute_estimate(i/block_size, j/block_size, u_, unew_, f_, dx, dy,
-                     nx, ny, block_size);
-  }
-}
-\end{lstlisting}
-\end{figure}
+%\begin{figure}[htbp]
+%\begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
+%// Compute a new estimate.
+%for (int j = 0; j < ny; j += block_size) {
+  %for (int i = 0; i < nx; i += block_size) {
+    %int xdm1 = i == 0 ? 0 : block_size;
+    %int xdp1 = i == nx-block_size ? 0 : block_size;
+    %int ydp1 = j == ny-block_size ? 0 : block_size;
+    %int ydm1 = j == 0 ? 0 : block_size;
+    %#pragma omp task shared(u_, unew_) \
+                     %depend(out: unew[i: block_size][j: block_size]) \
+                     %depend(in: f[i: block_size][j: block_size], \
+                                %u[i: block_size][j: block_size], \
+                                %u[(i - xdm1): block_size][j: block_size], \
+                                %u[i: block_size][(j + ydp1): block_size], \
+                                %u[i: block_size][(j - ydm1): block_size], \
+                                %u[(i + xdp1): block_size][j: block_size]) \
+                     %affinity(thread:GET_PARTITION(i, j, block_size, nx, ny), 1)
+    %compute_estimate(i/block_size, j/block_size, u_, unew_, f_, dx, dy,
+                     %nx, ny, block_size);
+  %}
+%}
+%\end{lstlisting}
+%\end{figure}
 
 \subsubsection{Sparse Matrix Vector product}
 
@@ -484,8 +507,8 @@ Matrix size and block sizes have been chosen so that partitioning easily match
 the number of threads up to 128. Experiments have been made with a block size of 1024
 or 2048, and with a matrix size of 49152.
 
-Base performances comparison between Clang's runtime and \kaapi are available in Figure~\ref{fig:eval-jacobi-before} in Section~\ref{sec:motivation}.
-
+Base performances comparison between Clang's runtime and \kaapi are available in
+Figure~\ref{fig:eval-jacobi-before} in Section~\ref{sec:motivation}.
 Figure~\ref{fig:eval-jacobi} focuses on results for \kaapi used through \libXKOMP.
 
 \begin{figure}[t]
