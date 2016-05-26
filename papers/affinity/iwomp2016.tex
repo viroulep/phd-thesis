@@ -155,7 +155,7 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 
 OpenMP has become a major standard to program parallel applications on a wide variety of parallel platforms ranging from desktop notebooks to high-end supercomputers. It provides keywords to express fine grain task-based parallelism that boost the applications performance and scalability on large scale shared memory machines. In particular, tasking in OpenMP helps the programmers parallelize applications with irregular workload, letting the runtime system in charge of performing load balancing through task scheduling in a dynamic way. However, very little support exists to express and to control the affinity between tasks and data on systems with a decentralized memory layout, like \emph{Non-Uniform Memory Architectures} (NUMA). On such systems, the memory is physically split into several banks, also called \emph{NUMA nodes}, which leads to different memory latencies and throughputs depending on the location of the memory bank a core is accessing data from. To get the most performance out of such architectures, OpenMP runtime systems thus need to be extended to make the task scheduler aware of both the underlying hardware and the relation that exists between a task and the data it accesses.
 
- We relate in this paper our experiences to reach high performance out of OpenMP numerical applications on 192-core NUMA machine. The recently-added \emph{places} concept in the OpenMP 4.0 specification provides ways of binding OpenMP parallel regions to user-defined partitions of the machine. This basically ends up binding the threads of the corresponding region to a set of cores. Thus, relying on the first-touch memory allocation policy as a portable solution to control memory binding, OpenMP places can help to control thread affinity with respect to the memory.
+ We relate in this paper our experiences to reach high performance out of OpenMP numerical applications on a 192-core NUMA machine. The recently-added \emph{places} concept in the OpenMP 4.0 specification provides ways of binding OpenMP parallel regions to user-defined partitions of the machine. This basically ends up binding the threads of the corresponding region to a set of cores. Thus, relying on the first-touch memory allocation policy as a portable solution to control memory binding, OpenMP places can help to control thread affinity with respect to the memory.
 %Nevertheless, if this solution exists it remains cumbersome with inherent shortages: it does not ensure clarity in the program between computations and memory access; Design of library remains complex due to non-composable non functional properties; It does not provide robust solution when load is high unbalanced between threads of different parallel regions.
 However, the concept behind OpenMP places needs to be extended to improve the performance of task-based applications, as tasks are most of the time scheduled over threads in a dynamic way according to a work-stealing execution model.  This is why the OpenMP \emph{Architecture Review Board} is currently discussing the introduction of a new \textit{affinity} feature to make the runtime system aware of the affinities between the tasks and the data they access.
 
@@ -231,7 +231,7 @@ Another class of algorithms needing special care regarding data locality is the 
 These algorithms consist of multiple timesteps during which every element of an
 array is updated using the value of its neighbors. Figure~\ref{fig:eval-jacobi-before} shows
 the base performances of our Jacobi kernel, a stencil algorithm, evaluated on a
-192 cores NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
+192-core NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
 We can see that the performances of either task-based versions is disappointing,
 as the execution time of this kernel increases when the number of threads is greater than 16.
 The reason behind this is that tasks are not scheduled close to their data.
@@ -371,9 +371,13 @@ public queue (in case of a locality domain attached to a NUMA node, every thread
 
 \section{Examples of use and experimentation results}
 
-\subsection{Implementation in applications}
+In this section, we describe two OpenMP kernels we extended to make use of the \emph{affinity} clause. We also gives some details on the platform we used to conduct experiments, before presenting the performance evaluation of different versions of these two kernels.
 
-\subsubsection{Jacobi kernel}
+\subsection{Enhancing task-based OpenMP kernels to support \emph{affinity}}
+
+This section presents how we expressed affinities inside the two task-based OpenMP kernels we described in section 2.
+
+\subsubsection{Jacobi}
 
 We looked into our Jacobi application from the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
 The application is a 2D stencil computational kernel that is repeatedly applied until
@@ -450,9 +454,9 @@ for (int j = 0; j < ny; j += block_size) {
 In this section, we present the \textit{sparse matrix vector product} algorithms arising in the BiCGStab iterative algorithm. The main goal is to ensure that tasks will have local accesses to their data among the iterations.
 We split data following matrix graph partitioning techniques \cite{Saad:2003:IMS:829576} while using automatic graph partitioner like Metis~\cite{metis} tools.
 
-In such a decomposition, a matrix A is split in several sub-domains of several rows: OpenMP independent tasks are responsible for computing sub part of the output vector. We ensure the task affinity using the common methodology in this paper: first data are allocated while taking care to evenly distribute them among the NUMA nodes, while the workload is balanced among the cores; then we annotate tasks to constrain the scheduling.
+In such a decomposition, a matrix A is split in several sub-domains of several rows: OpenMP independent tasks are responsible for computing sub parts of the output vector. We ensure the task affinity using the common methodology in this paper: first data are allocated while taking care to evenly distribute them among the NUMA nodes, while the workload is balanced among the cores; then we annotate tasks to constrain the scheduling.
 
-To ensure an efficient data distribution on NUMA nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting is dictated by partitions. Local parts of the vectors are distributed too (sparse matrix are stored in CSR format). Moreover, output vector bloc associated with a part of the matrix is allocated on the same NUMA node as the partition itself.
+To ensure an efficient data distribution on NUMA nodes, all the local data structures to a partition are allocated in parallel. Vectors are split following row permutations and splitting is dictated by partitions. Local parts of the vectors are distributed too (sparse matrix are stored in CSR format). Moreover, an output vector block associated to a part of the matrix is allocated on the same NUMA node than the partition itself.
 
 Affinity of computational tasks are constrained by assigning them where partitions of the matrix are stored. This is very similar to the owner compute rule from HPF~\cite{HPF}: a task is mapped on the thread holding the output subvector $Y[i]$ (line 9 of figure~\ref{fig:spmv} (a)).
 
@@ -484,7 +488,7 @@ Matrix size and block sizes have been chosen so that partitioning easily match
 the number of threads up to 128. Experiments have been made with a block size of 1024
 or 2048, and with a matrix size of 49152.
 
-Base performances comparison between Clang's runtime and \kaapi are available in Figure~\ref{fig:eval-jacobi-before} in Section~\ref{sec:motivation}.
+Base performances comparison between Clang's runtime and \kaapi are available on figure~\ref{fig:eval-jacobi-before} from section~\ref{sec:motivation}.
 
 Figure~\ref{fig:eval-jacobi} focuses on results for \kaapi used through \libXKOMP.
 
@@ -500,9 +504,9 @@ The program is memory bound and there is not much we can do beside ensuring comp
 close to the data, in order to minimize the impact of memory bandwidth.
 In all these results, only the use of the \emph{affinity} extension prevent
 a severe decrease in performances when increasing the number of threads.
-always compute faster when more threads are added to the team.
+%always compute faster when more threads are added to the team.
 
-Basic dependent \emph{tasks} version offers really poor performances, the basic
+The basic dependent \emph{tasks} version offers really poor performances, the basic
 \emph{for} version is a bit better but still has room for improvement.
 The two high results for the \emph{for} versions in Figure~\ref{fig:eval-jacobi-before} and~\ref{fig:eval-jacobi}
 are obtained for a number of threads of 48 and 96: these numbers are not powers
@@ -559,28 +563,28 @@ for (i=0; i < $n_{partitions}$; ++i)
         \legend{Clang,GCC,Komp};
       \end{axis}
     \end{tikzpicture}
-\centerline{(b) Results on 192 cores NUMA machine.}
+\centerline{(b) Results on our 192-core NUMA machine.}
 \end{minipage}
 \caption{SpMV experiment}\label{fig:spmv}
 \end{figure}
 
-In our experiment, $500$ iterates of SpMV operations are timed and the average times is reported in the figure~\ref{fig:spmv} (b)  using various number of cores $p$.The matrix here correspond to a  Finite Volume discretization of a 2D Laplace problem on a square mesh of size $2000\times 2000$.
-We run the same code compiled and executed with Clang-3.8 and its standard OpenMP runtime (label  \texttt{Clang}), GCC-5.2 with libGOMP (\texttt{GCC}) and our modified Clang-3.8 compiler with our OpenMP runtime libKOMP (\texttt{Komp}).
+In our experiment, $500$ iterations of SpMV operations are timed and the average times is reported in the figure~\ref{fig:spmv} (b)  using various number of cores $p$. The matrix here corresponds to a  Finite Volume discretization of a 2D Laplace problem on a square mesh of size $2000\times 2000$.
+We run the same code compiled and executed with Clang-3.8 and its standard OpenMP runtime (labeled  \texttt{Clang} on figure~\ref{fig:spmv}), GCC-5.2 with libGOMP (\texttt{GCC}) and our modified Clang-3.8 compiler with our OpenMP runtime libKOMP (\texttt{Komp}).
 
 Up to 8 cores, all the execution times decrease in the same way for the three configurations \texttt{Clang}, \texttt{GCC} and \texttt{Komp}: differences between them is not visible.
-When the number of cores exceed $8$, the \texttt{Clang} and \texttt{GCC} have execution times that increase before to decrease with a growing number of cores.
+When the number of cores exceeds $8$, \texttt{Clang} and \texttt{GCC} have execution times that increase before to decrease with a growing number of cores.
 On our machine a NUMA node is composed of $8$ cores. When $p >8$ then the program has to use several NUMA nodes. For both \texttt{Clang} and \texttt{GCC} this is due to the misplacement of tasks on NUMA nodes where accessed memory is allocated.
 Data are split to fit on local memory of each NUMA node. Vector are split in several parts, which are allocated on different NUMA nodes by using initialization tasks placement, relying on the OS first-touch policy.
 Matrices are split and also allocated by the use of initialization tasks, so that it matches the
 same NUMA nodes on which the corresponding sub-vector has been allocated.
 Despite this tasks misplacement, the computation times are still decreasing because computations related to a domain are always done on the same core due to scheduling policies offered by \texttt{Clang} and \texttt{GCC}.
-\kaapi offers more powerful results because of the use of affinity clauses to place tasks on specific NUMA nodes, which ensures the temporal affinity among the iterations.
+\kaapi obtains better results because of the use of affinity clauses to place tasks on specific NUMA nodes, which ensures the temporal affinity among the iterations.
 
 
 \section{Related Work}
 \label{sec:related_work}
 
-Many research projects have been carried out to improve execution of
+Many research projects have been carried out to improve the execution of
 OpenMP applications on NUMA machines.
 
 The HPCTools group at the University of Houston has been working in
@@ -644,7 +648,7 @@ a data.
 We implemented this proposal in the Clang-3.8 compiler, and implemented the
 corresponding extensions in our OpenMP runtime \libXKOMP.
 
-And finally we did a preliminary evaluation of this work on a 192 cores NUMA architecture,
+And finally we did a preliminary evaluation of this work on a 192-core NUMA architecture,
 showing good improvements in the behaviour of the applications.
 
 In our future works our focus will move to compile-time techniques able to infer and
