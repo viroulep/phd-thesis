@@ -216,7 +216,7 @@ The remainder of this paper is organized as follows. Section 2 introduces some m
 %\caption{BiCGStab Algorithm. Left: Mathematical formulation of the algorithm. Right: Sketch of the parallel program using a high level API interface.} \label{lst:bicgstab}
 %\end{figure}
 
-\section{Motivation: examples where we need support}
+\section{Motivating examples for which affinity does matter}
 \label{sec:motivation}
 
 The high memory throughput  of NUMA architectures~\cite{} have been introduced at the price of non uniformity in memory latency. On such architectures, accessing local memory access induces lower latency than accessing data on a remote memory bank. To get the most performance, computational units of work, like \emph{threads} and \emph{tasks}, should ideally only access local memory.
@@ -224,7 +224,7 @@ The high memory throughput  of NUMA architectures~\cite{} have been introduced a
 %Iteratif, creux, ça repose sur du matrix vecteur traité dans les résultats.
 
 Many projects from the High Performance Computing research area deal with sparse linear solvers as fundamental building blocks.
-For instance, let us consider the BiCGStab~\cite{Saad:2003:IMS:829576} algorithm, a classical method for solving sparse linear algebra systems.  Such algorithm is structured around a main loop that iterates until convergence. At each iteration, the algorithm performs global access to data in (sparse) matrix vector products as well as many global reduction such that dot products. Data locality among iterations is fundamental for performances. Especially for the sparse matrix products arising during computation: we present in section~\ref{sec:experiment} preliminary results using our extended compiler.
+For instance, let us consider the BiCGStab~\cite{Saad:2003:IMS:829576} algorithm, a classical method for solving sparse linear algebra systems.  Such algorithm is structured around a main loop that iterates until convergence is reached. At each iteration, the algorithm accesses global data through the computation of some sparse matrix-vector products as well as the execution of many global reductions like dot products. Preserving data locality among iterations is crucial to reach a high level of performance, especially for the sparse matrix products arising during the algorithm execution like reported by some early experiments running the BiCGStab algorithm (section~\ref{sec:experiment}).
 
 Another class of algorithms needing special care regarding data locality is the Stencil algorithm.
 These algorithms consist of multiple timesteps during which every element of an
@@ -232,8 +232,7 @@ array is updated using the value of its neighbors. Figure~\ref{fig:eval-jacobi-b
 the base performances of our Jacobi kernel, a stencil algorithm, evaluated on a
 192 cores NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
 We can see that the performances of either
-task-based version is very poor. The reason behind this is that tasks are not
-scheduled close to their data, and we will discuss this in details in Section~\ref{sec:experiment}.
+task-based versions is disappointing, as the execution time of this kernel increases when the number of threads is greater than \FB{XXX}. The reason behind this is that tasks are not scheduled close to their data. To do so, the runtime system should be aware of which data is accessed by every task and where the data has been physically allocated. While the former could be obtained through OpenMP data dependencies, the latter would need a specific support from the runtime level. Our proposal meets both these requirements though an OpenMP-friendly portable solution presented in the next section.
 
 
 \begin{figure}[t]
