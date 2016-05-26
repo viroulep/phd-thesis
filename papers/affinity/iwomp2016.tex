@@ -232,7 +232,7 @@ array is updated using the value of its neighbors. Figure~\ref{fig:eval-jacobi-b
 the base performances of our Jacobi kernel, a stencil algorithm, evaluated on a
 192 cores NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
 We can see that the performances of either
-task-based versions is disappointing, as the execution time of this kernel increases when the number of threads is greater than \FB{XXX}. The reason behind this is that tasks are not scheduled close to their data. To do so, the runtime system should be aware of which data is accessed by every task and where the data has been physically allocated. While the former could be obtained through OpenMP data dependencies, the latter would need a specific support from the runtime level. Our proposal meets both these requirements though an OpenMP-friendly portable solution presented in the next section.
+task-based versions is disappointing, as the execution time of this kernel increases when the number of threads is greater than 16. The reason behind this is that tasks are not scheduled close to their data. To do so, the runtime system should be aware of which data is accessed by every task and where the data has been physically allocated. While the former could be obtained through OpenMP data dependencies, the latter would need a specific support from the runtime level. Our proposal meets both these requirements though an OpenMP-friendly portable solution presented in the next section.
 
 
 \begin{figure}[t]
