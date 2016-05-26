@@ -232,8 +232,13 @@ These algorithms consist of multiple timesteps during which every element of an
 array is updated using the value of its neighbors. Figure~\ref{fig:eval-jacobi-before} shows
 the base performances of our Jacobi kernel, a stencil algorithm, evaluated on a
 192 cores NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
-We can see that the performances of either
-task-based versions is disappointing, as the execution time of this kernel increases when the number of threads is greater than 16. The reason behind this is that tasks are not scheduled close to their data. To do so, the runtime system should be aware of which data is accessed by every task and where the data has been physically allocated. While the former could be obtained through OpenMP data dependencies, the latter would need a specific support from the runtime level. Our proposal meets both these requirements through an OpenMP-friendly portable solution presented in the next section.
+We can see that the performances of either task-based versions is disappointing,
+as the execution time of this kernel increases when the number of threads is greater than 16.
+The reason behind this is that tasks are not scheduled close to their data.
+To do so, the runtime system should be aware of which data is accessed by every task
+and where the data has been physically allocated. While the former could be obtained
+through OpenMP data dependencies, the latter would need a specific support from the runtime level.
+Our proposal meets both these requirements through an OpenMP-friendly portable solution presented in the next section.
 
 
 \begin{figure}[t]
@@ -245,9 +250,9 @@ task-based versions is disappointing, as the execution time of this kernel incre
 
 \section{Extending OpenMP to support affinities}
 
-In this section, we describe the details of our proposition, starting with the
-language extension description, followed by our runtime extensions we implemented
-to take advantage of this information.
+In this section, we detail our proposal with the introduction
+of the \emph{affinity} keyword and how we implemented the corresponding runtime extensions
+that take advantage of this new feature.
 
 
 \subsection{Extension of the OpenMP Task directive}
@@ -280,19 +285,18 @@ clause for the OpenMP \emph{task} directive. The proposed syntax for the clause 
 affinity([node,thread,data]: expr[, strict])
 \end{lstlisting}
 
-\PV{review needed}
 When \emph{expr} refers to a thread id, it should refer to the thread id within
-the \verb/OMP_PLACES/ defined for the current team. For example if the places for the
-current team are \verb/"{0},{1},{2}"/, thread with id 0 is \verb/"{0}"/,
-however if the places are \verb/"{2},{5},{8}"/, thread with id 0 is \verb/"{2}"/.
+the \verb/OMP_PLACES/ defined for the current team. For example, if the places for the
+current team are \verb/"{0},{1},{2}"/, thread with id 0 refers to \verb/"{0}"/.
+However, if the places are \verb/"{2},{5},{8}"/, thread with id 0 refers to \verb/"{2}"/.
 
 When \emph{expr} refers to a NUMA node id, it should refer to the node id within
-the set of NUMA nodes deduced from the \verb/OMP_PLACES/.
+the set of NUMA nodes built from the \verb/OMP_PLACES/ list.
 
 Two successive parallel regions with the same number of threads and the same places have
 the same set of NUMA nodes.
 
-If the \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the amount of resources.
+If \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the amount of resources.
 
 In case of an affinity to a data, if the NUMA node associated to the data can't be determined, it defaults to the first NUMA node of the team.
 
@@ -308,8 +312,7 @@ omp_get_node_num(void);
 omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
-These functions allow to query information about the hardware topology, and are only permitted
-in a parallel region. On machines without NUMA support we consider that all the threads are on a single NUMA node.
+These functions allow to query information about the hardware topology, and can only be called from inside a parallel region. On machines without NUMA support we consider that all the threads are on a single NUMA node.
 
 We also added the following runtime API function that mimics the \textit{affinity} clause:
 \begin{lstlisting}
@@ -322,7 +325,7 @@ This function takes an \texttt{omp\_affinitykind\_t} value (either \texttt{omp\_
 
 We implemented these extensions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
 
-Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following Section.
+Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following section.
 
 
 \subsection{Extension of the task scheduler to support affinity}
