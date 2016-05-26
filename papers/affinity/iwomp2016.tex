@@ -94,7 +94,8 @@
 	numbersep=5pt,
 % OMP define
 emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
-emph={[2]in,inout,out,cw,data,numa,thread}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={omp_affinitykind_t,uintptr_t}, emphstyle=\color{Black}\bfseries,
+emph={[2]in,inout,out,cw,data,node,thread}, emphstyle={[2]\color{BrickRed}\bfseries},
 emph={[3]tied,untied,shared, firstprivate, private}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
 emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,omp_set_task_affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
@@ -219,20 +220,20 @@ The remainder of this paper is organized as follows. Section 2 introduces some m
 \section{Motivating examples for which affinity does matter}
 \label{sec:motivation}
 
-The high memory throughput  of NUMA architectures~\cite{} have been introduced at the price of non uniformity in memory latency. On such architectures, accessing local memory access induces lower latency than accessing data on a remote memory bank. To get the most performance, computational units of work, like \emph{threads} and \emph{tasks}, should ideally only access local memory.
+The high memory throughput  of NUMA architectures have been introduced at the price of non uniformity in memory latency. On such architectures, accessing local memory access induces lower latency than accessing data on a remote memory bank. To get the most performance, computational units of work, like \emph{threads} and \emph{tasks}, should ideally only access local memory.
 
 %Iteratif, creux, ça repose sur du matrix vecteur traité dans les résultats.
 
 Many projects from the High Performance Computing research area deal with sparse linear solvers as fundamental building blocks.
 For instance, let us consider the BiCGStab~\cite{Saad:2003:IMS:829576} algorithm, a classical method for solving sparse linear algebra systems.  Such algorithm is structured around a main loop that iterates until convergence is reached. At each iteration, the algorithm accesses global data through the computation of some sparse matrix-vector products as well as the execution of many global reductions like dot products. Preserving data locality among iterations is crucial to reach a high level of performance, especially for the sparse matrix products arising during the algorithm execution like reported by some early experiments running the BiCGStab algorithm (section~\ref{sec:experiment}).
 
-Another class of algorithms needing special care regarding data locality is the Stencil algorithm.
+Another class of algorithms needing special care regarding data locality is the Stencil algorithms.
 These algorithms consist of multiple timesteps during which every element of an
 array is updated using the value of its neighbors. Figure~\ref{fig:eval-jacobi-before} shows
 the base performances of our Jacobi kernel, a stencil algorithm, evaluated on a
 192 cores NUMA architecture, with both Clang's OpenMP runtime and our OpenMP runtime \libXKOMP.
 We can see that the performances of either
-task-based versions is disappointing, as the execution time of this kernel increases when the number of threads is greater than 16. The reason behind this is that tasks are not scheduled close to their data. To do so, the runtime system should be aware of which data is accessed by every task and where the data has been physically allocated. While the former could be obtained through OpenMP data dependencies, the latter would need a specific support from the runtime level. Our proposal meets both these requirements though an OpenMP-friendly portable solution presented in the next section.
+task-based versions is disappointing, as the execution time of this kernel increases when the number of threads is greater than 16. The reason behind this is that tasks are not scheduled close to their data. To do so, the runtime system should be aware of which data is accessed by every task and where the data has been physically allocated. While the former could be obtained through OpenMP data dependencies, the latter would need a specific support from the runtime level. Our proposal meets both these requirements through an OpenMP-friendly portable solution presented in the next section.
 
 
 \begin{figure}[t]
@@ -292,7 +293,8 @@ Two successive parallel regions with the same number of threads and the same pla
 the same set of NUMA nodes.
 
 If the \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the amount of resources.
-In the case of an affinity to a data, if the NUMA node associated to the data can't be determined, it defaults to the first NUMA node of the team.
+
+In case of an affinity to a data, if the NUMA node associated to the data can't be determined, it defaults to the first NUMA node of the team.
 
 \subsection{Extension of the OpenMP runtime API functions}
 In order to dynamically get information about the current team hierarchy, we also propose
@@ -313,7 +315,7 @@ We also added the following runtime API function that mimics the \textit{affinit
 \begin{lstlisting}
 //Set the affinity information to the next created tasks
 omp_set_task_affinity( 
-     omp_affinitykind_t, uintptr_t ptr, int strict);
+     omp_affinitykind_t k, uintptr_t ptr, int strict);
 \end{lstlisting}
 The scope of the function call is the next created task in the current \textit{task region}.
 This function takes an \texttt{omp\_affinitykind\_t} value (either \texttt{omp\_affinity\_thread}, \texttt{omp\_affinity\_numa} or \texttt{omp\_affinity\_data}) to specify which kind of affinity control is applied. \texttt{value} is either an integer that represents an identifier to the NUMA node, an identifier to a thread or an address in the process address space used to select the affinity NUMA node \textbf{when} the task becomes ready for execution.
@@ -565,9 +567,12 @@ We run the same code compiled and executed with Clang-3.8 and its standard OpenM
 Up to 8 cores, all the execution times decrease in the same way for the three configurations \texttt{Clang}, \texttt{GCC} and \texttt{Komp}: differences between them is not visible.
 When the number of cores exceed $8$, the \texttt{Clang} and \texttt{GCC} have execution times that increase before to decrease with a growing number of cores.
 On our machine a NUMA node is composed of $8$ cores. When $p >8$ then the program has to use several NUMA nodes. For both \texttt{Clang} and \texttt{GCC} this is due to the misplacement of tasks on NUMA nodes where accessed memory is allocated.
-\TG{Comment sont initialisés les données !}
-However, the computation times are still decreasing because computations related on a domain are always done on the same core due to scheduling policies offered by \texttt{Clang} and \texttt{GCC}.
-However, XKaapi runtime systems offers more powerful results because of the use of affinity clauses to place tasks on specific NUMA node allows to ensure the temporal affinity among the iterations.
+Data are split to fit on local memory of each NUMA node. Vector are split in several parts
+parts, which are allocated on different NUMA nodes by using initialization tasks placement, relying on the OS first-touch policy.
+Matrices are split and also allocated by the use of initialization tasks, so that it matches the
+same NUMA nodes on which the corresponding sub-vector has been allocated.
+Despite this tasks misplacement, the computation times are still decreasing because computations related to a domain are always done on the same core due to scheduling policies offered by \texttt{Clang} and \texttt{GCC}.
+\kaapi offers more powerful results because of the use of affinity clauses to place tasks on specific NUMA nodes, which ensures the temporal affinity among the iterations.
 
 
 \section{Related Work}
