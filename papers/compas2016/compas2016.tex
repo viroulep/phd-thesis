@@ -113,7 +113,7 @@ par l'état de l'art.
 
 Les architectures à temps d'accès mémoire non uniforme (NUMA) sont
 aujourd'hui le choix le plus populaire pour créer des grosses machines à mémoire
-partagées.
+partagée.
 Compte tenu de la différence de temps d'accès en fonction de la distribution physique
 de la mémoire (une donnée proche sera accédée beaucoup plus rapidement qu'une donnée distante),
 contrôler le placement des données tout au long de l'exécution d'une application
@@ -124,11 +124,11 @@ populaires pour exploiter les machines à mémoire partagée avec plusieurs cent
 Ils offrent un moyen d'exprimer beaucoup de parallélisme à grain fin, tout en
 ayant un coût relativement faible. La plupart d'entre eux fournissent également
 un moyen d'équilibrer dynamiquement la charge de travail sur tous les processeurs,
-mais aucun d'entre eux ne fournis de moyen de gérer la localité
+mais aucun d'entre eux ne fournit de moyen de gérer la localité
 des données sur des systèmes NUMA.
 
 L'ajout récent des dépendances de données au modèle de programmation par tâches
-d'OpenMP fourni au support exécutif des informations précises, notamment sur les
+d'OpenMP fournit au support exécutif des informations précises, notamment sur les
 accès mémoires des tâches de l'application.
 L'ordonnanceur de tâches peut implémenter des stratégies dédiées aux architectures
 NUMA, comme montré dans cet article.
@@ -156,7 +156,8 @@ de l'art dans la partie~\ref{sec:related-work}, avant de conclure.
 
 Nous avons effectué nos expériences sur une machine SGI UV2000, constituée de
 24 nœuds NUMA, possédant chacun un processeur Intel Xeon E5-4640 à 8 cœurs,
-le tout formant un total de 192 cœurs. Nous utilisons le nom Intel192 pour faire
+le tout formant un total de 192 cœurs. Cette machine dispose de 31Go de RAM
+par nœud, pour un total de 744Go. Nous utilisons le nom Intel192 pour faire
 référence à cette machine dans l'article.
 
 Afin d'exploiter les grosses architectures à mémoire partagée, le programmeur a besoin :
@@ -180,8 +181,8 @@ Dans la norme OpenMP 3.0, la synchronisation des tâches est effectuée à l'aid
 mot clé |taskwait|, imposant l'attente de la complétion de toutes les tâches
 de la région parallèle courante.
 
-La norme 4.0 enrichie ce concept en introduisant le mot clé |depend|, qui permet
-de spécifier le mode d'accès des variables utilisées par une tâches pendant son exécution.
+La norme 4.0 enrichit ce concept en introduisant le mot clé |depend|, qui permet
+de spécifier le mode d'accès des variables utilisées par une tâche pendant son exécution.
 Le mode d'accès peut être soit |in|, |out|, ou |inout|, en fonction de si la
 variable correspondante est respectivement lue par la tâche, écrite, ou bien les deux.
 Cette information peut être analysée par le support exécutif, qui décidera si
@@ -245,15 +246,14 @@ autre tâche.
 
 Le support exécutif que nous développons, \kaapi, implémente un modèle d'exécution par vol
 de travail pour les programmes à base de tâches OpenMP. Ce modèle a été présenté
-à la base dans Cilk~\cite{cilk5}, et est couramment utilisé dans les environnements
+initialement dans Cilk~\cite{cilk5}, et est couramment utilisé dans les environnements
 de programmation à base de tâches.
 
-\kaapi créer un thread, appelé un \emph{kproc}, pour chaque unité d'exécution
+\kaapi crée un thread, appelé un \emph{kproc}, pour chaque unité d'exécution
 (dans le cas d'une machine NUMA, il s'agit d'un cœur).
 Chaque kproc possède sa propre queue de travail dans laquelle il poussera les
-tâches qu'il créer, et qui est implémentée comme une pile,
+tâches qu'il crée, et qui est implémentée comme une pile.
 
-\vspace*{-1ex}
 \subsection{Contrôler la distribution des données sur les architectures NUMA}
 
 Contrôler le placement des données nécessite de bien connaître l'architecture NUMA.
@@ -262,18 +262,18 @@ dédiés, tels que \verb/numactl/~\cite{DBLP:journals/corr/abs-1101-0093}.
 
 Par exemple l'option \verb/--interleave=all/ permet de répartir toutes les pages
 sur l'architecture suivant une politique de round-robin sur tous les nœuds NUMA.
-Cette politique est largement utilisé avec du parallélisme dynamique,
-car elle répartie le trafic mémoire sur tous les contrôleurs mémoire, rendant
+Cette politique est largement utilisée avec du parallélisme dynamique,
+car elle répartit le trafic mémoire sur tous les contrôleurs mémoire, rendant
 tous les processeurs "\emph{équitablement mauvais}" par rapport aux accès mémoire.
 
 Nous proposons deux approches différentes pour distribuer la mémoire sur les systèmes
-NUMA, basé sur le principe de l'allocation \emph{first-touch} de la mémoire : la première
+NUMA, basées sur le principe de l'allocation \emph{first-touch} de la mémoire : la première
 en donnant la possibilité d'allouer explicitement la donnée sur un nœud NUMA
 spécifique de la machine, via une API que nous fournissons~\cite{Durand2013,BroFurGogWacNam10IJPP};
 la seconde en donnant la possibilité de marquer certaines portions de code comme
 étant du code d'initialisation, et le support exécutif se charge de la distribution
 des tâches créées dans cette portion.
-Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085} ont utilisés cette
+Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085} ont utilisé cette
 approche avec des restrictions sur l'exécution des tâches créées par l'application.
 
 Ces deux approches permettent au support exécutif de savoir où les données
@@ -281,7 +281,6 @@ de l'application sont stockées, et cela peut être utilisé pour guider l'équi
 
 
 
-\vspace*{-1ex}
 \section{Amélioration du placement des tâches et des données grâce aux dépendances}
 \label{sec:contributions}
 
@@ -290,7 +289,6 @@ positif sur l'exécution de l'application, en utilisant les informations présen
 dans les dépendances.
 
 
-\vspace*{-1ex}
 \subsection{La mécanique interne de \kaapi}
 
 \kaapi implémente un modèle d'exécution par vol de travail pour les programmes
@@ -308,85 +306,91 @@ et les places au niveau du processeur (une place par cœur).
 Le graphe de dépendances est construit, et lors d'un vol le voleur va choisir
 l'une des tâches dans la liste des tâches prêtes de la victime.
 
-L'environnement de développement dans \kaapi~\cite{DBLP:journals/corr/BleuseGLMT14} repose sur des fonctions
-virtuelles pour \textit{sélectionner une victime}, \textit{sélectionner une place} dans
-laquelle pousser une tâche prête, et \textit{pousser} un ensemble de tâches initialement
-prêtes.
-Quand un processeur devient inactif, le support exécutif utilise une fonction appelée
-\verb/WSselect/ pour parcourir la topologie à la recherche d'une place à voler.
+\kaapi~\cite{DBLP:journals/corr/BleuseGLMT14} base son exécution par vol de travail
+sur trois actions importantes :
+\begin{itemize}
+  \item La \textit{distribution initiale} des tâches prêtes
+  \item La \textit{sélection d'une place} dans laquelle pousser une tâche prête.
+  \item La \textit{sélection d'une victime} à voler lorsqu'un thread devient inactif.
+\end{itemize}
 
-La complétion d'une tâche peut rendre possible l'exécution d'un ensemble de tâches.
-Le choix de la place où pousser chacune des tâches est implémentée par une fonction
-appelée \verb/WSpush/.
-Avant l'exécution parallèle de l'application, le support exécutif peut répartir
-les tâches prêtes à l'aide de la fonction appelée \verb/WSpush_init/.
-
-Ces trois fonctions sont les trois points d'entrée à préciser pour définir
-un algorithme d'ordonnancement dans \kaapi.
+Ces trois points mis ensemble définissent un algorithme d'ordonnancement dans \kaapi.
 
 
 
-\vspace*{-1ex}
-\subsection{Distribution initiale des tâches : stratégies WSpush\_init}
+\subsection{Distribution initiale des tâches}
 
 Nous avons implémenté deux stratégies de distribution : \verb/cyclicnuma/, qui
 distribue les tâches en round-robin sur les nœuds NUMA, et \verb/randnuma/, aléatoirement.
 Il faut noter que contrairement à \verb/numactl/, nos stratégies fonctionnent
-par blocs de données dans les clauses |depend|, et pas par pages.
+par blocs de données dans les clauses |depend|, et non pas par pages.
 
 
-\vspace*{-1ex}
-\subsection{Distribution des tâches prêtes : stratégies WSpush}
+\subsection{Sélection d'une place pour les tâches prêtes}
 
 Nous présentons quatre stratégies pour pousser les tâches prêtes dans une place
 du système NUMA. Deux d'entre elles ne prennent pas en compte les données, les deux
-autre si, via la clause OpenMP |depend| sur les tâches.
+autres si, via la clause OpenMP |depend| sur les tâches.
 
 La stratégie \verb/pLoc/ permet au processeur de pousser localement les tâches prêtes.
 La stratégie \verb/pLocNuma/ permet au processeur de les pousser dans la place de son nœud NUMA local.
 
-La stratégie \verb/pNumaW/ pousse les tâches sur la place NUMA où les données
-écrites par la tâche se trouvent (W est l'initiale de Write).
+La stratégie \verb/pNumaW/ pousse les tâches sur la place NUMA où se trouve
+le premier bloc de données écrit par la tâche (W est l'initiale de Write).
+
 La dernière stratégie, \verb/pNumaWLoc/, est similaire à \verb/pNumaW/, mais
 si la donnée est allouée sur le nœud NUMA local, alors la tâche est poussé dans
 la place du processeur courant.
 
 
-\vspace*{-1ex}
-\subsection{Équilibrage dynamique de charge par vol de travail : stratégies WSselect}
+\subsection{Sélection d'une victime lors du vol de travail}
+
+Nous  avons implémenté des stratégies utilisant différents niveau de hiérarchie,
+afin de pouvoir étudier l'impact de celle ci sur la fonction de sélection.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.5]{figures/strategies.pdf}
+\vspace*{-3ex}
+\caption{Illustration de la stratégie de sélection \emph{sProcNuma}}
+\label{fig:strategies}
+\vspace*{-5ex}
+\end{figure}
 
 Les deux premières, \verb/sRand/ et \verb/sRandNuma/, sont similaires à celles étudiées
-dans~\cite{DBLP:journals/ijhpca/OlivierPWSP12}. \verb/sRand/ sélectionne une place
+dans~\cite{DBLP:journals/ijhpca/OlivierPWSP12}. Elle ne prennent en compte qu'un seul
+niveau de hiérarchie : \verb/sRand/ sélectionne une place
 processeur aléatoire, et \verb/sRandNuma/ sélectionne une place NUMA aléatoire.
+
 Nous avons également implémenté plusieurs stratégies prenant en compte les deux niveaux
 de hiérarchie :
 
 \begin{itemize}
-  \item \verb/sProcNuma/ : dans un premier temps on visite la place du processeur.
-    en cas d'échec, on visite la topologie dans l'ordre suivant : d'abord les
-    processeurs voisins; puis, une fois que tous les voisins ont été visités, on
-    visite la place NUMA locale; puis on visite toutes les places processeur d'un
-    nœud NUMA aléatoire; et éventuellement sa place NUMA.
+  \item \verb/sProcNuma/ : cette stratégie est illustrée dans la Figure~\ref{fig:strategies}.
+    L'ordre de visite de la topologie est le suivant : d'abord on visite la place
+    du processeur local (1), puis celles de ses voisins (2a), puis la place NUMA associée au
+    processeur courant (2b). Si ces tentatives de vol échouent, un noeud est choisi
+    au hasard sur la machine et les places de ses processeurs sont visitées (3a),
+    avant que sa place NUMA soit visitée (3b).
     
   \item \verb/sNumaProc/ : cette stratégie est similaire, mais on visite les places
-    NUMA avant de visiter les places processeur.
+    NUMA avant de visiter les places processeur (inversion des étapes 2a et 2b, ainsi que 3a et 3b).
   \item \verb/sProc/ : le voleur ne visite que les places processeur et sa place
-    NUMA locale.
-  \item \verb/sNuma/ : le voleur ne visite que les places NUMA et sa place processeur.
+    NUMA locale (suppression de l'étape 3b).
+  \item \verb/sNuma/ : le voleur ne visite que les places NUMA et sa place processeur (suppression des étapes 2a et 3a).
 \end{itemize}
 
 
 
-\vspace*{-1ex}
 \section{Évaluation de performances}
 \label{sec:performances-evaluation}
 Toutes nos expériences ont été effectuées sur la machine Intel192 décrite en partie~\ref{sec:background}.
 Nous avons évalué nos stratégies sur deux applications tirées des benchmarks
 KASTORS~\cite{virouleau:hal-01081974}\footnote{git disponible ici : https://scm.gforge.inria.fr/anonscm/git/kastors/kastors.git, tag \emph{paper-hierarchy}} :
 une factorisation QR par bloc (\verb/dgeqrf_taskdep/), et une factorisation de
-Cholesky par block (\verb/dpotrf_taskdep/).
+Cholesky par bloc (\verb/dpotrf_taskdep/).
 Ces applications utilisent des routines BLAS et LAPACK fournies par OpenBLAS 2.15.
-Nous avons utilisé la librairie OpenMP compatible avec GCC libKOMP~\cite{libkomp} basée
+Nous avons utilisé la bibliothèque OpenMP compatible avec GCC libKOMP~\cite{libkomp} basée
 sur le support exécutif \kaapi\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git,
 branche \emph{viroulea/public/paper}}.
 Nos traces et résultats sont également disponibles en ligne\footnote{https://github.com/viroulep/results-paper-hierarchy} afin que notre analyse
@@ -398,42 +402,50 @@ soit reproductible par une tierce personne.
 Dans un premier temps nous avons évalué l'impact de la distribution de données sur
 les performance de la factorisation de Cholesky. Nous avons fait cette évaluation sur plusieurs
 tailles de matrices et tailles de bloc, ainsi que sur plusieurs combinaisons
-de stratégies WSpush et WSselect. Nous avons comparé ces résultats aux performances de GCC (via libGOMP),
+de stratégies de \emph{sélection de victime} et de \emph{sélection de place} pour les tâches prêtes.
+Nous avons comparé ces résultats aux performances de GCC~\footnote{GCC 5.2.0} (via libGOMP),
 en utilisant, ou pas, une initialisation parallèle, ainsi que \verb/numactl/.
 
-La conclusion de ces expériences est que l'initialisation parallèle est nécessaire
-pour obtenir les meilleures performances possibles avec libGOMP, et atteignant 1750 Gflops en moyenne.
-Sans initialisation parallèle, libGOMP n'atteint pas 300 Gflops, et l'utilisation de
-\verb/numactl/ est impérative pour voir un réel gain de performances, avec une moyenne à 1140 Gflops.
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.5]{figures/graph_distrib.pdf}
+\vspace*{-3ex}
+  \caption{Évaluation de la distribution de données}
+\label{fig:eval-distrib}
+\vspace*{-5ex}
+\end{figure}
+
+La Figure~\ref{fig:eval-distrib} montre les résultats de cette évaluation.  
+La conclusion de ces expériences est que l'initialisation parallèle des
+données est capitale.
 
 Pour \kaapi, l'utilisation d'une distribution contrôlée de données (\verb/cyclicnuma/,
 \verb/randnuma/) permet aux stratégies indépendantes de la hiérarchie de dépasser
-les meilleures performances de libGOMP (respectivement 1814, 1779 Gflops).
-L'utilisation de stratégies hiérarchiques permet d'atteindre les meilleures performances
-de l'application, avec une moyenne de 1980 Gflops.
+les meilleures performances de libGOMP, en revanche il n'y a pas de différence
+notable (à stratégie similaire), entre une distribution cyclique ou aléatoire,
+pour l'application considérée (cette conclusion est similaire pour les résultats
+de QR, non présents sur cette figure).
 
 La distribution \verb/cyclicnuma/ sera utilisée comme stratégie par défaut pour
-les expériences suivantes, étant donné qu'elle offre les meilleures performances.
+les expériences suivantes, étant donné qu'elle offre de légèrement meilleures performances.
 
 \subsection{Aperçu des performances des différentes stratégies}
 
-Nous avons choisi une distribution de données, \verb/cyclicnuma/, et comparé les
-différentes stratégies.
-Une nouvelle fois, même si les performances obtenues ne sont évidemment pas les
-même, la comparaison des stratégies les unes par rapport aux autres est similaire
-pour les différentes applications que nous avons lancé.
+À distribution de données fixée (\verb/cyclicnuma/), nous avons comparé les
+différentes stratégies d'ordonnancement, caractérisées par un couple de stratégies de
+\emph{sélection} de victimes, et de sélection de place pour \emph{pousser} les tâches prêtes.
 
 La Figure \ref{fig:eval-all-strat} montre les résultats des expériences pour
-la factorisation de Cholesky sur des matrices de largeur 32K, divisées par
+la factorisation de Cholesky sur des matrices carrées de dimension 32768, divisées par
 bloc de 512$\times$512 éléments (meilleure taille de bloc pour cette taille de matrice).
-La ligne en pointillé représente la performance du runtime de GCC,
-libGOMP~\footnote{GCC 5.2.0}, en utilisant une initialisation parallèle.
+La ligne en pointillés représente la performance du runtime de GCC,
+libGOMP, en utilisant une initialisation parallèle.
 
-La première chose à noter est que même une combinaison de stratégies \verb/WSselect/
-\verb/WSpush/ basique telle que \verb/sRand/+\verb/pLoc/ (Stratégie 1) obtient des performances
+La première chose à noter est que même une combinaison de stratégies basique
+telle que \verb/sRand/+\verb/pLoc/ (stratégie 1) obtient des performances
 acceptables grâce à la distribution de données.
 De plus, étant donnée une stratégie de sélection (e.g. \verb/sRandNuma/), pousser
-les tâches sur le nœud NUMA où elle écrit des données (stratégies 7) offre
+les tâches sur le nœud NUMA où elle écrit des données (stratégie 7) offre
 de meilleures performances que simplement pousser les tâches sur son nœud NUMA (stratégie 2).
 
 En considérant que les tâches sont poussées en utilisant la stratégie \verb/pNumaWLoc/,
@@ -445,11 +457,11 @@ permet d'obtenir de meilleures performances que les stratégies étudiées préc
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_all_strat.pdf}
-\vspace*{-3ex}
-  \caption{Évaluation des toutes les stratégies (WSselect + WSpush)}
+  \caption{Évaluation des différentes stratégies}
 \label{fig:eval-all-strat}
 \vspace*{-5ex}
 \end{figure}
+
 
 \subsection{Scalabilité des performances des stratégies}
 
@@ -457,23 +469,30 @@ permet d'obtenir de meilleures performances que les stratégies étudiées préc
 Nous avons finalement sélectionné les trois combinaisons de stratégies offrant de meilleures
 performances que libGOMP pour évaluer leur scalabilité en fonction de la taille
 de la matrice en entrée, sur les applications de factorisation QR et de Cholesky. Il s'agit des stratégies 1,
-4, et 7 présentent sur la Figure \ref{fig:eval-all-strat} (nous avons ignoré la 6, étant donnée
+4, et 7 présentent sur la Figure~\ref{fig:eval-all-strat} (nous avons ignoré la 6, étant donnée
 qu'elle offrait des performances équivalentes à la 4, sans introduire une différence suffisante de stratégie).
 Nous avons choisi la meilleure taille de bloc pour une taille de matrice et une application donnée.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[scale=0.5]{figures/graph_details_strat.pdf}
+  \caption{Évaluation d'une sélection de stratégies sur plusieurs applications et
+  tailles de matrice.}
+\label{fig:eval-details-strat}
+\end{figure}
 
-Quelque soit la taille, utiliser une combinaison de stratégies qui prend en compte à la fois
-la localité des données et la hiérarchie de l'architecture (stratégie 4),
-permet d'obtenir les meilleures performances par rapport aux deux autres stratégies.
-Ce gain est significatif : pour Cholesky la stratégie 4 améliore de 7\% à 9\% les
-performances obtenue par la stratégie 1, et pour QR ce gain varie entre 11\% et 19\%,
-en fonction de la taille de matrice.
+Ces résultats sont présentés dans la Figure~\ref{fig:eval-details-strat}.
+Sur des matrices de petites tailles l'avantage à utiliser des stratégies évoluées
+n'est pas flagrant. Cela peut être expliqué par le fait que le coût des stratégies
+hiérarchique est légèrement plus élevé que celui de la combinaison \verb/sRand/+\verb/pLoc/,
+et que le coût des communications induites par une petite taille de matrice n'est suffisant
+pour voir l'impact des stratégies hiérarchiques.
+En revanche dès une dimension de matrice 32768, l'utilisation d'une combinaison
+de stratégies qui prend en compte à la fois la localité des données et la hiérarchie
+de l'architecture (\verb/sNumaProc/+\verb/pNumaWLoc/), permet d'obtenir les
+meilleures performances par rapport aux deux autres stratégies, quelque
+soit l'application.
 
-La seule exception apparait pour les petites tailles de matrices (16384), où les
-trois stratégies sont équivalentes, et où il n'y a peut être tout simplement pas
-assez de travail pour tirer partie de la hiérarchie ou de la localité des données.
-
-\vspace*{-1ex}
 \section{État de l'art}
 \label{sec:related-work}
 
@@ -481,8 +500,8 @@ De nombreux travaux traitent de la localité et/ou de stratégie d'ordonnancemen
 spécifiques aux architectures NUMA.
 
 Clet-Ortega et al.~\cite{DBLP:conf/europar/Clet-OrtegaCP14} ont étudié et évalué plusieurs
-façon de décorer la topologie de l'architecture, en privilégiant des listes de tâches
-privées par thread, parcourue de manière hiérarchique. Nos étendons ces travaux
+façons de décorer la topologie de l'architecture, en privilégiant des listes de tâches
+privées par thread, parcourues de manière hiérarchique. Nos étendons ces travaux
 en considérant également des listes au niveau des nœuds, et nous avons montré
 que cela peut aider à améliorer les performances sur des architectures NUMA.
 
@@ -494,12 +513,12 @@ qu'avec les autres approches.
 
 Tahan et al.~\cite{DBLP:journals/corr/Tahan14} ont également étudié le comportement
 des programmes à base de tâches OpenMP sur les systèmes NUMA, en étendant le
-support exécutif NANOS avec deux ordonnanceurs de tâches appellés DFWSPT et DFWSRPT,
-prenant en compte la notion de priorité de tâches, et essayant également de diminuer
-la distance de la mémoire lors de l'équilibrage de charge.
-D'autres travaux ont été fait dans le même context~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093},
-mais aucun ne tire partie de la clause OpenMP |depend|, qui indique précisément les
-données lues et écrites par une tâches donnée. Comme montrée par notre combinaison
+support exécutif NANOS avec deux ordonnanceurs de tâches appellés DFWSPT et DFWSRPT.
+Ils prennent en compte la notion de priorité de tâches, et essayent également de diminuer
+la distance à la mémoire lors de l'équilibrage de charge.
+D'autres travaux ont été faits dans le même contexte~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093},
+mais aucun ne tire parti de la clause OpenMP |depend|, qui indique précisément les
+données lues et écrites par une tâche donnée. Comme montré par notre combinaison
 de stratégies \verb/sNumaProc+pNumaWLoc/, il est rentable de prendre en compte
 cette information lors de l'ordonnancement.
 Drebes et al.~\cite{LIP610333} ont caractérisé les problèmes de performances des
@@ -513,10 +532,10 @@ Les environnements de programmation à base de tâches tels qu'OpenMP sont deven
 un moyen standard de programmer des systèmes NUMA à large échelle.
 Ils offrent au programmeur un moyen d'exprimer du parallélisme à grain fin,
 qui peut être associé dynamiquement à la topologie de l'architecture.
-OpenMP a récemment évoluer pour permettre d'exprimer les dépendances de données
+OpenMP a récemment évolué pour permettre d'exprimer les dépendances de données
 entre tâches.
 
-Cet article présente plusieurs stratégie d'exécution pour affecter efficacement
+Cet article présente plusieurs stratégies d'exécution pour affecter efficacement
 les tâches prêtes aux listes de tâches représentant l'architecture NUMA.
 Ces stratégies contrôlent à la fois la manière dont les tâches prêtes sont
 initialement réparties, ainsi que la manière dont les tâches sont volées.
@@ -530,13 +549,12 @@ la fois le placement initial des données et la hiérarchie de la machine.
 compatible avec OpenMP quelles sont les tâches d'initialisation.
 
 Sur le long terme nous prévoyons de nous concentrer sur certaines techniques
-de compilation qui pourrait nous permettre d'évaluer des informations
+de compilation qui pourraient nous permettre d'évaluer des informations
 importantes sur les tâches, comme leur intensité opérationnelle, qui pourrait
 aider à la prise de décision au sein du support exécutif. Nous pensons
 que la coopération entre le compilateur et le support exécutif peut améliorer
 significativement les performances et la scalabité des applications à base de tâches.
 
-\vspace*{-2ex}
 \section*{Remerciements}
 Ce travail est réalisé dans le cadre du projet ELCI, un projet collaboratif Français financé par le FSN ("Fond pour la Société Numériqe"), qui associe des partenaires académiques et industriels pour concevoir et produire un
 environnement logiciel pour le calcul intensif.
