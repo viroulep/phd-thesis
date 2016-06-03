@@ -25,7 +25,6 @@
 \usepackage{booktabs}
 \usepackage{tkz-graph}
 \usepackage{setspace}
-\setstretch{0.95}
 \newcommand{\arevoir}[1]{#1}
 
 \newcommand{\kaapi}{\textsc{\mbox{Xkaapi}}\xspace}
@@ -37,7 +36,7 @@
 \usepackage[color,leftbars]{changebar}
 
 \newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
-\newcommand{\PV}[1]{{\color{red}\bfseries PV: #1}}
+\newcommand{\PV}[1]{{\color{purple}\bfseries PV: #1}}
 
 
 \newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
@@ -114,7 +113,7 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 \title{Using data dependencies to improve task-based scheduling strategies on NUMA architectures}
 \author{
   Philippe Virouleau \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
- \vspace*{-1ex}}
+}
 \institute{
    Inria,
    Univ. Grenoble Alpes,  CNRS, Grenoble Institute of Technology, LIG, Grenoble, France
@@ -126,7 +125,7 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 \maketitle
 
 \begin{abstract}
-  \vspace*{-5ex} The recent addition of data dependencies to the OpenMP 4.0 standard provides the application programmer with a more flexible way of synchronizing tasks.
+  The recent addition of data dependencies to the OpenMP 4.0 standard provides the application programmer with a more flexible way of synchronizing tasks.
   Using such an approach allows both the compiler and the runtime system
   to know exactly which data are read or written by a given task, and how these
   data will be used through the program lifetime.  Data placement and task scheduling
@@ -172,7 +171,7 @@ The recent addition of data dependencies to the OpenMP tasking model provides th
 runtime system with very precise information about which part of an application accesses which variables. 
 Thanks to these dependencies, the runtime system knows which memory areas are read or written by which task. As shown in this paper, the task scheduler can rely on this information when assigning tasks to processors to implement NUMA-aware strategies.
 
-This paper describes several of these strategies we implemented inside the \kaapi runtime system.
+This paper describes several of these strategies we implemented inside the \kaapi~\cite{kaapi} runtime system.
 We identified three major steps in the task scheduler workflow that may have an impact on parallel applications on NUMA systems : the data distribution, the assignment of ready tasks to the processors and the way the task scheduler browses the architecture topology to perform load balancing.
 This paper describes and evaluates them, showing how they impact the application performance on a 192-core NUMA machine.
 We also compare them to state-of-the-art task scheduling strategies taken from related works and implemented within \kaapi.
@@ -334,7 +333,10 @@ These pairs can communicate together through a proprietary fabric called NUMALin
 %\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
 %\end{itemize}
 
-Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10} that represents the communication time for different distances normalized to the time of a local communication. Distances named \textit{local} and \textit{peer} are through Intel QuickPath only.
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10}
+that represents the communication time for different distances normalized to the time of a local communication.
+Distances named \textit{local} and \textit{peer} form a pair of NUMA nodes (through Intel QPI),
+other nodes are either one hop away or two hops away (through NUMALink6).
 %node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \begin{table}
@@ -369,7 +371,7 @@ Tasks can be created by an OpenMP thread and executed by any thread of the same 
 As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were too fine grain to be parallelized using only threads.
 The synchronization of OpenMP 3.0 tasks is performed thanks to the |taskwait| keyword that waits for the completion of all the tasks generated from the current OpenMP parallel region.
 On one hand, the application programmer is responsible for creating and synchronizing OpenMP tasks explicitly. 
-On the other hand, the runtime system is in charge of assigning tasks to threads during the application execution, considering the underlying system state.
+On the other hand, the runtime system is in charge of correctly assigning tasks to threads during the application execution.
 
 OpenMP 4.0 pushes the concept of task further introducing the |depend| keyword to specify the access mode of each shared variable a task will access during its execution. 
 Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task. 
@@ -387,6 +389,8 @@ scenarios than explicitly synchronized tasks, which provides the runtime
 system with many more valid task schedules to choose from. For example, in the Cholesky factorization,
 many instances of  the |dtrsm|, |dsyrk| and |dgem| BLAS computations can legally
 run concurrently when executing the version with task dependencies.
+Secondly, information about task dependencies also enables the runtime system
+to optimize further, such as improving tasks and data placement.
 
 \begin{figure}[tbp]
 \hrule
@@ -560,12 +564,10 @@ By the nature of our benchmarks, this latter strategy is de facto selected and w
 In this section, we describe how the runtime system can have a positive impact on the application execution using the information provided by data dependencies.
 The following sections describe the way we adapted the behavior of the runtime system to control data placement during the initialization phase, when data will be allocated and accessed for the first time, and how we modified the way tasks that perform the actual computations are dynamically assigned to processors while maximizing data locality.
 
-\vspace*{-1ex}
 \subsection{Inside the \kaapi task-based runtime system}
 
 This section describes some of the key internal structures and mechanisms of the \kaapi runtime system.
 
-\vspace*{-1ex}
 \subsubsection{The way \kaapi models the architecture.}
 
 %\begin{figure}[t]
@@ -587,16 +589,22 @@ at the NUMA node level one \verb/place/ is associated to each of the NUMA nodes.
 %FIXME : doit on paler de la différence pop/steal ? Genre ça doit être plus cher de
 %faire un steal mais il faudrait l'expliquer.
 The scheduling framework in \kaapi~\cite{Bleuse2014} relies on virtual functions for \textit{selecting a victim}, \textit{selecting a place} to push a ready task and \textit{pushing} a set of initial ready tasks.
-When a processor becomes idle, the runtime system calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browse the topology to find a place from which stealing a task from the place task queue.
+
+When a processor becomes idle the runtime system has to \textit{select a victim} and calls a function, called  \verb/WSselect/ for \emph{work-stealing select}, to browse the topology to find a place from which stealing a task from the place task queue.
 %There are many ways to do so, implemented in different \emph{selection strategies} called \verb/WSselect/, for \emph{work-stealing select} in the remaining of the paper.
 %Once a place is selected, the processor will take a ready task from its queue.
 
 The completion of a task may unlock the execution of some of its children in the dependency graph.
 This means marking them as ready for execution and pushing at least one of them to a place.
 Once again, there are many ways of selecting the place where to push ready tasks, implemented in strategies we refer to as \verb/WSpush/, for \emph{work-stealing push}.
-Before parallel computation begins, the runtime system distributed the set of ready tasks accordingly to the strategy defined by \verb/WSpush_init/.
 
-These functions are the three main entry points to specify a scheduling algorithm in \kaapi. 
+Before parallel computation begins, the runtime system can distribute (\textit{push}) the set of ready tasks to multiple places, according to the strategy defined by \verb/WSpush_init/.
+
+These \textbf{three functions} are the main entry points to specify a \textbf{scheduling algorithm} in \kaapi.
+Sections~\ref{sec:ws_push_init} to~\ref{sec:ws_select} describe strategies for
+these three points, all them were designed to explore the possibilities of the target NUMA architectures,
+to be able to evaluate which one are worth taking into account.
+
 
 \subsection{Controlling data distribution on a NUMA system}
 
@@ -618,10 +626,11 @@ have shown that specifying affinity for initialization tasks can lead to huge im
 To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
 We extend the OpenMP runtime in two ways. First, by adding functions to provide a dedicated API: \verb!omp_set_affinity! to  make the runtime map the next task to a specific NUMA node. Secondly, by extending scheduling heuristics to take into account task's dependencies to better map ready tasks.
 \end{itemize}
-Both of these approaches give the runtime system a way of keeping track of where the memory pages associated with the application data are actually stored.
+During the application's execution, the runtime relies on system's \verb/get_mempolicy/ to determine on which physical node data are allocated.
 This information is then used to guide the way we perform task creation and load balancing.
 
 \subsection{Distribution of initial ready tasks : WSpush\_init strategies}
+\label{sec:ws_push_init}
 We refer to \emph{initial tasks} when considering the sources of a task dependency graph, usually declared at the beginning of an OpenMP parallel region.
 These tasks are basically the first ones to be marked as ready and to be distributed over the platforms' places.
 We have implemented two initial tasks distribution strategies : \verb!cyclicnuma! which distributes the tasks in a round-robin fashion over the NUMA nodes, and \verb!randnuma! which randomly distributes the tasks over the NUMA nodes.
@@ -638,9 +647,10 @@ The \verb/pNumaW/ strategy pushes tasks on the node-level place corresponding to
 The last WSpush strategy, called \verb/pNumaWLoc/, behaves almost the same than \verb!pNumaW! except that if
     the data are allocated to the NUMA node of the processor pushing the task, we directly push the task to this processor's place instead of pushing it to the node-level place (Loc stands for Local).
     
-    It's important to note that \verb!pLoc! and \verb!pLocNum! does not take initial data placement into account, while \verb!pNumaW! and \verb!pNumaWLoc! are both aware of where a task's data are physically allocated and which of them are written, thanks to the OpenMP \verb!depend! keyword.
+It's important to note that \verb!pLoc! and \verb!pLocNum! does not take initial data placement into account, while \verb!pNumaW! and \verb!pNumaWLoc! are both aware of where a task's data are physically allocated and which of them are written, thanks to the OpenMP \verb!depend! keyword.
 
 \subsection{Dynamic load balancing using work-stealing : WSselect strategies}
+\label{sec:ws_select}
 
 Another important step when implementing work-stealing is the selection of the victim processor we want to steal from.
 This section describes the selection strategies we implemented, that take the architecture memory hierarchy into account.
@@ -681,10 +691,10 @@ More specifically, we used the dependent tasks version of the blocked QR factori
 (\verb/dgeqrf_taskdep/), and of the blocked Cholesky factorization (\verb/dpotrf_taskdep/).
 These applications rely on kernels from BLAS and LAPACK libraries provided by OpenBLAS 2.15.
 We used the OpenMP GCC compliant runtime libKOMP~\cite{libkomp} based on \kaapi runtime system. We tagged the version we used on \kaapi's
-git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/kaapi.git } in the branch \emph{public/europar2016}.
+git repository\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/xkaapi.git} in the branch \emph{public/europar2016}.
 For all of the above applications, we used the GCC 5.2.0 compiler.
 We also made our execution log files public\footnote{https://github.com/viroulep/europar-2016-public}, as well as all the scripts we used, so that
-anyone may reproduce our data analysis.
+anyone may reproduce our data analysis, and look at the other results we did not put in the figures.
 
 \subsection{Impact of the data distribution}
 
@@ -771,7 +781,7 @@ On the contrary, taking into account both levels of the hierarchy (\verb/sProcNu
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_all_strat.pdf}
-  \caption{Evaluating all strategies (WSselect + WSpush)}
+  \caption{Evaluating all strategies (WSselect + WSpush), using \emph{cyclicnuma} WSpush\_init}
 \label{fig:eval-all-strat}
 \end{figure}
 
@@ -780,7 +790,7 @@ On the contrary, taking into account both levels of the hierarchy (\verb/sProcNu
 \begin{figure}[t]
   \centering
   \includegraphics[scale=0.5]{figures/graph_details_strat.pdf}
-\caption{Evaluating specific strategies on multiple sizes}
+  \caption{Evaluating specific strategies on multiple sizes, using \emph{cyclicnuma} WSpush\_init}
 \label{fig:eval-strat-sizes}
 \end{figure}
 
@@ -803,8 +813,18 @@ not enough work to be able to take advantage of this strategy.
 We must note that simply distributing the data over the nodes enables the basic
 \verb/sRand/ + \verb/pLoc/ combination to achieve satisfying performances.
 
+Finding the appropriate combination is highly application-dependent, therefore it is hard
+to give a solution for every type of application. However some general guidelines can be followed:
+\begin{itemize}
+  \item The most critical part is the initial data distribution.
+    Figure~\ref{fig:eval-distrib} showed it is absolutely necessary to use one.
+  \item Hierarchical strategies have a cost, so the problem size has to generate
+    enough work and data transfer to see a benefit.
+\end{itemize}
+
 \section{Related work}
 \label{sec:related-work}
+
 
 Numerous works focus on data locality and/or topology-aware task scheduling strategies for
 NUMA architectures.
@@ -812,7 +832,13 @@ Clet-Ortega et al.~\cite{DBLP:conf/europar/Clet-OrtegaCP14} studied different wa
 We somehow extended this work considering also node-level task lists. We showed considering these lists for pushing ready tasks and selecting work-stealing victims can help improving performance on NUMA systems.
 Olivier et al.~\cite{DBLP:journals/ijhpca/OlivierPWSP12} evaluated hierarchical task scheduling with respect to traditional centralized or distributed task schedulers. Creating a thread list, called \emph{shepherd}, per NUMA node allowed their hierarchical scheduler to outperforms other approaches on several task-based applications.
 Tahan et al.~\cite{DBLP:journals/corr/Tahan14} also studied the behavior of task-based OpenMP applications on NUMA systems, extending the NANOS runtime system with two NUMA-aware task schedulers called DFWSPT and DFWSRPT, taking into account the notion of task priority when pushing tasks to core-level queues. They also try to minimize the number of \emph{memory hops} when performing load balancing.
-While the same kind of studies have been conducted in other contexts~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093}, none of them takes advantage of the OpenMP \verb/depend/ clause, which precisely indicates which data are read and written by a given task. As advertised by the results obtained by our \verb!sNumaProc+pNumaWLoc! combined strategy, this information is worth taking into account when choosing a place to push ready tasks to.
+Drebes et al.~\cite{Drebes:2014:TDS:2658949.2641764} proposed similar ideas in another
+dataflow programming model named OpenStream. This model has a focus on data streaming
+and has a lot of flexibility on their placement, but does not provide flexibility to the user.
+
+While the same kind of studies have been conducted in other contexts~\cite{DBLP:conf/europar/TerbovenSCM12,DBLP:journals/corr/abs-1101-0093,Weng:2002:IOU:645610.661369}, none of them takes advantage of the OpenMP \verb/depend/ clause, which precisely indicates which data are read and written by a given task. As advertised by the results obtained by our \verb!sNumaProc+pNumaWLoc! combined strategy, this information is worth taking into account when choosing a place to push ready tasks to.
+
+
 
 %TODO parler des schedule static.
 
@@ -844,7 +870,6 @@ This paper presented several runtime-level strategies to efficiently assign task
 A short-term future work will be to extend an OpenMP compiler to be able to identify the initialization tasks in a more OpenMP-friendly manner, like extending the \verb!task! construct with a \verb!init! clause. We also intend to experiment with more OpenMP 4 applications.
 In a longer term, we intend to move our focus to compile-time techniques able to infer and to attach valuable information on tasks, like an estimation of a task operational intensity, that could guide some of the runtime system's decisions regarding task scheduling and load balancing. We strongly believe a tight cooperation between the compiler and the runtime system is a key step to enhance the performance and scalability of task-based programs on large-scale platforms.
 
-\vspace*{-2ex}
 \section*{Acknowledgments}
 
 This work is integrated and supported by the ELCI  project, a French FSN ("Fond pour la Société Numérique")
