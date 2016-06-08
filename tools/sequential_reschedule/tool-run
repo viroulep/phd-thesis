@@ -1,0 +1,4 @@
+#! /bin/sh
+export LD_LIBRARY_PATH="/home/fifi/inria/these/these-viroulea/tools/sequential_reschedule:$LD_LIBRARY_PATH"
+exec "$@"
+
