@@ -395,7 +395,7 @@ to optimize further, such as improving tasks and data placement.
 \begin{figure}[tbp]
 \hrule
 \begin{minipage}[t]{.43\textwidth}
-\begin{lstlisting}[frame=none,style=smaller,showlines=true,label=lst:LU-deps]{lst:LU-deps1}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true]{lst:LU-deps1}
 for (size_t k=0; k < NB; ++k) {
 #pragma omp task shared(A) \
   depend(inout: A[k][k]) 
@@ -410,7 +410,7 @@ for (size_t k=0; k < NB; ++k) {
 \end{lstlisting}
 \end{minipage}\hfill
 \begin{minipage}[t]{.485\textwidth}
-\begin{lstlisting}[frame=none,style=smaller,label=lst:LU-deps,firstnumber=12]{lst:LU-deps2}
+\begin{lstlisting}[frame=none,style=smaller,firstnumber=12]{lst:LU-deps2}
   for (int m=k; m < NB; ++m) {
 #pragma omp task shared(A)\
   depend(in: A[m][k]) \

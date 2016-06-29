@@ -128,8 +128,8 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 
 \title{Description, Implementation and Evaluation of an Affinity Clause for Task Directives}
 \author{
-  Philippe Virouleau \and Adrien Roussel$^{*}$ \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
- \vspace*{-1ex}}
+  Philippe Virouleau \and Adrien Roussel$^{*}$ \and François Broquedis \and Thierry Gautier \and Fabrice Rastello \and Jean-Marc Gratien$^{*}$
+}
 \institute{
    Inria,
    Univ. Grenoble Alpes,  CNRS, Grenoble Institute of Technology, LIG, Grenoble, France
@@ -142,10 +142,10 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
 \maketitle
 
 \begin{abstract}
-  \vspace*{-5ex}
 OpenMP 4.0 introduced dependent tasks, which give the programmer a way to
-express fine grain parallelism that can be dynamically mapped to the architecture
-topology at runtime.
+express fine grain parallelism. Using appropriate OS support (such as NUMA libraries),
+the runtime can rely on the information in the \emph{depend} clause to dynamically
+map the tasks to the architecture topology.
 Controlling data locality is one of the key factors to reach a high level of performance when targeting NUMA architectures.
 On this topic, OpenMP does not provide a lot of flexibility to the programmer yet,
 which lets the runtime decide where a task should be executed.
@@ -160,7 +160,7 @@ the following resources: a thread, a NUMA node, and a data.
 We then present an implementation of this proposal in the Clang-3.8 compiler,
 and an implementation of the corresponding extensions in our OpenMP runtime \libXKOMP.
 Finally, we present a preliminary evaluation of this work running two task-based OpenMP kernels on a 192-core NUMA architecture,
-that shows noticeable improvements both in terms on performance and scalability.
+that shows noticeable improvements both in terms of performance and scalability.
 \smallskip
   \noindent\textbf{Keywords:}
   \emph{
@@ -171,16 +171,16 @@ that shows noticeable improvements both in terms on performance and scalability.
 
 \section{Introduction}
 
-OpenMP has become a major standard to program parallel applications on a wide variety of parallel platforms ranging from desktop notebooks to high-end supercomputers. It provides keywords to express fine grain task-based parallelism that boosts the applications performance and scalability on large-scale shared memory machines. In particular, tasking in OpenMP helps the programmers parallelize applications with an irregular workload, letting the runtime system in charge of performing load balancing through task scheduling in a dynamic way. However, very little support exists to express and to control the affinity between tasks and data on systems with a decentralized memory layout, like \emph{Non-Uniform Memory Architectures} (NUMA). On such systems, the memory is physically split into several banks, also called \emph{NUMA nodes}, which leads to different memory latencies and throughputs depending on the location of the memory bank a core is accessing data from. To get the most performance out of such architectures, OpenMP runtime systems thus need to be extended to make the task scheduler aware of both the underlying hardware and the relation that exists between a task and the data it accesses.
+OpenMP has become a major standard to program parallel applications on a wide variety of parallel platforms ranging from desktop notebooks to high-end supercomputers. It provides keywords to express fine grain task-based parallelism that boosts the applications performance and scalability on large-scale shared memory machines. In particular, tasking in OpenMP helps the programmers parallelize applications with an irregular workload, letting the runtime system be in charge of performing load balancing through task scheduling in a dynamic way. However, very little support exists to express and to control the affinity between tasks and data on systems with a decentralized memory layout, like \emph{Non-Uniform Memory Architectures} (NUMA). On such systems, the memory is physically split into several banks, also called \emph{NUMA nodes}, which leads to different memory latencies and throughputs depending on the location of the memory bank a core is accessing data from. To get the most performance out of such architectures, OpenMP runtime systems thus need to be extended to make the task scheduler aware of both the underlying hardware and the relation that exists between a task and the data it accesses.
 
  We relate in this paper our experiences to reach high performance out of OpenMP numerical applications on a 192-core NUMA machine. The recently-added \emph{places} concept in the OpenMP 4.0 specification provides ways of binding OpenMP parallel regions to user-defined partitions of the machine. This basically ends up binding the threads of the corresponding region to a set of cores. Thus, relying on the first-touch memory allocation policy as a portable solution to control memory binding, OpenMP places can help to control thread affinity with respect to the memory.
 %Nevertheless, if this solution exists it remains cumbersome with inherent shortages: it does not ensure clarity in the program between computations and memory access; Design of library remains complex due to non-composable non functional properties; It does not provide robust solution when load is high unbalanced between threads of different parallel regions.
 However, the concept behind OpenMP places needs to be extended to improve the performance of task-based applications, as tasks are most of the time scheduled over threads in a dynamic way according to a work-stealing execution model.  This is why the OpenMP \emph{Architecture Review Board} is currently discussing the introduction of a new \textit{affinity} feature to make the runtime system aware of the affinities between the tasks and the data they access.
 
-In this paper, we present how we control task and data placement inside our OpenMP runtime system, implementing an \emph{affinity} clause which syntax is very close to the one currently discussed by the ARB. We also explain how we manage such information at runtime in order to improve the execution of task-based OpenMP programs on NUMA systems, with a particular focus on the scheduling data structure and the scheduling algorithm.
+In this paper, we present how we control task and data placement inside our OpenMP runtime system, implementing an \emph{affinity} clause whose syntax is very close to the one currently discussed by the ARB. We also explain how we manage such information at runtime in order to improve the execution of task-based OpenMP programs on NUMA systems, with a particular focus on the scheduling data structure and the scheduling algorithm.
 The contribution of this paper is threefold:
 \begin{itemize}
-\item We propose an OpenMP-friendly \emph{affinity} extension to the Clang-3.8 compiler able to express affinities between tasks and memory and pass this information along to the runtime system ;
+\item We propose an OpenMP \emph{affinity} extension to the Clang-3.8 compiler able to express affinities between tasks and memory and pass this information along to the runtime system ;
 \item We describe an extension to our task-based OpenMP runtime system to guide the scheduling of tasks according to such information to reach better performance on NUMA systems ;
 \item We present some preliminary experimental results on running OpenMP benchmarks with tasks dependencies on a 192-core NUMA system, with and without using \emph{affinity}.
 \end{itemize}
@@ -254,14 +254,16 @@ The reason behind this is that tasks are not scheduled close to their data.
 To do so, the runtime system should be aware of which data is accessed by every task
 and where the data has been physically allocated. While the former could be obtained
 through OpenMP data dependencies, the latter would need a specific support from the runtime level.
-Our proposal meets both these requirements through an OpenMP-friendly portable solution presented in the next section.
+Our proposal meets both these requirements through an OpenMP portable solution presented in the next section.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[scale=0.6]{graphs/jacobi_scale_iomp_komp.pdf}
-  \caption{Jacobi's base performances}
+  \caption{Jacobi's base performances, with a Matrix size of 49152, and blocksizes of 1024 or 2048}
 \label{fig:eval-jacobi-before}
 \end{figure}
+
+\PV{TODO: relancer les xp avec clang + le runtime "amélioré" quand idchire est de nouveau up}
 
 \section{Extending OpenMP to support affinities}
 
@@ -297,23 +299,28 @@ Since this extension is aimed for the tasking construct, we implemented it as a 
 clause for the OpenMP \emph{task} directive. The proposed syntax for the clause is the following:
 
 \begin{lstlisting}
-affinity([node,thread,data]: expr[, strict])
+affinity([node | thread | data]: expr[, strict])
 \end{lstlisting}
 
+This proposal assumes the master thread with id 0 is executed on the first place
+in the place list.
 When \emph{expr} refers to a thread id, it should refer to the thread id within
 the \verb/OMP_PLACES/ defined for the current team. For example, if the places for the
 current team are \verb/"{0},{1},{2}"/, thread with id 0 refers to \verb/"{0}"/.
 However, if the places are \verb/"{2},{5},{8}"/, thread with id 0 refers to \verb/"{2}"/.
 
-When \emph{expr} refers to a NUMA node id, it should refer to the node id within
+When \emph{expr} refers to a NUMA node id, it should refer to a node id within
 the set of NUMA nodes built from the \verb/OMP_PLACES/ list.
 
 Two successive parallel regions with the same number of threads and the same places have
 the same set of NUMA nodes.
 
+When \emph{expr} refers to a data, it should be a memory address.
+If the NUMA node associated with the data can't be determined, it defaults to the first NUMA node of the team.
+
 If \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the number of resources.
 
-In case of an affinity to a data, if the NUMA node associated with the data can't be determined, it defaults to the first NUMA node of the team.
+\PV{Réfléchir à ça: One issue with relying on the OMP\_PLACES list when specifying task affinity is that the place list depends on the machine toplogy. This requires the programmer to have the machine topology in mind when writing the program. So the program may not be portable.}
 
 \subsection{Extension of the OpenMP runtime API functions}
 In order to dynamically get information about the current team hierarchy, we also propose
@@ -328,6 +335,7 @@ omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
 These functions allow to query information about the hardware topology, and can only be called from inside a parallel region. On machines without NUMA support, we consider that all the threads are on a single NUMA node.
+In our proposed implementation, \verb/omp_get_node_from_data/ is implemented through Linux \verb/get_mempolicy/ interface.
 
 We also added the following runtime API function that mimics the \textit{affinity} clause:
 \begin{lstlisting}
@@ -438,6 +446,10 @@ for (j = 0; j < ny; j+= block_size)
   }
 \end{lstlisting}
 \end{figure}
+
+
+\PV{Une review sur ce listing, posant la question de si une affinité au niveau d'un thread
+est un niveau d'abstraction acceptable pour le standard. Indiquer que les perfs en bindant sur un noeud seulement sont mauvaises, histoire de cache L2 toussa ?}
 
 %\begin{figure}[htbp]
 %\begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
@@ -654,9 +666,11 @@ placements.
 In this paper, we presented a class of applications which would benefit
 from having such a control and flexibility over tasks and data placement.
 
-We proposed a new \emph{affinity} clause for the \emph{task} directive.
+We proposed an implementation of a new \emph{affinity} clause for the \emph{task} directive,
+based on the discussion within the OpenMP language committees.
 It enables the programmer to give hints to the runtime about
-tasks placement during the program execution, which can be used to control the data
+tasks placement during the program execution.
+These hints, combined with NUMA's first touch policy for memory, can be used to control the data
 mapping. The programmer can express affinity between a task and the following resources: a thread, a NUMA node, and
 a data.
 
@@ -666,7 +680,7 @@ corresponding extensions in our OpenMP runtime \libXKOMP.
 Finally, we performed a preliminary evaluation of this work running two task-based OpenMP kernels on a 192-core NUMA architecture,
 that showed noticeable improvements both in terms on performance and scalability.
 
-In the next future, our focus will move to compile-time techniques able to infer and
+In future, our focus will move to compile-time techniques able to infer and
 attach valuable information to tasks, like an estimation of a task operational intensity,
 that could guide some of the runtime system's decisions regarding task scheduling, load balancing, and data placement.
 We strongly believe a tight cooperation between the compiler and the runtime system
