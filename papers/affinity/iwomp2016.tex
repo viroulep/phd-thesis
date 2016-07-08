@@ -137,6 +137,7 @@ emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,o
    $^{*}$ IFPEN, Rueil Malmaison\\
    \email{firstname.lastname@inria.fr}\\
    \email{thierry.gautier@inrialpes.fr}\\
+   \email{jean-marc.gratien@ifpen.fr}\\
 }
 \date{}
 \maketitle
@@ -318,7 +319,6 @@ If the NUMA node associated with the data can't be determined, it defaults to th
 
 If \emph{expr} refers to an out-of-bounds resource, the value is taken modulo the number of resources.
 
-\PV{Réfléchir à ça: One issue with relying on the OMP\_PLACES list when specifying task affinity is that the place list depends on the machine toplogy. This requires the programmer to have the machine topology in mind when writing the program. So the program may not be portable.}
 
 \subsection{Extension of the OpenMP runtime API functions}
 In order to dynamically get information about the current team hierarchy, we also propose
@@ -445,9 +445,6 @@ for (j = 0; j < ny; j+= block_size)
 \end{lstlisting}
 \end{figure}
 
-
-\PV{Une review sur ce listing, posant la question de si une affinité au niveau d'un thread
-est un niveau d'abstraction acceptable pour le standard. Indiquer que les perfs en bindant sur un noeud seulement sont mauvaises, histoire de cache L2 toussa ?}
 
 %\begin{figure}[htbp]
 %\begin{lstlisting}[caption=Example of use of the affinity clause for computation,frame=tlrb,style=smaller,label=lst:compute-aff]{lst:compute-aff}
