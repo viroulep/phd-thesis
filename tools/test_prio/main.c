@@ -39,14 +39,16 @@ int main()
 
   printf("Doing stuff...\n");
   /*for (int i = 0; i < nrow; i++)*/
-  /*for (int j = 0; j < nrow; j++) {*/
-  /*if ((i+j)%2 != 0)*/
-  /*printf("x ");*/
-  /*else*/
-  /*printf("o ");*/
-  /*if (j + 1 == nrow)*/
-  /*printf("\n");*/
-  /*}*/
+    /*for (int j = 0; j < nrow; j++) {*/
+      /*if ((i+j)%2 != 0)*/
+        /*printf("x ");*/
+      /*else if (i%2 == 0)*/
+        /*printf("a ");*/
+      /*else*/
+        /*printf("b ");*/
+      /*if (j + 1 == nrow)*/
+        /*printf("\n");*/
+    /*}*/
   struct timespec start;
   clock_gettime(CLOCK_MONOTONIC, &start);
 
@@ -62,10 +64,20 @@ int main()
         int dep1j = (j + 1)%nrow;
         int dep2i = (i + 1)%nrow;
         int dep2j = j;
+        if (i%2 == 0) {
 #pragma omp task depend(out: A(i, j))
-        {
-          /*printf("Writing blck A(%i, %i), dep A(%i, %i), A(%i, %i)\n", i, j, dep1i, dep1j, dep2i, dep2j);*/
-          high_io(A(i, j), A(dep1i, dep1j), A(dep2i, dep2j), block_size);
+          {
+            /*printf("Writing blck A(%i, %i), dep A(%i, %i), A(%i, %i)\n", i, j, dep1i, dep1j, dep2i, dep2j);*/
+            printf("high\n");
+            high_io(A(i, j), A(dep1i, dep1j), A(dep2i, dep2j), block_size);
+          }
+        } else {
+          omp_set_task_priority(1);
+#pragma omp task depend(out: A(i, j))
+          {
+            printf("low\n");
+            low_io(A(i, j), A(dep1i, dep1j), A(dep2i, dep2j), block_size);
+          }
         }
       }
   }
