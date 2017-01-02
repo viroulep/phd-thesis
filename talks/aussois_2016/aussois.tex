@@ -75,7 +75,7 @@ emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
 Julien Langou, Philippe Virouleau}
 %FIXME, ajouter denver correctement
 \institute[CORSE/AVALON]{Inria - CORSE/AVALON teams}
-\date{December 14th, 2016}
+\date{January 2nd, 2017}
 
 \begin{document}
 
@@ -111,76 +111,24 @@ Julien Langou, Philippe Virouleau}
 % Après : Philippe
 %%%%%
 
-\section{Nowadays architectures and their usage}
+\section{Theory vs practice}
 
-\subsection{NUMA architectures, a necessity}
-
-\begin{frame}
-\frametitle{What do we need?}
-\begin{block}{The applications need:}
-    \begin{itemize}
-      \item Cores (a lot)
-      \item Memory (a lot)
-    \end{itemize}
-    In the shared memory world this is NUMA architectures!
-\end{block}
-
-\begin{block}{The programmers need:}
-    \begin{itemize}
-      \item Some standard way to exploit them
-    \end{itemize}
-    The de-facto standard is OpenMP.
-\end{block}
-\end{frame}
-
+\subsection{Lets compare them!}
 
 \begin{frame}
-\frametitle{NUMA architecture overview}
-%Texte : dire ce que ça veut dire NUMA, que les données sont partagées, décrire idchire
-\begin{columns}[T,onlytextwidth]
-  \column{0.42\textwidth}
-  \includegraphics[scale=0.3]{graph/NUMA-latences}
-  \column{0.40\textwidth}
-
-  \begin{block}{Description}
-    \begin{itemize}
-      \item Shared memory
-      \item Machine = multiple nodes
-      \item Node = multiple cores + a subset of the RAM
-    \end{itemize}
-  \end{block}
-
-\end{columns}
-\begin{alertblock}{Main consequence}
-  Task execution time depends on its placement and on its data placement.
-\end{alertblock}
-
+  \frametitle{What theory can give us}
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{graph/kaapi_upperbound-crop.pdf}
+  \end{center}
 \end{frame}
 
-\subsection{OpenMP as a way to exploit them}
+\subsection{What do we run, and on what?}
+
+
+
 
 \begin{frame}[fragile]
-\frametitle{OpenMP overview}
-Based on the fork-join model:
-
-    \begin{figure}
-        \includegraphics[width=\textwidth]{graph/fork_join.png}
-    \end{figure}
-        \begin{lstlisting}
-void foo(double *a) {
-  #pragma omp parallel num_threads(3)
-  {
-    #pragma omp task depend(out:a)
-      write_on(a);
-    #pragma omp task depend(in:a)
-      display(a);
-  }
-}
-        \end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Tasks-based application example}
+\frametitle{Taking a look at the application}
 
 
     \begin{lstlisting}
@@ -218,38 +166,32 @@ void Cholesky( int N, double A[N][N], size_t NB ) {
 \end{frame}
 
 
-%\section{Contribution}
-
-%-> Changer/Contrôler le placement des tâches sur la machines, tout en respectant les dépendances
-%-> implique un contrôle possible de l'initialisation
-
-
-%\section{Mise en application}
-%titi
-
-%\subsection{Travaux similaires}
-%toto
-
-%\subsection{Travaux futurs}
-%tutu
-
-
-
-%\subsection{Objectives overview}
-
-\subsection{Understanding the keys to performances}
-
 \begin{frame}
-\frametitle{Sample motivating example}
+\frametitle{NUMA architecture overview}
+%Texte : dire ce que ça veut dire NUMA, que les données sont partagées, décrire idchire
+\begin{columns}[T,onlytextwidth]
+  \column{0.42\textwidth}
+  \includegraphics[scale=0.3]{graph/NUMA-latences}
+  \column{0.40\textwidth}
 
-\begin{figure}
-  \includegraphics[width=\textwidth]{./graph/jacobi_scale_iomp.pdf}
-\end{figure}
+  \begin{block}{Description}
+    \begin{itemize}
+      \item Shared memory
+      \item Machine = multiple nodes
+      \item Node = multiple cores + a subset of the RAM
+    \end{itemize}
+  \end{block}
 
-\begin{alertblock}{Main cause}
-  no temporal locality using the task version!
+\end{columns}
+\begin{alertblock}{Main consequence}
+  Task execution time depends on its placement and on its data placement.
 \end{alertblock}
+
 \end{frame}
+
+\section{Runtime approaches and extensions}
+
+\subsection{An overview of the problematics}
 
 \begin{frame}[fragile]
 \frametitle{Problematics and approaches}
@@ -325,28 +267,6 @@ void Cholesky( int N, double A[N][N], size_t NB ) {
 
 \end{frame}
 
-
-\begin{frame}
-\frametitle{Related works}
-\begin{block}{OpenMP and scheduling}
-    \begin{itemize}
-      \item Tahan et al. -> tasks priorities
-      \item Oliver et al. -> hierarchical scheduling for independent tasks
-      \item Broquedis et al. -> independent tasks scheduling + data mapping over NUMA architecture
-      \item Terboven et al. -> independent tasks locality
-    \end{itemize}
-\end{block}
-\begin{block}{Locality and other dataflow models}
-    \begin{itemize}
-      \item OpenStream. Focuses on data streaming applications.
-      \item StarPU, Kaapi, ... -> multi GPU
-      \item X10, ... -> distributed systems, locality aware
-    \end{itemize}
-\end{block}
-\end{frame}
-
-
-\section{Extensions for dependent tasking}
 
 \subsection{Extending OpenMP}
 
@@ -499,7 +419,6 @@ for (n = k+1; n < m; n++) {
       \item Check data in \verb/out/ dependency
       \item Choose relevant queue, e.g: node where the data is physically allocated.
     \end{itemize}
-    Example : \textbf{p}Local
   \end{block}
 
   \begin{block}{Task selection strategies}
@@ -508,36 +427,9 @@ for (n = k+1; n < m; n++) {
       \item Possible queues : core, node
       \item Several ways of browsing the topology
     \end{itemize}
-    Example : \textbf{s}Random
   \end{block}
 
 \end{frame}
-
-%\begin{frame}
-%\frametitle{Support exécutif - placement d'une tâche}
-%\only<1> {
-  %\begin{figure}
-    %\includegraphics[width=\textwidth]{graph/push_1.pdf}
-  %\end{figure}
-%}
-%\only<2> {
-  %\begin{figure}
-    %\includegraphics[width=\textwidth]{graph/push_2.pdf}
-  %\end{figure}
-%}
-%\end{frame}
-
-%\begin{frame}
-%\frametitle{Support exécutif - placement d'une tâche}
-%Exemple de stratégie hiérarchique
-    %\begin{figure}
-        %\includegraphics[width=\textwidth]{graph/strategies.pdf}
-    %\end{figure}
-
-%\end{frame}
-
-%L'implémentation de ces algos
-
 
 \section{Experimentation results}
 
@@ -662,10 +554,21 @@ for (n = k+1; n < m; n++) {
   %\end{center}
 %\end{frame}
 
+\subsection{Getting there}
+
 \begin{frame}
   \frametitle{Comparison of runtimes on a given problem size}
   \begin{center}
-    \includegraphics[width=\textwidth]{graph/dpotrf_scale_32k.pdf}
+    \includegraphics[width=\textwidth]{graph/dpotrf_scale_8k.pdf}
+  \end{center}
+\end{frame}
+
+\subsection{Explaining the differences, looking for improvements}
+
+\begin{frame}
+  \frametitle{Remember...}
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{graph/kaapi_upperbound-crop.pdf}
   \end{center}
 \end{frame}
 
@@ -676,45 +579,70 @@ for (n = k+1; n < m; n++) {
   \end{center}
 \end{frame}
 
+
 \begin{frame}
-  \frametitle{Impact of the blocksize}
+  \frametitle{A closer look at the average execution time}
   \begin{center}
-    \includegraphics[width=0.85\textwidth]{graph/graph_bs.pdf}
+    \includegraphics[width=\textwidth]{graph/graph_eval_kernels.pdf}
   \end{center}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Comparison of runtimes on a small problem size}
+  \frametitle{A look at the individual time distribution}
   \begin{center}
-    \includegraphics[width=\textwidth]{graph/dpotrf_scale_8k.pdf}
+    \includegraphics[width=\textwidth]{graph/graph_distrib.pdf}
   \end{center}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Impact of the strategies using xKaapi}
+  \frametitle{Impact of the NUMA on distribution}
   \begin{center}
-    \includegraphics[width=\textwidth]{graph/graph_details_strat.pdf}
+    \includegraphics[width=\textwidth]{graph/graph_distrib_overview.pdf}
   \end{center}
 \end{frame}
 
 
-\begin{frame}
-  \frametitle{Conclusion}
-  \begin{block}{Major impact}
-    Data distribution is the most important factor.
-  \end{block}
 
-  \begin{block}{How to chose the best strategies combination?}
-    Unfortunately depends on the application...
 
-    \begin{itemize}
-      \item task + small dataset? -> naive strategies work well
-      \item task + big dataset? -> hierarchical strategies are better
-    \end{itemize}
-  \end{block}
-\end{frame}
+%\begin{frame}
+  %\frametitle{Impact of the blocksize}
+  %\begin{center}
+    %\includegraphics[width=0.85\textwidth]{graph/graph_bs.pdf}
+  %\end{center}
+%\end{frame}
 
-\section{Future works}
+%\begin{frame}
+  %\frametitle{Comparison of runtimes on a small problem size}
+  %\begin{center}
+    %\includegraphics[width=\textwidth]{graph/dpotrf_scale_8k.pdf}
+  %\end{center}
+%\end{frame}
+
+%\begin{frame}
+  %\frametitle{Impact of the strategies using xKaapi}
+  %\begin{center}
+    %\includegraphics[width=\textwidth]{graph/graph_details_strat.pdf}
+  %\end{center}
+%\end{frame}
+
+
+%\begin{frame}
+  %\frametitle{Conclusion}
+  %\begin{block}{Major impact}
+    %Data distribution is the most important factor.
+  %\end{block}
+
+  %\begin{block}{How to chose the best strategies combination?}
+    %Unfortunately depends on the application...
+
+    %\begin{itemize}
+      %\item task + small dataset? -> naive strategies work well
+      %\item task + big dataset? -> hierarchical strategies are better
+    %\end{itemize}
+  %\end{block}
+%\end{frame}
+
+\section{Conclusion and future works}
 
 
 
@@ -732,43 +660,6 @@ for (n = k+1; n < m; n++) {
   We somehow need to be able to quickly simulate different strategies, based on the hardware specificities we measure.
 \end{block}
 
-
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{What theory can give us}
-  \begin{center}
-    \includegraphics[width=0.7\textwidth]{graph/kaapi_upperbound-crop.pdf}
-  \end{center}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Helping the model with the hardware}
-  \begin{center}
-    \includegraphics[width=\textwidth]{graph/graph_eval_kernels.pdf}
-  \end{center}
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Conclusion}
-
-  \begin{block}{Compiler and runtime extensions for}
-    \begin{itemize}
-      \item Data distribution
-
-      Hierarchical scheduling -> EuroPar'16
-      \item Locality awareness -> IWOMP 2016
-    \end{itemize}
-  \end{block}
-
-  \begin{block}{On the todo list}
-    \begin{itemize}
-      \item Improve the cooperation between the Runtime and the Compiler
-    \end{itemize}
-  \end{block}
-
 \begin{block}{Give it a shot}
   \begin{itemize}
     \item Clang 3.9 fork : https://github.com/viroulep/ + (clang|llvm|openmp)
@@ -778,7 +669,6 @@ for (n = k+1; n < m; n++) {
 \end{block}
 
 \end{frame}
-
 
 
 
