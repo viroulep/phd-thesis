@@ -1,0 +1,59 @@
+\documentclass[10pt,compress, epsfig, xcolor=dvipsnames]{beamer}
+
+
+\input{preamble}
+\input{definitions}
+\newcommand{\rope}{\sqrt{1+\epsilon}}
+
+\usetikzlibrary{decorations.pathreplacing}
+
+%\usepackage{pgfpages}
+%\setbeameroption{show notes on second screen}
+
+
+
+
+
+\author[Julien Langou]{%Julien Langou}
+Willy Quach\inst{1}\\ Julien Langou\inst{2}\vspace*{.4cm}}
+%Julien Langou\\ \vspace{25pt} Mathias Jacquelin\\Yves Robert}
+%\title[Tree LA]{
+%Reduction trees for large-scale parallel heterogeneous machines\\
+%Application to linear algebra}
+\title[A Makespan Lower Bound for the Scheduling of Tiled Cholesky]
+{A Makespan Lower Bound for the Scheduling of the Tiled Cholesky Factorization based on ALAP scheduling}
+\institute[University of Colorado Denver]{
+\inst{1}\'Ecole Normale Sup\'erieure de Lyon, France\\
+\inst{2}University of Colorado Denver, USA\vspace*{.4cm}
+}
+%\vspace{-47pt}University of Colorado Denver\\ \vspace{41pt}Ecole Normale Sup\'erieure de Lyon}
+\date{June 17, 2016\\
+\vspace*{.3cm}
+http://arxiv.org/abs/1510.05107
+}
+
+
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+    %\frametitle{Outline for section \thesection}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+
+
+
+%\setbeamercovered{transparent}
+\begin{document}
+
+\begin{frame}[t,plain]
+	\titlepage
+\end{frame}
+
+\input{content.tex}
+
+
+
+\end{document} 
+

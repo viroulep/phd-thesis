@@ -1,0 +1,65 @@
+\definecolor{myorange}{RGB}{255,165,0}
+\definecolor{myred}{RGB}{147, 0 ,0}
+\definecolor{mycyan}{RGB}{65, 105, 225}
+\definecolor{mygreen}{RGB}{0, 153, 0}
+\newcolumntype{+}{>{\global\let\currentrowstyle\relax}}
+\newcolumntype{^}{>{\currentrowstyle}}
+\newcommand{\rowstyle}[1]{\gdef\currentrowstyle{#1}%
+#1\ignorespaces
+}
+\newcommand\hc[2][red]{\setbox0=\hbox{$#2$}%
+\rlap{\raisebox{.45\ht0}{\textcolor{#1}{\rule{\wd0}{1pt}}}}#2} 
+
+
+\DeclareDocumentCommand{\R}{ O{ } O{ } }{
+	\ifthenelse{\isempty{#1}}
+		{\mathbb{R} }
+		{
+			\ifthenelse{\isempty{#2}}
+				{\mathbb{R}^{#1} }
+				{ \mathbb{R}^{#1 \times #2} }
+		}
+}
+\DeclareDocumentCommand{\C}{ O{ } O{ } }{
+	\ifthenelse{\isempty{#1}}
+		{\mathbb{C} }
+		{
+			\ifthenelse{\isempty{#2}}
+				{\mathbb{C}^{#1} }
+				{ \mathbb{C}^{#1 \times #2} }
+		}
+}
+\DeclareDocumentCommand{\Z}{ O{ } O{ } }{
+	\ifthenelse{\isempty{#1}}
+		{\mathbb{Z} }
+		{
+			\ifthenelse{\isempty{#2}}
+				{\mathbb{Z}^{#1} }
+				{ \mathbb{Z}^{#1 \times #2} }
+		}
+}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Oh}{\mathcal{O}}
+
+
+
+\newcommand{\blue}{\color{blue}}
+\newcommand{\red}{\color{red}}
+\newcommand{\black}{\color{black}}
+
+
+\newcommand{\bluebox}[1]{ \setlength{\fboxsep}{1pt}\colorbox{blue!50}{#1}}
+
+% defining custom colors
+\definecolor{b}{RGB}{75,146,219} % #4B92DB
+\definecolor{lg}{rgb}{0.6078,0.7333,0.3490}
+\definecolor{dg}{rgb}{0.3098,0.3843,0.1569}
+\definecolor{lr}{rgb}{0.7529,0.3137,0.3020}
+\definecolor{dr}{rgb}{0.3882,0.1451,0.1373}
+\definecolor{lc}{rgb}{0.2941,0.6745,0.7765}
+\definecolor{dc}{rgb}{0.1294,0.3490,0.4078}
+\definecolor{lp}{rgb}{0.5020,0.3922,0.6353}
+\definecolor{dp}{rgb}{0.2510,0.1922,0.3216}
+\definecolor{lo}{rgb}{1     ,0.6470,0.0000}
+\definecolor{do}{rgb}{0.5000,0.3235,0.0000}
