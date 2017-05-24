@@ -1,0 +1,12 @@
+dpotrf, 192, 5.193471, 2258.3472, 1489088056955719042, 1489088062149161484, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 32768, 512
+dpotrf, 192, 4.827176, 2429.7147, 1489088065285393227, 1489088070112564595, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 32768, 512
+dpotrf, 192, 4.832856, 2426.8592, 1489088073201932428, 1489088078034783000, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 32768, 512
+dpotrf, 192, 4.924274, 2381.8051, 1489088081163713475, 1489088086087984596, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 32768, 512
+dpotrf, 192, 4.942439, 2373.0511, 1489088089203612579, 1489088094146046153, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 32768, 512
+dpotrf, 192, 4.786783, 2450.2178, 1489088097286603283, 1489088102073381529, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 32768, 512
+dpotrf, 192, 1.006957, 1456.0201, 1489088199974248823, 1489088200981177345, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 16384, 256
+dpotrf, 192, 0.893313, 1641.2498, 1489088201851622253, 1489088202744929772, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 16384, 256
+dpotrf, 192, 0.908541, 1613.7409, 1489088203617746845, 1489088204526282169, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 16384, 256
+dpotrf, 192, 0.873526, 1678.4273, 1489088205402056321, 1489088206275578086, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 16384, 256
+dpotrf, 192, 0.857591, 1709.6143, 1489088207154416394, 1489088208012001331, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 16384, 256
+dpotrf, 192, 0.843881, 1737.3889, 1489088208902991279, 1489088209746868302, off, gcc, libkomp-affinity, default, idchire, userspace, cores(N), 16384, 256
