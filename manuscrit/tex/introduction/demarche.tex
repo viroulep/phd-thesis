@@ -1,0 +1,22 @@
+\section{Contributions de cette thèse}\label{sec:intro:demarche}
+Nous proposons une approche dirigée par les données pour l'observation de systèmes. Dans le domaine de la gestion des flux de données, nous proposons de créer un langage algébrique pour interroger les données persistantes et temps réel. À l'aide de ce support théorique, nous développons un intergiciel capable de gérer les données issues de l'observation. Cette section présente brièvement ces contributions.
+
+\subsection{Un langage unique d'interrogation}
+La gestion de flux de données permet de manipuler les données temps réel. Cette approche permet une grande souplesse, car il est possible d'évaluer des requêtes complexes via un langage déclaratif. Toutefois, les langages existants manquent de fondations théoriques pour maîtriser ces données.
+
+Nous avons spécifié \textit{Astral}, une algèbre permettant d'interroger de manière unifiée les données sous forme de flux et de relations persistantes. Cette algèbre manipule les deux modes d'interrogation (continue et instantanée) sur des données persistantes ou temps réel. Les définitions d'opérateurs d'Astral sont dotées d'une sémantique précise. Ainsi, lors de l'expression d'une requête par cette algèbre, il n'existe qu'une interprétation du résultat, ce qui permet une gestion plus claire des données.
+
+\subsection{Un intergiciel extensible d'évaluation de requêtes}
+Il existe plusieurs intergiciels~\cite{Arasu:stream,url:aleri} capables d'évaluer des requêtes continues sur les flux de données. Toutefois, leur implémentation n'est pas précise concernant les sémantiques d'évaluations de requête~\cite{Jain:spread,Botan:secret}. Or, il existe peu d'approches permettant de spécifier formellement la sémantique des opérateurs d'un évaluateur.
+
+Nous proposons \textit{Astronef}, un intergiciel capable d'évaluer des requêtes exprimées dans le langage algébrique que nous avons développé. Cette algèbre sert aussi pour la spécification des composants de l'intergiciel. En effet, chaque module implémentant un opérateur doit spécifier sa sémantique selon une ou plusieurs règles se basant sur des opérateurs algébriques. Ce principe couplé avec les notions architecturales de composants orientés services offre une grande flexibilité et permet aux utilisateurs de personnaliser au mieux cette solution générique à leurs besoins.
+
+De plus, cet intergiciel possède un optimiseur pour construire des plans d'exécutions correspondants aux expressions de requêtes \textit{Astral}. Notre approche est à base de règles ce qui permet une approche générale d'optimisation des requêtes. Il est ainsi possible d'appliquer une optimisation logique, puis physique des requêtes. Ces optimisations sont possibles avec les équivalences de requêtes découvertes avec \textit{Astral}.
+
+\subsection{Une intégration des supports persistants}
+Dans la littérature, plusieurs rapprochements existent entre les supports persistants et la gestion de flux, de manière ad hoc ou implicite~\cite{Balazinska:moirae,Reiss:fastbit}. Étant donné qu'\textit{Astral} permet d'interroger de manière unifiée les données persistantes et temps réel, nous proposons l'extension \textit{Asteroid} capable d'intégrer un SGBD à \textit{Astronef}. Ainsi, l'utilisateur peut spécifier le schéma du système observé, ainsi que les requêtes permettant l'intégration des données des sources du système. L'utilisateur peut interroger les données persistantes et temps réel via l'algèbre et la requête sera évaluée de façon efficace.
+
+\subsection{Personnalisation des résultats}
+Enfin, afin de pouvoir gérer les différentes perspectives du système, nous avons introduit deux nouveaux opérateurs \textit{Best} et \textit{KBest}, capables de personnaliser les résultats des requêtes de notre système d'observation. L'utilisateur peut établir un profil de préférences qui lui est propre, ensuite, ces opérateurs adaptent les résultats en fonction de ce profil. Le premier, sélectionne les données préférées tandis que le second sélectionne les $k$ meilleures. Ces opérateurs peuvent s'appliquer sur toute requête Astral ce qui rend cette approche très générique.
+
+De plus, l'ajout de ces opérateurs permet de démontrer l'extensibilité de notre approche, autant au niveau de l'algèbre que de l'intergiciel.

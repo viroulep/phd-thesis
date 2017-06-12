@@ -1,0 +1,9 @@
+\newcounter{chapterhead}
+\def\chapterhead#1{\newpage
+\refstepcounter{chapterhead}%hyperref hack
+\quad
+\vspace{2.3\baselineskip}
+\begin{flushright} \huge #1 \end{flushright}
+\addstarredchapter{\protect\numberline{} #1}{\thepage}
+\vspace{1.7\baselineskip}
+}

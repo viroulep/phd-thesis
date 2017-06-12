@@ -1,0 +1,29 @@
+% Couverture
+\MakeUGthesePDG
+
+\begin{savequote}[7cm]
+<< Blah
+
+\quad blabla
+
+\quad blablabla >>
+\qauthor{TG}
+\end{savequote}
+% Remerciements...
+\chapter*{Remerciements}
+
+\begin{todo}
+Test todo
+\end{todo}
+
+
+% TOC
+\cleardoublepage
+\dominitoc
+\makeatletter
+\renewcommand{\tableofcontents}[1][\contentsname]{%
+  \chapter*{#1}
+  \@starttoc{toc}
+}
+\makeatother
+\tableofcontents

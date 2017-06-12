@@ -1,0 +1,15 @@
+\usepackage{titlesec}
+\titleclass{\part}{straight}
+\titleformat{\part}[display]
+{\bfseries\Large} {\centering Partie \Huge\thepart} {4ex} {\titlerule
+\vspace{20pt}%
+\centering\fontsize{40pt}{40pt}\selectfont} [\vspace{20pt}%
+\titlerule]
+\let\partbak=\part
+\def\part#1{
+	\cleardoublepage
+	\quad
+	\vskip 6cm
+	\partbak{#1}
+}
+

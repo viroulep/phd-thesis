@@ -1,0 +1,14 @@
+*.aux
+*.brf
+*.log
+*.bbl
+*.blg
+*.dvi
+*.ps
+*.pdf
+*.*toc
+*.kilepr
+*.backup
+*.maf
+*.mtc*
+*.out

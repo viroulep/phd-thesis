@@ -1,0 +1,17 @@
+%BEGIN TODO MACROS, to be removed when the work is finished
+\newsavebox{\savepar}%
+\newenvironment{boxit}{%
+\begin{lrbox}{\savepar}%
+\begin{minipage}[b]{\textwidth}%
+\par \quad \par
+}{%
+\par \quad
+\end{minipage}%
+\end{lrbox}%
+\par\noindent\fbox{\usebox{\savepar}}%
+}%
+
+\def\WarnTODO{\GenericWarning{}{LaTeX Warning: TODO BLOC}}
+\newenvironment{todo}{\WarnTODO\begin{boxit}\expandafter\parbox{0.9\columnwidth}{\centering\textbf{TO DO}}\par\noindent}{\end{boxit}}
+\def\TODO#1{\WarnTODO\begin{boxit}\parbox{0.9\columnwidth}{\centering\textbf{TO DO} #1}\par\noindent\end{boxit}}
+%END TODO MACROS

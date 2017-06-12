@@ -1,0 +1,22 @@
+\ifx\frenchbsetup\undefined\else\frenchbsetup{AutoSpacePunctuation=false}\fi
+\ifx\definecolor\undefined\usepackage{xcolor}\fi
+\definecolor{darkblue}{HTML}{000099}
+\definecolor{darkgreen}{HTML}{006600}
+\definecolor{darkred}{HTML}{990000}
+\definecolor{brandorange}{HTML}{FF6600} 
+\usepackage[colorlinks,hyperfootnotes=true,citecolor=darkblue,linkcolor=darkred,urlcolor=brandorange, pagebackref]{hyperref}
+
+\newcommand{\mapolicebackref}[1]{
+    \hspace*{\fill} \mbox{\textit {\small #1}}
+}
+%pour gérer les backref dans la bibliographie
+\renewcommand*{\backref}[1]{}
+\renewcommand*{\backrefalt}[4]{%
+\ifcase #1 \mapolicebackref{pas de citations}
+    \or \mapolicebackref{cité page #2}
+    \else \mapolicebackref{#1 citations pages #2}
+\fi
+}
+%redéfinir les séparateurs en français :
+\renewcommand*{\backreftwosep}{ et~}
+\renewcommand*{\backreflastsep}{, et~}
