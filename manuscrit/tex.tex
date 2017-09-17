@@ -5,7 +5,7 @@
 %\begin{itemize}
   %\item HPC ? (OpenMP (with ref to the "main" chapter for details), other existing languages)
   %\item NUMA (with ref to the "main" chapter)
-  %\item Workstealing (with ref to the "main" chapter)
+  %\item task + Workstealing (with ref to the "main" chapter)
   %\item Related work
 %\end{itemize}
 
@@ -16,23 +16,23 @@
 % - Key points (bandwidth, latency, cache coherence protocol, ...)
 % - How to benchmark/modelize this (if possible)
 %     - Behavior with regards to task's instructions, data used, etc
+%     - Introduce the tool to "watch" specific kernels behavior, and get numbers
+%     - Get traces and numbers from inside the runtime / compare
 % - Get some conclusion : what matter from now on
 
 
-%\input{tex/language}
-% This chapter should include:
-% - description of OpenMP language
-% - Motivating example
-% - Existing stuff for us
-% - Missing stuff
-% - Implemented stuff
+%\input{tex/OpenMP on numa}
+% Big section to describe how we use/extend OpenMP to exploit these architectures
 
-%\input{tex/runtime}
-% This chapter should include:
-% - description of typical WS runtimes
-% - Existing stuff for us
-% - Missing stuff
-% - Implemented stuff
+% - Description of OpenMP language (tasking and such)
+% - Description of OpenMP runtime
+
+% - Motivating examples for our works using current OpenMP
+
+% - Missing to improve things
+%    - What we implemented
+%    - What remains
+
 
 %\input{tex/exp}
 % This chapter should include:
