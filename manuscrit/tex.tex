@@ -4,53 +4,148 @@
 % This chapter should include
 %\begin{itemize}
   %\item HPC ? (OpenMP (with ref to the "main" chapter for details), other existing languages)
+\cite{openmp40}, OpenMP 4.0
+
+\cite{openmp45}, OpenMP 4.5
+
 \cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
   %\item NUMA (with ref to the "main" chapter)
   %\item task + Workstealing (with ref to the "main" chapter)
+
+\cite{cilk5}, CILK
+
+\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
   %\item Related work
 
   - rel sched/openmp
+
 \cite{Zhuravlev2012}, Survey of Scheduling Techniques for Addressing Shared Resources in Multicore Processors
+
 \cite{Sbirlea2015}, Polyhedral Optimizations for a Data-Flow Graph Language
+
   - rel sched/numa
+
 \cite{Selva2015}, (thèse) Performance Monitoring of Throughput Constrained Dataflow Programs Executed On Shared-Memory Multi-core Architectures
+
 \cite{Reinman2015}, NUMA-aware scheduling for both memory- and compute-bound tasks
+
 \cite{Drebes2014}, Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
+
+\cite{Durand2013}, An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
+
+\cite{Clet2014}, Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
+
+\cite{Tahan2014}, Towards Efficient OpenMP Strategies for Non-Uniform Architectures
+
+\cite{Pilla2014}, Topology-Aware Load Balancing for Performance Portability over Parallel High Performance Systems
+
+\cite{Broquedis2010a}, ForestGOMP: an efficient OpenMP environment for NUMA architectures
+
+  - rel bench
+
+\cite{Rodinia2010}, A characterization of the Rodinia benchmark suite with comparison to contemporary CMP workloads
+
   - rel bench openmp
+
 (vieux?)\cite{Nanjegowda2009}, Scalability evaluation of barrier algorithms for OpenMP
+
+\cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
+
+\cite{Kurzak2013}, Multithreading in the PLASMA Library
+
+\cite{Jin2004}, Performance Characteristics of the Multi-Zone NAS Parallel Benchmarks.
+
+\cite{Bailey1994}, The NAS Parallel Benchmarks
+
+\cite{Muller2012}, SPEC OMP2012 -- an Application Benchmark Suite for Parallel Systems Using OpenMP
+
   - rel task/numa
+
 \cite{Wienke2012}, Task-Parallel Programming on NUMA Architectures
+
+\cite{Olivier2012}, OpenMP task scheduling strategies for multicore NUMA systems
+
+\cite{Terboven2012}, Task-Parallel Programming on NUMA Architectures
+
+\cite{Wittmann2011}, Optimizing ccNUMA locality for task-parallel execution under OpenMP and TBB on multicore-based systems
+
+
+  - rel affinity/heterogeneous
+
+\cite{Bleuse2014}, Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
+
   - rel numa/linear algegra
+
 \cite{Al-Omairy2015}, Dense Matrix Computations on NUMA Architectures with Distance-Aware Work Stealing
+
   - rel task
+
 \cite{Olivier2013}, Characterizing and mitigating work time inflation in task parallel programs
+
+\cite{Gautier2007}, Kaapi: A Thread Scheduling Runtime System for Data Flow Computations on Cluster of Multi-Processors
+
+\cite{StarPU}, StarPU: A Unified Platform for Task Scheduling on Heterogeneous Multicore Architectures
+
+\cite{OMPSs}, Ompss: a proposal for programming heterogeneous multi-core architectures
+
+\cite{Broquedis2012}, LIBKOMP, an Efficient openMP Runtime System for Both Fork-join and Data Flow Paradigms
+
   - rel numa/openmp
+
 \cite{Huang2010}, Enabling locality-aware computations in OpenMP
+
 \cite{Yu2017}, Design and Implementation of Bandwidth-aware Memory Placement and Migration Policies for Heterogeneous Memory Systems
+
 \cite{Weng2002}, Implementing OpenMP Using Dataflow Execution Model for Data Locality and Efficient Parallel Execution
+
 (vieux?)\cite{Nikolopoulos2001}, Exploiting Memory Affinity in OpenMP Through Schedule Reuse
+
   - rel energy/openmp
+
 \cite{Shafik2015}, Adaptive Energy Minimization of OpenMP Parallel Applications on Many-Core Systems
+
 \cite{Porterfield2013}, Power measurement and concurrency throttling for energy reduction in OpenMP programs
+
 \cite{Porterfield2013a}, OpenMP and MPI application energy measurement variation
+
 \cite{Nandamuri2015}, Power and energy footprint of OpenMP programs using OpenMP runtime API
+
 \cite{Alessi2015}, Application-level energy awareness for OpenMP
+
   - rel energy
+
 \cite{Hackenberg2015}, An Energy Efficiency Feature Survey of the Intel Haswell Processor
+
 \cite{Davidovic2015}, Energy efficiency of parallel multicore programs
+
 \cite{Bao2016}, Static and Dynamic Frequency Scaling on Multicore CPUs
 
+
+
 %\end{itemize}
+
+
 
 %\input{tex/characterization}
 % This chapter should include:
 % - NUMA architectures descriptions
 \cite{Virouleau2016b}, Using data dependencies to improve task-based scheduling strategies on numa architectures
+
+\cite{Broquedis2010}, hwloc: {A} Generic Framework for Managing Hardware Affinities in {HPC} Applications
+
 % - Various examples (idchire, idkat, idbool?, brunch, random 16 cores 2 nodes
 % - Key points (bandwidth, latency, cache coherence protocol, ...)
+
 \cite{Dice2013}, Scalable statistics counters
+
 \cite{Libutti2014}, Exploiting performance counters for energy efficient co-scheduling of mixed workloads on multi-core platforms
+
 \cite{Li2013}, Characterization of Input/Output bandwidth performance models in NUMA architecture for data intensive applications
+
+\cite{Bienia2011}, Benchmarking Modern Multiprocessors
+
+\cite{Olivier2013}, Characterizing and mitigating work time inflation in task parallel programs
+
 % - How to benchmark/modelize this (if possible)
 %     - Behavior with regards to task's instructions, data used, etc
 %     - Introduce the tool to "watch" specific kernels behavior, and get numbers
@@ -59,8 +154,25 @@ benchs:
 
 \cite{Gajinov2014}, DaSH: A Benchmark Suite for Hybrid Dataflow and Shared Memory Programming Models: with Comparative Evaluation of Three Hybrid Dataflow Models
 
+\cite{YarKhan2011}, QUARK Users' Guide: QUeueing And Runtime for Kernels
+
+\cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
+
+\cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
+
+\cite{Kurzak2013}, Multithreading in the PLASMA Library
+
+\cite{Jin2004}, Performance Characteristics of the Multi-Zone NAS Parallel Benchmarks.
+
+\cite{Bailey1994}, The NAS Parallel Benchmarks
+
+\cite{Muller2012}, SPEC OMP2012 -- an Application Benchmark Suite for Parallel Systems Using OpenMP
+
+
 ref model:
+
 \cite{Pan2014}, Modeling cache coherence misses on multicores
+
 \cite{Stanisic2016}, Fast and Accurate Simulation of Multithreaded Sparse Linear Algebra Solvers
 
 % - Get some conclusion : what matter from now on
@@ -77,6 +189,7 @@ ref model:
 % - Missing to improve things
 %    - What we implemented
 \cite{Virouleau2016}, Description, implementation and evaluation of an affinity clause for task directives
+
 \cite{Virouleau2016b}, Using data dependencies to improve task-based scheduling strategies on numa architectures
 %    - What remains
 
@@ -87,6 +200,9 @@ ref model:
 % - Software description
 %   - In-depth analysis of linar algebra kernels?
 % - Experimentation results with all the above
+
+\cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
+
 \cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
 % - Perf/energy
 
