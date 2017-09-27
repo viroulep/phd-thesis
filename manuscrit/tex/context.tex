@@ -1,8 +1,29 @@
-\part{The basics: context and starting point}
+\begin{savequote}[6cm]
+<< Some great quote  >>
+\qauthor{François Broquedis}
+\end{savequote}
+\chapter{Context and problematic}
+\chaptertoc
 
-\begin{itemize}
-  \item HPC ? (OpenMP (with ref to the "main" chapter for details), other existing languages)
-  \item NUMA (with ref to the "main" chapter)
-  \item Workstealing (with ref to the "main" chapter)
-  \item Related work
-\end{itemize}
+The section~\ref{sec:context:numa} describes the kind of hardware we'll be referring to during this thesis.
+
+The section~\ref{sec:context:openmp} describes OpenMP, and specifically its task model, which suits large parallel application, and on which we'll focus.
++runtime
+
+
+\input{tex/context/numa}
+\input{tex/context/openmp}
+
+  %\item HPC ? (OpenMP (with ref to the "main" chapter for details), other existing languages)
+\cite{openmp40}, OpenMP 4.0
+
+\cite{openmp45}, OpenMP 4.5
+
+\cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
+  %\item NUMA (with ref to the "main" chapter)
+  %\item task + Workstealing (with ref to the "main" chapter)
+
+\cite{cilk5}, CILK
+
+\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
+

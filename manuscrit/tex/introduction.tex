@@ -1,11 +1,35 @@
 \begin{savequote}[6cm]
-<< Some great quote  >>
-\qauthor{François Broquedis}
+<< What do you work on?  >>
+\qauthor{someone}
 \end{savequote}
-\chapter{Contexte et objectifs de la thèse}
+\chapter{Introduction}
 \chaptertoc
 
-Lorem Ipsum blablabla
-%Ce premier chapitre présente brièvement le contexte de cette thèse en section~\ref{sec:intro:contexte}. Puis, nous détaillons les problématiques de recherche en section~\ref{sec:intro:problematique}. Nous présentons les principales contribution de ce travail en section~\ref{sec:intro:demarche}. Ensuite, nous présentons notre cadre applicatif en section~\ref{sec:introduction:digitalhome} et enfin, nous détaillons le plan de ce manuscrit en section~\ref{sec:intro:plan}.
+Computer science evolves fast, especially when it comes to the most basic and necessary element: the microprocessor.
+Until around 10 years ago, microprocessors manufacturers were able to increase the frequencies to increase the overall performances of the microprocessor.
+At some point it became less efficient, and if we look at how architectures changed since then, we can notice the focus of microprocessors manufacturers has moved from increasing the chip frequency to increasing the number of chips.
 
-\input{tex/introduction/contexte}
+Some goals haven't changed:
+ - we still want to exploit hardwares to the best of their potential, either energy-wise, performance-wise, or both.
+ - we still need more powerful machines to make programs run faster and cheaper.
+
+However a lot of related things have changed: we can't deal with multiple processors just the same way as we deal with a single processor, and we can't deal with thousands of processors just the same way as we deal with 10 processors.
+
+TODO: où et comment formuler la distinction entre mémoire partagée et mémoire distribuée ?
+
+This increase in the number of processing units has lead to several other changes :
+
+ - Memory: increasing the number of CPUs accessing the same RAM increases the contention on the memory bus. To accommodate a higher number of CPUs while still avoiding too much contention, most of recent shared memory architectures split their memory into several parts, usually named "nodes". Each of these node has their own memory controller, as well as a group of CPUs. These nodes are linked together through an interconnect, so that the operating system only see one single big machine.
+ It is faster for a CPU to access the memory on its own node than the one on a remote node, which is why we refer to this kind of architecture as "Non-Uniform Memory Access" (NUMA).
+ %Note : ~5000 kWh par an par foyer (soit ~570 watts), les rangs 1 et 2 peuvent consommer ~15kW
+ - Energy: regardless of if we are talking about a small 16 cores shared memory computer or a big 1 million cores supercomputer, energy is a critical factor. Constantly increasing the number of processing units won't continue to happen without taking care of the energy issue: we need the power of ~25 families in France to power some of the first supercomputers of the top500.
+ - Language: regular languages such as C/C++/Fortran are designed for sequential execution. When targeting such large architectures, programmers need to express parallelism, so new languages or extensions to existing languages have to be designed and experimented. Preferably in a portable way.
+ - Parallel programming languages rely on a specific software - the runtime - to take care of the load balancing of the program, and make sure every resource is used at its best. Increasing the number of working cores can lead to more complex synchronizations and scheduling decision.
+ - Other hardware changes: supercomputers use a mix of CPUs and GPUs, FPGA. Faster interconnect for supercomputer. Faster cache coherent interconnect for shared memory.
+
+
+We can see that there are a lot of opportunities for research about the general "High Performance Computing" topic, and the next section will describe what was the objectives of this thesis.
+
+
+\input{tex/introduction/objectives}
+\input{tex/introduction/outline}

@@ -1,18 +1,51 @@
 \usepackage{listings}
 
-
 \lstset{
-  language=XML,
-  basicstyle=\footnotesize\ttfamily\upshape,
-  columns=fullflexible,
-  showstringspaces=false,
-  stringstyle=\color{darkgreen},
-  identifierstyle=\color{darkblue},
-  keywordstyle=\color{darkred},
-  keywordstyle=[2],
-  commentstyle=\color{gray}\upshape,
-    numbers=left,
-frame=leftline,
-tabsize=4,
-xleftmargin=2\stdindent
+	tabsize=4,
+%	frame=single,
+	breaklines=true,
+	basicstyle=\ttfamily,
+	frame=tb,
+	framerule=0.2pt,
+%	frameround={tttt},
+	showstringspaces=false,
+	language=c,
+%	linewidth=0.95\textwidth,
+	keywordstyle=\color{black}\bfseries,
+%	keywordstyle=\color{blue},
+	commentstyle=\color{OliveGreen},
+	stringstyle=\color{red}\itshape,
+	inputencoding=utf8,
+	numbers=left,
+	numberstyle=\tiny,
+	numbersep=5pt,
+% OMP define
+emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
+emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
+emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
+emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
+    %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
 }
+
+%\lstset{
+%  language=c,
+%  basicstyle=\footnotesize\ttfamily\upshape,
+%  columns=fullflexible,
+%  showstringspaces=false,
+%  stringstyle=\color{darkgreen},
+%  identifierstyle=\color{darkblue},
+%  keywordstyle=\color{darkred},
+%  keywordstyle=[2],
+%  commentstyle=\color{gray}\upshape,
+%    numbers=left,
+%frame=leftline,
+%tabsize=4,
+%xleftmargin=2\stdindent
+%emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
+%emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+%emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
+%emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
+%emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
+%}
+\lstdefinestyle{smaller}{basicstyle=\scriptsize\ttfamily}

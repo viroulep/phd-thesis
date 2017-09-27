@@ -1,0 +1,30 @@
+\section{NUMA}\label{sec:context:numa}
+
+The memory topology is organized by pairs of NUMA nodes connected together through Intel QuickPath Interconnect.
+These pairs can communicate together through a proprietary fabric called NUMALink6 with up to two hops.
+%, represented by the edges of the graph.In other words, taking node $n_0$ as example :
+%\begin{itemize}
+%\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
+%\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
+%\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
+%\end{itemize}
+
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{Broquedis2010}
+that represents the communication time for different distances normalized to the time of a local communication.
+Distances named \textit{local} and \textit{peer} form a pair of NUMA nodes (through Intel QPI),
+other nodes are either one hop away or two hops away (through NUMALink6).
+%node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\begin{table}
+\caption{NUMA distances from node 0 advertised by the hwloc library on Intel192.}
+\begin{center}
+\begin{tabular}{C{3cm} C{2cm} C{2cm} C{2cm} C{2cm}}
+    \toprule[0.15em]
+		\emph{NUMA nodes location} & \emph{local} & \emph{peer} & \emph{one hop away} & \emph{two hops away} \\
+    \midrule[0.1em]
+	hwloc distances & 1.0 & 5.0 & 6.5 & 7.9 \\
+    \bottomrule[0.15em]
+\end{tabular}
+\end{center}
+\label{tab:idchire}
+\end{table}

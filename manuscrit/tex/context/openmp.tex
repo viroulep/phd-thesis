@@ -1,0 +1,28 @@
+\section{OpenMP}\label{sec:context:openmp}
+
+TODO: introduce task-based programming
+
+\subsection{Software background}
+
+To exploit  large-scale shared memory architectures, the application programmer needs:
+\begin{enumerate}
+\item to express massive fine grain parallelism to get the most out of the numerous processing units of the platform ;
+\item to control the execution of the application, especially the way computations and data are distributed over the platform, to prevent the NUMA design to have a negative impact on the overall application performance.
+\end{enumerate}
+
+Task-based parallel programming environments provide ways of expressing fine grain parallelism that can be dynamically assigned to processors at runtime.
+OpenMP~\cite{openmp40}, the de-facto standard for shared-memory parallel programming, supports task parallelism with dependencies since revision 4.0.
+
+\subsubsection{OpenMP tasking}
+
+An OpenMP \emph{task} can be seen as an independent \emph{unit of work} an OpenMP thread can execute.
+Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region.
+As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were too fine grain to be parallelized using only threads.
+The synchronization of OpenMP 3.0 tasks is performed thanks to the |taskwait| keyword that waits for the completion of all the tasks generated from the current OpenMP parallel region.
+On one hand, the application programmer is responsible for creating and synchronizing OpenMP tasks explicitly.
+On the other hand, the runtime system is in charge of correctly assigning tasks to threads during the application execution.
+
+OpenMP 4.0 pushes the concept of task further introducing the \verb/depend/ keyword to specify the access mode of each shared variable a task will access during its execution.
+Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task.
+This information is then processed by the underlying runtime system to decide whether a task is ready for execution or should first wait for the completion of other ones.
+
