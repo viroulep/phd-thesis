@@ -13,7 +13,7 @@ Some goals haven't changed:
  - we still want to exploit hardwares to the best of their potential, either energy-wise, performance-wise, or both.
  - we still need more powerful machines to make programs run faster and cheaper.
 
-However a lot of related things have changed: we can't deal with multiple processors just the same way as we deal with a single processor, and we can't deal with thousands of processors just the same way as we deal with 10 processors.
+However a lot of related issues have changed: we can't deal with multiple processors just the same way as we deal with a single processor, and we can't deal with thousands of processors just the same way as we deal with 10 processors.
 
 TODO: où et comment formuler la distinction entre mémoire partagée et mémoire distribuée ?
 
@@ -26,6 +26,7 @@ This increase in the number of processing units has lead to several other change
  - Language: regular languages such as C/C++/Fortran are designed for sequential execution. When targeting such large architectures, programmers need to express parallelism, so new languages or extensions to existing languages have to be designed and experimented. Preferably in a portable way.
  - Parallel programming languages rely on a specific software - the runtime - to take care of the load balancing of the program, and make sure every resource is used at its best. Increasing the number of working cores can lead to more complex synchronizations and scheduling decision.
  - Other hardware changes: supercomputers use a mix of CPUs and GPUs, FPGA. Faster interconnect for supercomputer. Faster cache coherent interconnect for shared memory.
+
 
 
 We can see that there are a lot of opportunities for research about the general "High Performance Computing" topic, and the next section will describe what was the objectives of this thesis.

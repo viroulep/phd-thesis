@@ -1,22 +1,29 @@
 \section{Objectives}\label{sec:intro:objectives}
 
-Amongst all the possible research topics mentioned above, the scope of this thesis was restricted in the following way:
+Amongst all the possible research topics mentioned above, the scope of this thesis was restricted in the following ways:
 
-- Study focused on shared memory, NUMA architectures
-- Several programming languages are available to target these architectures, however this study was focus on the de-facto standard: OpenMP.
+\begin{itemize}
+  \item The thesis was focused on shared memory, NUMA architectures
+  \item Several programming languages are available to target these architectures, however this thesis was focused on the de-facto standard: OpenMP.
+\end{itemize}
 
 In this context, the objectives of the thesis were to:
- - Evaluate the language, and understand the behavior of the underlying architecture.
- - Propose and evaluate evolutions to the language and the softwares, in order to improve performances.
+\begin{itemize}
+ \item Evaluate the language with regards to the current architectures.
+ \item Propose and evaluate evolutions to the language and the softwares, specifically the runtime, in order to improve performances.
+\end{itemize}
 
+Additionally to that, most of the work has been done in the context of task-based application (TODO: ref section suivante?), even though some attention has been given to loop-based programs.
 
-Focused on task-based application, some other stuff (eg: jacobi).
-The first contribution is several benchmarks (kastors, replay tool).
-This lead to several intuitions about possible improvements to the OpenMP language and runtimes.
+The evaluation of the OpenMP language was conducted over several runtimes and lead to the design of a benchmark suite and a tool to facilitate the controlled execution of specific benchmarks.
+The lack of support in OpenMP to target NUMA architectures was highlighted.
+Parts of this thesis was focused on improving usage of the information available to the runtime, as well as on enabling the programmer to pass more information to the runtime.
+
 Which lead to two contributions:
- - The proposal for an task-to-data affinity clause in OpenMP
- - Runtime extensions to take advantage of data locality, and better data distributions.
-
+\begin{itemize}
+ \item The proposal for an task-to-resource affinity clause in OpenMP
+ \item Runtime extensions to take advantage of data locality, and better data distributions.
+\end{itemize}
 
 
 
