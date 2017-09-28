@@ -2,20 +2,10 @@
 
 
 
-\subsection{Cache hierarchy}
+\subsection{Single node design}
 
-Describe the architecture:
-
-One node, then multiple node
+Talk about cache hierarchy, maybe give some number and a drawing of how it looks like?
 
 \subsection{Interconnecting nodes}
 
-The memory topology is organized by pairs of NUMA nodes connected together through Intel QuickPath Interconnect.
-These pairs can communicate together through a proprietary fabric called NUMALink6 with up to two hops.
-%, represented by the edges of the graph.In other words, taking node $n_0$ as example :
-%\begin{itemize}
-%\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
-%\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
-%\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
-%\end{itemize}
-
+Talk about how nodes are interconnected with each other, give some numbers (?) and some drawing.
