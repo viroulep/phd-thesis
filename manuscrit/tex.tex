@@ -46,21 +46,25 @@
 \subsection{Preliminary results}
 
 \section{Focus on "profiling" Cholesky}
-\subsection{Importance of initialization}
-\subsection{Impact of BLAS library}
-matter for top perf, not for overall behavior
-\subsection{Conclusion: all is DGEMM}
+\subsection{Closer look at the blocked algorithm}
+\subsection{Various configurations and their results (init, existing numa tools)}
+\subsection{Conclusion: all is DGEMM, let's look into this better}
 
 \section{Better understanding of basic kernels through "the tool"}
 \subsection{Motivation}
 \subsection{Basic design}
-\subsection{Various scenario}
+\subsection{Various kernels/scenario}
+\subsection{What to observe? (perf, counters, ...)}
+\subsection{Impact of BLAS library}
+matter for top perf, not for overall behavior
+
+\subsection{Conclusion: we can start modeling}
 
 \section{Modeling Cholesky (Theory)}
 \subsection{Model description}
 \subsection{Lower/Upper bound given kernels' profiling}
 
-\section{Conclusion}
+\section{Conclusion: should come down to local vs remote, let's implement stuff}
 
 %\input{tex/characterization}
 % This chapter should include:
