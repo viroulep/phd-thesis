@@ -24,16 +24,43 @@
 
 %\end{itemize}
 
-\part{Getting to know NUMA architectures internals}
+\part{Getting to know NUMA better, and improving its use through OpenMP}
 
 \begin{savequote}[6cm]
 << truc
 \qauthor{Test}
 \end{savequote}
 
-\chapter{Understanding NUMA architecture}\label{chap:contrib:characterization}
+\chapter{Executing applications on NUMA architectures, TODO improve title}\label{chap:contrib:characterization}
 \chaptertoc
 
+\section{Hardware}
+
+\subsection{idchire}
+\subsection{idkat}
+\subsection{brunch}
+
+\section{Kastors}
+\subsection{Motivation}
+\subsection{Kernels description}
+\subsection{Preliminary results}
+
+\section{Focus on "profiling" Cholesky}
+\subsection{Importance of initialization}
+\subsection{Impact of BLAS library}
+matter for top perf, not for overall behavior
+\subsection{Conclusion: all is DGEMM}
+
+\section{Better understanding of basic kernels through "the tool"}
+\subsection{Motivation}
+\subsection{Basic design}
+\subsection{Various scenario}
+
+\section{Modeling Cholesky (Theory)}
+\subsection{Model description}
+\subsection{Lower/Upper bound given kernels' profiling}
+
+\section{Conclusion}
 
 %\input{tex/characterization}
 % This chapter should include:
@@ -87,9 +114,6 @@ ref model:
 % - Get some conclusion : what matter from now on
 
 
-\section{Precise micro benchmarking}
-\section{Focus on architectures bottleneck}
-\section{Performances model/Simulation}
 
 
 \begin{savequote}[6cm]
@@ -140,7 +164,7 @@ ref model:
 \section{On top of Intel's runtime}
 \subsection{TODO?}
 
-\subsection{What is missing, can we do more ?}
+\section{What is missing, can we do more ?}
 More flexibility for initialization
 
 
@@ -151,12 +175,6 @@ More flexibility for initialization
 \qauthor{Test}
 \end{savequote}
 
-\chapter{KASTORS}\label{chap:exp:kastors}
-\chaptertoc
-
-
-\section{Motivation}
-\section{Kernels description}
 
 \chapter{Environment}\label{chap:exp:env}
 \chaptertoc
@@ -172,12 +190,6 @@ More flexibility for initialization
 \section{Additional software}
 \subsection{Basic benchs (mem bandwidth, epcc)}
 \subsection{Various BLAS libraries}
-
-\section{Hardware}
-
-\subsection{idchire}
-\subsection{idkat}
-\subsection{brunch}
 
 \chapter{Experiments}\label{chap:exp:exp}
 \chaptertoc
