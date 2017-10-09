@@ -1,0 +1,101 @@
+
+\begin{savequote}[6cm]
+<< truc
+\qauthor{Test}
+\end{savequote}
+
+\chapter{Caractérisation des architectures NUMA}\label{chap:contrib:characterization}
+\chaptertoc
+
+\section{Machines}
+
+\subsection{idchire}
+\subsection{idkat}
+\subsection{brunch}
+
+\section{Suite d'applications : les KASTORS}
+\subsection{Motivation}
+\subsection{Description des noyaux}
+\subsubsection{Étude de cas : Cholesky}
+
+
+\section{Exécution précise de noyaux}
+\subsection{Motivation}
+
+On a le comportement général d'une application, mais on veut faire plus précis :
+exécuter des noyaux séparemment
+ajuster les paramètres de ces noyaux et des données qu'il manipule
+exécuter des noyaux afin de déterminer certaines caractéristiques particulières des machines
+
+
+\subsection{Design de l'outil}
+\subsection{Descriptions des noyaux et scenario}
+\subsection{Quelles caractéristiques observer ?}
+Perf ctr, perfs tout court
+
+\subsection{Application aux noyaux de Cholesky}
+\subsection{Impact de la bibliothèque BLAS}
+
+matter for top perf, not for overall behavior
+
+\subsection{Conclusion : modélisation de base possible}
+
+\section{Modélisation du comportement de Cholesky}
+\subsection{Description du modèlé}
+\subsection{Borne inférieure et supérieure à partir des évaluations des noyaux}
+
+\section{Conclusion : la perf dépend essentiellement de local vs distance, implémentons cette heuristique}
+
+%\input{tex/characterization}
+% This chapter should include:
+% - NUMA architectures descriptions
+\cite{Virouleau2016b}, Using data dependencies to improve task-based scheduling strategies on numa architectures
+
+\cite{Broquedis2010}, hwloc: {A} Generic Framework for Managing Hardware Affinities in {HPC} Applications
+
+% - Various examples (idchire, idkat, idbool?, brunch, random 16 cores 2 nodes
+% - Key points (bandwidth, latency, cache coherence protocol, ...)
+
+\cite{Dice2013}, Scalable statistics counters
+
+\cite{Libutti2014}, Exploiting performance counters for energy efficient co-scheduling of mixed workloads on multi-core platforms
+
+\cite{Li2013}, Characterization of Input/Output bandwidth performance models in NUMA architecture for data intensive applications
+
+\cite{Bienia2011}, Benchmarking Modern Multiprocessors
+
+\cite{Olivier2013}, Characterizing and mitigating work time inflation in task parallel programs
+
+% - How to benchmark/modelize this (if possible)
+%     - Behavior with regards to task's instructions, data used, etc
+%     - Introduce the tool to "watch" specific kernels behavior, and get numbers
+%     - Get traces and numbers from inside the runtime / compare
+benchs:
+
+\cite{Gajinov2014}, DaSH: A Benchmark Suite for Hybrid Dataflow and Shared Memory Programming Models: with Comparative Evaluation of Three Hybrid Dataflow Models
+
+\cite{YarKhan2011}, QUARK Users' Guide: QUeueing And Runtime for Kernels
+
+\cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
+
+\cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
+
+\cite{Kurzak2013}, Multithreading in the PLASMA Library
+
+\cite{Jin2004}, Performance Characteristics of the Multi-Zone NAS Parallel Benchmarks.
+
+\cite{Bailey1994}, The NAS Parallel Benchmarks
+
+\cite{Muller2012}, SPEC OMP2012 -- an Application Benchmark Suite for Parallel Systems Using OpenMP
+
+
+ref model:
+
+\cite{Pan2014}, Modeling cache coherence misses on multicores
+
+\cite{Stanisic2016}, Fast and Accurate Simulation of Multithreaded Sparse Linear Algebra Solvers
+
+% - Get some conclusion : what matter from now on
+
+
+

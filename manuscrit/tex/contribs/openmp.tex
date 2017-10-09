@@ -1,0 +1,86 @@
+
+\begin{savequote}[6cm]
+<< truc
+\qauthor{Test}
+\end{savequote}
+
+\chapter{Extending OpenMP}\label{chap:contrib:TODO}
+\chaptertoc
+
+
+%\input{tex/OpenMP on numa}
+% Big section to describe how we use/extend OpenMP to exploit these architectures
+
+% - Description of OpenMP language (tasking and such)
+% - Description of OpenMP runtime
+
+% - Motivating examples for our works using current OpenMP
+
+% - Missing to improve things
+%    - What we implemented
+\cite{Virouleau2016}, Description, implementation and evaluation of an affinity clause for task directives
+
+\cite{Virouleau2016b}, Using data dependencies to improve task-based scheduling strategies on numa architectures
+%    - What remains
+
+
+\section{OpenMP vs NUMA architectures}
+
+\subsection{Current construct and clauses}
+\subsection{Additional tools and techniques}
+\subsection{Numbers, and why we need more}
+\subsection{Conclusion: what matters?}
+
+\section{Matching what is missing}
+\subsection{Programmers needs}
+\subsection{Expressing task-to-resource affinity}
+
+\section{topo description des trucs précédents + qu'est ce qu'on peut utiliser dans le runtime}
+\subsection{The programmer can give more information}
+\subsection{Can the runtime exploit it?}
+
+\section{Enhancing runtimes techniques}
+\subsection{Common schedulers and their specificities}
+\subsection{Data-based Heuristics}
+\subsection{Concrete implementation}
+
+\section{On top of Intel's runtime}
+\subsection{TODO?}
+
+\section{What is missing, can we do more ?}
+More flexibility for initialization
+
+\begin{savequote}[6cm]
+<< truc
+\qauthor{Test}
+\end{savequote}
+
+
+\chapter{Évaluation de performances}\label{chap:exp:env}
+\chaptertoc
+
+\section{Compiler and runtimes}
+
+\subsection{Gcc/GOMP}
+\subsection{Clang/Intel}
+\subsection{LibKOMP}
+\subsection{OMPSs}
+\subsection{KSTAR/StarPU?}
+\subsection{Openstream?}
+
+\section{Additional software}
+\subsection{Basic benchs (mem bandwidth, epcc)}
+\subsection{Various BLAS libraries}
+
+
+%\input{tex/exp}
+% This chapter should include:
+% - Hardware description
+% - Software description
+%   - In-depth analysis of linar algebra kernels?
+% - Experimentation results with all the above
+
+\cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
+
+\cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
+% - Perf/energy
