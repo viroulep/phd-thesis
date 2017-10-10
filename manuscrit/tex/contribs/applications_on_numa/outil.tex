@@ -1,0 +1,49 @@
+\section{Exécution précise de noyaux}\label{sec:contribs:outil}
+
+\subsection{Motivation}
+
+Les résultats de la section précédente montrent que l'on peut globalement évaluer le comportement d'une application.
+La suite naturelle est l'observation des différents facteurs pour essayer de déterminer s'il y a des améliorations possibles pour ce comportement, et comment faire pour l'améliorer.
+Au final une application basée sur des tâches avec dépendances se ramène à ordonnancer un graphe de tâches sur un ensemble de ressources.
+Sachant que dans le contexte d'une machine NUMA le temps d'exécution d'une tâche dépend, entre autre, de la ressource sur laquelle elle est placée, on a envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données.
+Une fois cela fait, cela permettra d'identifier des potentielles variations de comportement, et ajuster les heuristiques d'ordonnancement pour prendre en compte ces variations.
+
+C'est à ce besoin que répond NOMDEL4OUTIL : permettre à l'utilisateur de définir ce qu'il exécute et où, et garantir cette exécution, avec un certain nombre de variables observables.
+
+\subsection{Description d'un scenario}
+
+Un scenario est défini de la manière suivante :
+ - Un ensemble de données et variables
+ - Une liste d'actions à effectuer
+ - Un ensemble de caractéristiques à observer
+
+\subsubsection{Données et variables}
+\subsubsection{Actions}
+\subsubsection{Observeurs}
+
+
+\subsection{Design de l'outil}
+
+Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'archicture de l'outil soit simple, avec peu de logique quand au contrôle de l'exécution des tâches.
+
+Le flot d'exécution est le suivant :
+ - L'utilisateur fourni un scenario
+ - L'ensemble des coeurs utilisés est déterminé à partir du scénario
+ - Pour chaque coeur, un thread est créé et attaché à ce coeur, et une queue (FIFO) de tâches est créée
+ - L'ensemble des tâches définies dans le scenario est poussée dans les queues dans l'ordre défini
+ - Le scenario est déroulé
+ - Un résumé des caractéristiques observées est affiché
+
+\subsection{Exemples de noyaux}
+
+
+\subsection{Quelles caractéristiques observer ?}
+Perf ctr, perfs tout court
+
+\subsection{Application aux noyaux de Cholesky}
+\subsection{Impact de la bibliothèque BLAS}
+
+matter for top perf, not for overall behavior
+
+\subsection{Conclusion : modélisation de base possible}
+

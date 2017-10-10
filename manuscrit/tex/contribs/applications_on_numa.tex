@@ -7,44 +7,11 @@
 \chapter{Caractérisation des architectures NUMA}\label{chap:contrib:characterization}
 \chaptertoc
 
-\section{Machines}
+\input{tex/contribs/applications_on_numa/machines}
+\input{tex/contribs/applications_on_numa/kastors}
+\input{tex/contribs/applications_on_numa/outil}
+\input{tex/contribs/applications_on_numa/modele}
 
-\subsection{idchire}
-\subsection{idkat}
-\subsection{brunch}
-
-\section{Suite d'applications : les KASTORS}
-\subsection{Motivation}
-\subsection{Description des noyaux}
-\subsubsection{Étude de cas : Cholesky}
-
-
-\section{Exécution précise de noyaux}
-\subsection{Motivation}
-
-On a le comportement général d'une application, mais on veut faire plus précis :
-exécuter des noyaux séparemment
-ajuster les paramètres de ces noyaux et des données qu'il manipule
-exécuter des noyaux afin de déterminer certaines caractéristiques particulières des machines
-
-
-\subsection{Design de l'outil}
-\subsection{Descriptions des noyaux et scenario}
-\subsection{Quelles caractéristiques observer ?}
-Perf ctr, perfs tout court
-
-\subsection{Application aux noyaux de Cholesky}
-\subsection{Impact de la bibliothèque BLAS}
-
-matter for top perf, not for overall behavior
-
-\subsection{Conclusion : modélisation de base possible}
-
-\section{Modélisation du comportement de Cholesky}
-\subsection{Description du modèlé}
-\subsection{Borne inférieure et supérieure à partir des évaluations des noyaux}
-
-\section{Conclusion : la perf dépend essentiellement de local vs distance, implémentons cette heuristique}
 
 %\input{tex/characterization}
 % This chapter should include:
