@@ -90,6 +90,7 @@ Voici en pratique à quoi ressemblerait un tel scenario :
     core: 0
     repeat: 1
   - kernel: dgemm
+    # Les actions sont executees dans l'ordre de declaration, pour un seul dgemm c'est inutile de synchroniser
     sync: false
     params: 
     - a
@@ -129,23 +130,35 @@ papi:
 Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'archicture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches.
 
 Le flot d'exécution est le suivant :
-\begin{itemize}
- \item L'utilisateur fourni un scenario
- \item L'ensemble des coeurs utilisés est déterminé à partir du scénario
- \item Pour chaque coeur, un thread est créé et attaché à ce coeur, et une queue (FIFO) de tâches est créée
- \item L'ensemble des tâches définies dans le scenario est poussée dans les queues dans l'ordre défini
- \item Le scenario est déroulé
- \item Un résumé des caractéristiques observées est affiché
-\end{itemize}
+
+\paragraph{Lecture et analyse du scenario}
+L'outil charge le scenario fourni par l'utilisateur, créer les différentes données, et analyse les actions pour déterminer l'ensemble des coeurs physiques qui seront utilisés au cours des actions.
+
+\paragraph{Déroulement des actions}
+Pour chacun des coeurs utilisés, un thread est créé et attaché à ce coeur. De plus, une queue d'actions (FIFO) est créée pour ce thread.
+L'ensemble des actions sont poussées dans les tâches correspondantes dans l'ordre du fichier.
+
+Dès que les threads sont créés ils commencent à exécuter les actions prêtes ; avant et après chaque actions l'ensemble des observateurs pour cette actions sont appelés afin de les collecter pour cette action.
+
+Lorsque la dernière action du scenario est terminée, l'ensemble des données des observateurs est affiché à l'utilisateur sur la sortie standard.
 
 \subsection{Exemples de noyaux}
 
-Noyaux de cholesky, dgemm à la main, mem bandwidth
+\subsubsection{Noyaux BLAS utilisés par Cholesky}
 
-\subsection{Quelles caractéristiques observer ?}
-Perf ctr, perfs tout court
+\subsubsection{dgemm naif}
+
+cf les perf plus haut, pour vérifier que le comportement des caches miss était pas lié à l'implem.
+
+\subsubsection{Test de bande passante}
+
+Noyau naïf pour estimer la bande passante noeud à noeud
 
 \subsection{Application aux noyaux de Cholesky}
+
+\subsubsection{Quelles caractéristiques observer ?}
+Perf ctr, perfs tout court
+
 \subsection{Impact de la bibliothèque BLAS}
 
 matter for top perf, not for overall behavior
