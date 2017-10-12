@@ -2,13 +2,23 @@
 
 \subsection{Motivation}
 
-Les résultats de la section précédente montrent que l'on peut globalement évaluer le comportement d'une application.
-La suite naturelle est l'observation des différents facteurs pour essayer de déterminer s'il y a des améliorations possibles pour ce comportement, et comment faire pour l'améliorer.
-Au final une application basée sur des tâches avec dépendances se ramène à ordonnancer un graphe de tâches sur un ensemble de ressources.
-Sachant que dans le contexte d'une machine NUMA le temps d'exécution d'une tâche dépend, entre autre, de la ressource sur laquelle elle est placée, on a envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données.
+Les résultats de la section précédente montrent que l'on peut tout à fait étudier le comportement global d'une application sur une machine. On peut évidemment observer aussi les variations de ce comportement global lorsqu'on change certains détails, via l'utilisation par exemple de \emph{numactl}.
+
+En revanche, si l'on connait bien son application, on a envie de pouvoir étudier le comportement précis de certaines parties critiques de l'application afin de pouvoir identifier ce qui cause le comportement global.
+
+La suite naturelle de cette identification est de déterminer s'il y a des améliorations possibles pour ce comportement local, et comment l'améliorer en pratique.
+
+Dans le cas d'une application à base de flots de données, chaque partie de l'application est bien identifiée, et correspond à un noeud dans le graphe de tâches.
+Toutes les données manipulées par une partie de l'application sont facilement identifiées également, puisqu'il s'agit des connexions entre les noeuds du graphe de tâches.
+
+Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend à la fois du placement de son exécution, ainsi que du placement de ces données. On a donc envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données.
+
 Une fois cela fait, cela permettra d'identifier des potentielles variations de comportement, et ajuster les heuristiques d'ordonnancement pour prendre en compte ces variations.
 
 C'est à ce besoin que répond NOMDEL4OUTIL : permettre à l'utilisateur de définir ce qu'il exécute et où, et garantir cette exécution, avec un certain nombre de variables observables.
+
+
+TODO : dans la suite on va parler de scenario, qu'est ce que c'est ?
 
 \subsection{Description d'un scenario}
 
@@ -35,16 +45,17 @@ Si on imagine l'exemple d'un scenario simple ou l'on souhaite exécuter une mult
 
 Voici concrêtement à quoi ressemblerait la déclaration de ces données :
 
-\begin{lstlisting}[language=yaml]
-- a:
-  - type: "double *"
-- b:
-  - type: "double *"
-- c:
-  - type: "double *"
-- block_size:
-  - type: "int"
-  - value: 256
+\begin{lstlisting}[language=yaml,caption=Exemple de déclaration de variables,label=lst:tool:data-example]
+data:
+  - a:
+    - type: "double *"
+  - b:
+    - type: "double *"
+  - c:
+    - type: "double *"
+  - block_size:
+    - type: "int"
+    - value: 256
 \end{lstlisting}
 
 \subsubsection{Actions}
@@ -65,8 +76,8 @@ Si on continue dans l'exemple simple d'une multiplication de matrices carrées, 
 Afin d'avoir une mesure plus précise du comportement du noyau, on peut indiquer une répétition du noyau, ici on choisi 50 pour l'exemple.
 
 Voici en pratique à quoi ressemblerait un tel scenario :
-\begin{lstlisting}[language=yaml]
-  actions: 
+\begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions,label=lst:tool:actions-example]
+actions:
   - kernel: init_blas_bloc
     sync: false
     params: 
@@ -116,13 +127,15 @@ L'outil propose un certain nombre de caractéristiques observables :
 
 En continuant sur notre exemple, voici à quoi ressemblerait la section du scénario si nous souhaitions observer la performance de la multiplication de matrice en Gflops, le nombre de cycles passé dans l'action, ainsi que le nombre de cache miss au niveau 3 généré par l'action.
 
-\begin{lstlisting}[language=yaml]
-flops_dgemm:
-# le nombre de flops depend de la taille de bloc, il faut donc la donner en parametre
-- block_size
-papi:
-- PAPI_TOT_CYC
-- PAPI_L3_TCM
+\begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'observateurs,label=lst:tool:watchers-example]
+watchers:
+  flops_dgemm:
+    # Le nombre de flops depend de la taille de bloc,
+    # il faut donc la donner en parametre
+    - block_size
+  papi:
+    - PAPI_TOT_CYC
+    - PAPI_L3_TCM
 \end{lstlisting}
 
 \subsection{Design de l'outil}

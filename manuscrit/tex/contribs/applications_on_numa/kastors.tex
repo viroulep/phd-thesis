@@ -1,13 +1,19 @@
-\section{Suite d'applications : les KASTORS}
+\section{Applications par flots de données sur architectures à mémoire partagée}
 
-\subsection{Motivation}
 
-Motivation : rien d'existant, il fallait des applications de base pour évaluer et mettre en relief ce qu'il fallait améliorer.
+\subsection{Une suite de benchmark utilisant les dépendances de données d'OpenMP : KASTORS}
 
-La suite de benchmarks KASTORS a été créée pour évaluer l'implémentation des tâches avec dépendances d'OpenMP.
-Les dépendances ont été ajoutées avec la version 4.0 d'OpenMP, et il n'y avait aucun benchmark de référence pour cette version de la norme.
+Le support pour les applications à base de flots de données dans OpenMP est arrivé avec la version 4.0, qui est sortie au démarrage de cette thèse.
 
-Les sections suivantes décrivent les différents benchmarks de la suite, et comment nous les avons étendu pour utiliser les dépendances de données.
+Il existait évidemment plusieurs suites de benchmarks : d'une part pour les applications à base de tâches indépendantes et utilisant OpenMP~3.1, et d'autre part pour les applications à base de flots de données, mais écrites dans des languages différents.
+
+L'objectif derrière les KASTORS était double :
+\begin{itemize}
+    \item Rassembler et proposer une suite d'applications exploitant les dépendances introduites avec OpenMP~4.0
+    \item Comparer la version utilisant des flots de données à la version utilisant des synchronisations explicites. Le but étant de montrer que le support exécutif peut gérer les synchronisations plus finement, et par conséquent améliorer les performances sans changer l'algorithme.
+\end{itemize}
+
+Les sections suivantes décrivent les différents benchmarks de la suite : d'où ils viennent, ainsi que comment nous les avons étendu pour utiliser les dépendances de données.
 
 \subsection{Description des applications}
 
@@ -15,7 +21,7 @@ Les applications suivantes proviennent de différentes suites de benchmarks, et 
 
 \subsubsection{Factorisations de Cholesky, QR, et LU (PLASMA)}
 
-\begin{lstlisting}[caption=Format de l'algorithme dynamique,frame=tlrb,label=lst:kastors:dyn]{lst:kastors:dyn}
+\begin{lstlisting}[caption=Format de l'algorithme dynamique,label=lst:kastors:dyn]
 wrapper_algorithm_dynamic_call(...) {
   // code sequentiel
   for (...)
@@ -28,7 +34,7 @@ wrapper_algorithm_dynamic_call(...) {
   // code sequentiel
 }
 \end{lstlisting}
-\begin{lstlisting}[caption=Format de l'algorithme OpenMP,frame=tlrb,label=lst:kastors:dyn-omp]{lst:kastors:dyn-omp}
+\begin{lstlisting}[caption=Format de l'algorithme OpenMP,label=lst:kastors:dyn-omp]
 algorithm_call(...) {
     // code sequentiel
     for (...)
@@ -67,7 +73,7 @@ Nous avons implémenté deux versions bloquées de ce noyau, en utilisant d'une 
 
 \subsubsection{SparseLU}
 
-\begin{lstlisting}[caption=LU utilisant des tâches indépendantes,frame=tlrb,label=lst:kastors:sparseLU]{lst:kastors:sparseLU}
+\begin{lstlisting}[caption=LU utilisant des tâches indépendantes,label=lst:kastors:sparseLU]
 for (k=0; k<NB; k++) {
   lu0(M[k*NB+k]);
   for (j=k+1; j<NB; j++)
@@ -90,7 +96,7 @@ for (k=0; k<NB; k++) {
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption=LU utilisant des tâches avec dépendances,frame=tlrb,label=lst:kastors:sparseLU-deps]{lst:kastors:sparseLU-deps}
+\begin{lstlisting}[caption=LU utilisant des tâches avec dépendances,label=lst:kastors:sparseLU-deps]
 for (k=0; k<NB; k++) {
 #pragma omp task untied shared(M)\
     depend(inout: M[k*NB+k:BS*BS])
