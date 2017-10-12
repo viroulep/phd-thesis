@@ -13,29 +13,118 @@ C'est à ce besoin que répond NOMDEL4OUTIL : permettre à l'utilisateur de déf
 \subsection{Description d'un scenario}
 
 Un scenario est défini de la manière suivante :
- - Un ensemble de données et variables
- - Une liste d'actions à effectuer
- - Un ensemble de caractéristiques à observer
+\begin{itemize}
+ \item Un ensemble de données et variables
+ \item Une liste d'actions à effectuer
+ \item Un ensemble de caractéristiques à observer
+\end{itemize}
 
 \subsubsection{Données et variables}
+
+L'utilisateur fourni les noms et type des variables utilisées en paramètres des différents noyaux.
+Ces variables peuvent être des constantes, ou être initialisées par une action dans le scénario.
+
+Voici un exemple de déclaration de données :
+\begin{lstlisting}[language=Ruby]
+- a:
+  - type: "double *"
+- b:
+  - type: "double *"
+- c:
+  - type: "double *"
+- block_size:
+  - type: "int"
+  - value: 256
+\end{lstlisting}
+
 \subsubsection{Actions}
+
+L'utilisateur indique une série d'actions à exécuter, et avec quels paramètres.
+Une action peut avoir les caractéristiques suivantes :
+\begin{itemize}
+  \item repeat
+  \item sync
+  \item kernel: action name
+  \item params: list of variables
+  \item core: le coeur
+\end{itemize}
+
+Ces actions correspondent à des fonctions connues par l'outil, que l'utilisateur peut aisément ajouter.
+
+Voici un exemple de déclaration d'actions, utilisant les données ci dessus :
+\begin{lstlisting}[language=Ruby]
+  actions: 
+  - repeat: 1
+    sync: false
+    kernel: init_blas_bloc
+    params: 
+    - a
+    - block_size
+    core: 0
+  - repeat: 1
+    sync: false
+    kernel: init_blas_bloc
+    params: 
+    - b
+    - block_size
+    core: 0
+  - repeat: 1
+    sync: false
+    kernel: init_blas_bloc
+    params: 
+    - c
+    - block_size
+    core: 0
+  - repeat: 50
+    sync: true
+    kernel: dgemm
+    params: 
+    - a
+    - b
+    - c
+    - block_size
+    core: 0
+\end{lstlisting}
+
 \subsubsection{Observeurs}
 
+Exemples de caractéristiques observables :
+
+\begin{itemize}
+  \item temps passé dans l'action (ms)
+  \item performance personalisé (gflops)
+  \item compteurs de perf
+\end{itemize}
+
+Example de section dans le scenario :
+\begin{lstlisting}[language=Ruby]
+flops_dgemm:
+- block_size
+papi:
+- PAPI_L3_TCM
+- PAPI_L3_DCR
+- PAPI_L3_DCW
+time:
+- ms
+\end{lstlisting}
 
 \subsection{Design de l'outil}
 
-Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'archicture de l'outil soit simple, avec peu de logique quand au contrôle de l'exécution des tâches.
+Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'archicture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches.
 
 Le flot d'exécution est le suivant :
- - L'utilisateur fourni un scenario
- - L'ensemble des coeurs utilisés est déterminé à partir du scénario
- - Pour chaque coeur, un thread est créé et attaché à ce coeur, et une queue (FIFO) de tâches est créée
- - L'ensemble des tâches définies dans le scenario est poussée dans les queues dans l'ordre défini
- - Le scenario est déroulé
- - Un résumé des caractéristiques observées est affiché
+\begin{itemize}
+ \item L'utilisateur fourni un scenario
+ \item L'ensemble des coeurs utilisés est déterminé à partir du scénario
+ \item Pour chaque coeur, un thread est créé et attaché à ce coeur, et une queue (FIFO) de tâches est créée
+ \item L'ensemble des tâches définies dans le scenario est poussée dans les queues dans l'ordre défini
+ \item Le scenario est déroulé
+ \item Un résumé des caractéristiques observées est affiché
+\end{itemize}
 
 \subsection{Exemples de noyaux}
 
+Noyaux de cholesky, dgemm à la main, mem bandwidth
 
 \subsection{Quelles caractéristiques observer ?}
 Perf ctr, perfs tout court
