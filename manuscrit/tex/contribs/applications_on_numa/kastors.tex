@@ -1,5 +1,138 @@
 \section{Suite d'applications : les KASTORS}
+
 \subsection{Motivation}
-\subsection{Description des noyaux}
+
+Motivation : rien d'existant, il fallait des applications de base pour évaluer et mettre en relief ce qu'il fallait améliorer.
+
+La suite de benchmarks KASTORS a été créée pour évaluer l'implémentation des tâches avec dépendances d'OpenMP.
+Les dépendances ont été ajoutées avec la version 4.0 d'OpenMP, et il n'y avait aucun benchmark de référence pour cette version de la norme.
+
+Les sections suivantes décrivent les différents benchmarks de la suite, et comment nous les avons étendu pour utiliser les dépendances de données.
+
+\subsection{Description des applications}
+
+Les applications suivantes proviennent de différentes suites de benchmarks, et ont été modifiées afin d'utiliser les dépendances de données plutôt que d'autres moyen de synchronisation.
+
+\subsubsection{Factorisations de Cholesky, QR, et LU (PLASMA)}
+
+\begin{lstlisting}[caption=Format de l'algorithme dynamique,frame=tlrb,label=lst:kastors:dyn]{lst:kastors:dyn}
+wrapper_algorithm_dynamic_call(...) {
+  // code sequentiel
+  for (...)
+    QUARK_Insert_Task(wrapper_blas_function, packed_parameters);
+  // code sequentiel
+  for (...)
+    QUARK_Insert_Task(
+        wrapper_another_blas_function,
+        packed_parameters);
+  // code sequentiel
+}
+\end{lstlisting}
+\begin{lstlisting}[caption=Format de l'algorithme OpenMP,frame=tlrb,label=lst:kastors:dyn-omp]{lst:kastors:dyn-omp}
+algorithm_call(...) {
+    // code sequentiel
+    for (...)
+#pragma omp task depend(inout:array[...])
+        blas_function(...);
+    // code sequentiel
+    for (...)
+#pragma omp task depend(inout:array[...])
+        another_blas_function(...);
+    // code sequentiel
+}
+\end{lstlisting}
+
+La bibliothèque PLASMA~\cite{Kurzak2013} développée à ICL/UTK met à disposition un grand nombre d'algorithmes d'algèbre linéaire, optimisés pour les architectures multi-coeurs.
+Plusieurs implémentations de chaque algoritme sont disponibles, utilisant soit un ordonnancement statique, soit un ordonnancement dynamique.
+Les algorithmes à ordonnancement dynamique sont construit sur le support exécutif QUARK~\cite{YarKhan2011}, qui utilise un modèle avec dépendances de données pour ordonnancer les tâches.
+
+Les trois algorithmes que nous avons sélectionné sont les factorisations de Cholesky, QR, et LU, respectivement nommés DPOTRF, DGEQRF, et DGETRF dans PLASMA.
+Ils opèrent tous sur des matrices de nombres flottant à double précision (type |double|).
+
+L'implémentation initiale utilise plusieurs niveaux de wrappers, avec packing et unpacking de paramètres à chaque niveau, ce qui affecte la lisibilité du code et augmente grandement le risque d'erreur.
+
+Les listings~\ref{lst:kastors:dyn} et~\ref{lst:kastors:dyn-omp} montrent respectivement la version dynamique originale, et les transformation que l'on a fait pour porter le code en OpenMP~4.0.
+Dans la version originale, la function |wrapper_blas_function| effectue l'unpacking des paramètres avant d'appeler la vraie fonction BLAS/LAPACK sur laquelle elle est construite.
+La transformation en OpenMP~4.0 a donné lieu au retrait de plusieurs niveau d'encapsulation, ce qui facilite la lecture du code, la maintenabilité du code, et enlève le besoin de gérer ces paramètres.
+
+\subsubsection{Jacobi}
+
+Cet algorithme résout l'équation de Poisson sur le carré unitaire [0,1]x[0,1], qui est divisé en une grille de NxN points espacés régulièrement.
+
+TODO: expliquer à quoi correspond un stencil ?
+
+Cette application repose sur un noyau de calcul qui est en fait un stencil à 5 points en 2 dimensions.
+Ce noyau est appliqué successivement jusqu'à ce qu'une convergence soit détectée.
+Nous avons implémenté deux versions bloquées de ce noyau, en utilisant d'une part des tâches sans dépendances, et d'autre part des tâches avec dépendances.
+
+\subsubsection{SparseLU}
+
+\begin{lstlisting}[caption=LU utilisant des tâches indépendantes,frame=tlrb,label=lst:kastors:sparseLU]{lst:kastors:sparseLU}
+for (k=0; k<NB; k++) {
+  lu0(M[k*NB+k]);
+  for (j=k+1; j<NB; j++)
+#pragma omp task untied shared(M)
+    fwd(M[k*NB+k], M[k*NB+j]);
+
+  for (i=k+1; i<NB; i++)
+#pragma omp task untied shared(M)
+    bdiv(M[k*NB+k], M[i*NB+k]);
+
+#pragma omp taskwait
+
+  for (i=k+1; i<NB; i++)
+    for (j=k+1; j<NB; j++)
+#pragma omp task untied shared(M)
+      bmod(M[i*NB+k],
+           M[k*NB+j],
+           M[i*NB+j]);
+#pragma omp taskwait
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption=LU utilisant des tâches avec dépendances,frame=tlrb,label=lst:kastors:sparseLU-deps]{lst:kastors:sparseLU-deps}
+for (k=0; k<NB; k++) {
+#pragma omp task untied shared(M)\
+    depend(inout: M[k*NB+k:BS*BS])
+  lu0(M[k*NB+k]);
+  for (j=k+1; j<NB; j++)
+#pragma omp task untied shared(M)\
+    depend(in: M[k*NB+k:BS*BS])\
+    depend(inout: M[k*NB+j:BS*BS])
+    fwd(M[k*NB+k], M[k*NB+j]);
+
+  for (i=k+1; i<NB; i++)
+#pragma omp task untied shared(M)\
+    depend(in: M[k*NB+k:BS*BS])\
+    depend(inout: M[i*NB+k:BS*BS])
+    bdiv(M[k*NB+k], M[i*NB+k]);
+
+  for (i=k+1; i<NB; i++)
+    for (j=k+1; j<NB; j++)
+#pragma omp task untied shared(M)\
+   depend(in: M[i*NB+k:BS*BS])\
+   depend(in: M[k*NB+j:BS*BS])\
+   depend(inout: M[i*NB+j:BS*BS])
+    bmod(M[i*NB+k],M[k*NB+j],M[i*NB+j]);
+}
+\end{lstlisting}
+
+Cette application calcule la factorisation LU d'une matrice creuse.
+Nous avons modifié l'implémentation originale des BOTS pour ajouter des dépendances de données.
+Ces modificiations sont décrites dans les listings~\ref{lst:kastors:sparseLU} and~\ref{lst:kastors:sparseLU-deps}.
+
+\subsubsection{Strassen}
+
+L'application Strassen utilise des décompositions de matrices pour calculer le produit de grandes matrices denses.
+De manière similaire à SparseLU, nous avons modifié l'implémentation des BOTS pour ajouter du parallélisme au niveau des additions dans l'algorithme, et nous avons exprimé des dépendances de données plutôt que d'utiliser une synchronisation à base de |taskwait|.
+
+
+\subsection{Un apperçu des performances}
+
+TODO : ajouter des courbes, des détails sur les compilos/runtimes utilisés, et faire une première visualisation de ce qu'apporte les dépendances.
+
 \subsection{Étude de cas : Cholesky}
+
+TODO : décrire en détail l'algorithme de Cholesky, et faire un point sur les différentes performances que l'on obtient en fonction de comment on fait varier l'initialisation de données.
+
 
