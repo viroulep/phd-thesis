@@ -19,13 +19,23 @@ Un scenario est défini de la manière suivante :
  \item Un ensemble de caractéristiques à observer
 \end{itemize}
 
+Cette définition très générique permet beaucoup de flexibilité, et les sections suivantes précisent les différentes caractéristiques de ces points, ainsi que des exemples concrêt d'utilisation.
+
+Il est important que le format de description d'un scenario soit humainement lisible, et ne conduise pas à une recompilation systématique du programme. C'est donc une description en YAML qui a été choisie.
+
 \subsubsection{Données et variables}
 
-L'utilisateur fourni les noms et type des variables utilisées en paramètres des différents noyaux.
-Ces variables peuvent être des constantes, ou être initialisées par une action dans le scénario.
+Elles sont indispensables car c'est la dessus que vont se baser les actions du scenario.
 
-Voici un exemple de déclaration de données :
-\begin{lstlisting}[language=Ruby]
+L'utilisateur doit fournir les noms et type des variables utilisées en paramètres des différents noyaux, elles peuvent être réutilisées par différents noyaux, mais dans tous les cas l'utilisateur est le seul responsable de leur gestion.
+
+En pratique ces variables peuvent soit être des constantes, ou bien être initialisées par une action dans le scénario.
+
+Si on imagine l'exemple d'un scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un coeur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille de bloc, |block_size|.
+
+Voici concrêtement à quoi ressemblerait la déclaration de ces données :
+
+\begin{lstlisting}[language=yaml]
 - a:
   - type: "double *"
 - b:
@@ -39,73 +49,79 @@ Voici un exemple de déclaration de données :
 
 \subsubsection{Actions}
 
+C'est là où on décrit effectivement les noyaux exécutés au cours du scénario.
 L'utilisateur indique une série d'actions à exécuter, et avec quels paramètres.
-Une action peut avoir les caractéristiques suivantes :
+
+Chaque action peut avoir les caractéristiques suivantes :
 \begin{itemize}
-  \item repeat
-  \item sync
-  \item kernel: action name
-  \item params: list of variables
-  \item core: le coeur
+  \item core: nombre entier indiquant le coeur sur lequel exécuter l'action.
+  \item kernel: chaine de caractères avec le nom de l'action, correspondant à un noyau connu du programme.
+  \item params: liste de variables à passer à l'action, leur nom doit correspondre à des données déclarées dans la section précédente.
+  \item repeat: nombre entier indiquant le nombre de fois que cette action doit être répétée.
+  \item sync: booléen indiquant s'il faut synchroniser le démarrage de cette action avec celui des autres actions présentes dans les file d'attente des autres coeurs.
 \end{itemize}
 
-Ces actions correspondent à des fonctions connues par l'outil, que l'utilisateur peut aisément ajouter.
+Si on continue dans l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice, le lancement du dgemm une fois que ces matrices sont initialisées.
+Afin d'avoir une mesure plus précise du comportement du noyau, on peut indiquer une répétition du noyau, ici on choisi 50 pour l'exemple.
 
-Voici un exemple de déclaration d'actions, utilisant les données ci dessus :
-\begin{lstlisting}[language=Ruby]
+Voici en pratique à quoi ressemblerait un tel scenario :
+\begin{lstlisting}[language=yaml]
   actions: 
-  - repeat: 1
+  - kernel: init_blas_bloc
     sync: false
-    kernel: init_blas_bloc
     params: 
     - a
     - block_size
     core: 0
-  - repeat: 1
+    # Pour l'initialisation, un seul appel suffit
+    repeat: 1
+  - kernel: init_blas_bloc
     sync: false
-    kernel: init_blas_bloc
     params: 
     - b
     - block_size
     core: 0
-  - repeat: 1
+    repeat: 1
+  - kernel: init_blas_bloc
     sync: false
-    kernel: init_blas_bloc
     params: 
     - c
     - block_size
     core: 0
-  - repeat: 50
-    sync: true
-    kernel: dgemm
+    repeat: 1
+  - kernel: dgemm
+    sync: false
     params: 
     - a
     - b
     - c
     - block_size
     core: 0
+    # Ici c'est le noyau de calcul, on veut donc le repeter
+    repeat: 50
 \end{lstlisting}
 
-\subsubsection{Observeurs}
+Simplement exécuter ces actions ne nous donnera pas grand chose, il faut donc définir un ensemble de paramètres à observer.
 
-Exemples de caractéristiques observables :
+\subsubsection{Observateurs}
+
+L'outil propose un certain nombre de caractéristiques observables :
 
 \begin{itemize}
-  \item temps passé dans l'action (ms)
-  \item performance personalisé (gflops)
-  \item compteurs de perf
+  \item le temps passé dans l'action (en millisecondes).
+  \item pour les noyaux d'algèbre linéaire, la performance de l'action en Gflops.
+  \item des compteurs de performances à travers PAPI
 \end{itemize}
 
-Example de section dans le scenario :
-\begin{lstlisting}[language=Ruby]
+En continuant sur notre exemple, voici à quoi ressemblerait la section du scénario si nous souhaitions observer la performance de la multiplication de matrice en Gflops, le nombre de cycles passé dans l'action, ainsi que le nombre de cache miss au niveau 3 généré par l'action.
+
+\begin{lstlisting}[language=yaml]
 flops_dgemm:
+# le nombre de flops depend de la taille de bloc, il faut donc la donner en parametre
 - block_size
 papi:
+- PAPI_TOT_CYC
 - PAPI_L3_TCM
-- PAPI_L3_DCR
-- PAPI_L3_DCW
-time:
-- ms
 \end{lstlisting}
 
 \subsection{Design de l'outil}
