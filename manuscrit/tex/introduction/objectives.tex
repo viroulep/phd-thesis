@@ -1,28 +1,35 @@
-\section{Objectives}\label{sec:intro:objectives}
+\section{Objectifs}\label{sec:intro:objectives}
 
-Amongst all the possible research topics mentioned above, the scope of this thesis was restricted in the following ways:
+Parmi tous les sujets de recherche mentionnés ci dessus, le contexte de cette thèse a été restreint des manières suivantes :
 
+\paragraph{Architecture cible}
+La thèse se concentre sur l'exploitation des machines à mémoire partagée, de type NUMA.
+
+\paragraph{Modèle de programmation}
+La programmation par flot de données est un des meilleurs moyens pour exploiter pleinement le potentiel de ces architectures.
+Dans ce type de modèle de programmation, l'utilisateur décrit son programme à l'aide de \emph{tâche} - la plus petite unité d'exécution possible - qui consomment et produise des données.
+Si une tâche consomme une donnée produite par une tâche précédente, cela créer un lien entre elles, que l'ont appelle une \emph{dépendance}.
+L'ensemble du programme peut être représenté par un graphe de tâches liées par des dépendances, et l'exécution de ce graphe est confié à un programme spécifique que l'on appelle \emph{support exécutif}.
+
+Un certain nombre de langage de programmation utilise ce modèle de programmation, cette thèse se concentre sur le standard de-facto pour cibler les architectures NUMA : OpenMP.
+
+Avec ces restrictions, les objectifs de la thèse étaient double :
 \begin{itemize}
-  \item The thesis was focused on shared memory, NUMA architectures
-  \item Several programming languages are available to target these architectures, however this thesis was focused on the de-facto standard: OpenMP.
+ \item Évaluer le langage OpenMP vis-à-vis des architectures actuelles.
+ \item Proposer et évaluer des évolutions au langage et aux différents logiciel, en particulier le support exécutif, afin d'améliorer les performances.
 \end{itemize}
 
-In this context, the objectives of the thesis were to:
+La plupart des travaux ont été réalisés sur des programmes par flot de données, même si certaines applications à base de boucles ont été étudiées.
+
+L'évaluation d'OpenMP a été réalisée avec plusieurs support exécutif et à donné lieu à la création d'une suite de benchmark, ainsi qu'un outil, NOMDEL4OUTIL, afin de faciliter l'exécution contrôlée de parties d'applications.
+
+Nous avons montré le manque de support au sein d'OpenMP pour cibler les architectures NUMA.
+Pour palier à ce problème, nous avons porté notre attention sur l'amélioration de l'usage des informations disponible au sein du support exécutif. Nous avons également proposé des moyens additionnels pour que le programmeur puisse donner plus d'information au support exécutif.
+
+Cela a donné lieu à deux autres contributions :
 \begin{itemize}
- \item Evaluate the language with regards to the current architectures.
- \item Propose and evaluate evolutions to the language and the softwares, specifically the runtime, in order to improve performances.
-\end{itemize}
-
-Additionally to that, most of the work has been done in the context of task-based application (TODO: ref section suivante?), even though some attention has been given to loop-based programs.
-
-The evaluation of the OpenMP language was conducted over several runtimes and lead to the design of a benchmark suite and a tool to facilitate the controlled execution of specific benchmarks.
-The lack of support in OpenMP to target NUMA architectures was highlighted.
-Parts of this thesis was focused on improving usage of the information available to the runtime, as well as on enabling the programmer to pass more information to the runtime.
-
-Which lead to two contributions:
-\begin{itemize}
- \item The proposal for an task-to-resource affinity clause in OpenMP
- \item Runtime extensions to take advantage of data locality, and better data distributions.
+ \item Une proposition de clause d'affinité entre tâche et ressource dans OpenMP.
+ \item Des extensions du support exécutif pour améliorer la distributions des données, et tirer parti de la localité des données.
 \end{itemize}
 
 

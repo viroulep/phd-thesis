@@ -1,6 +1,6 @@
 \section{Exécution précise de noyaux}\label{sec:contribs:outil}
 
-\subsection{Motivation}
+\subsection{Besoins pour un outil spécifique}
 
 Les résultats de la section précédente montrent que l'on peut tout à fait étudier le comportement global d'une application sur une machine. On peut évidemment observer aussi les variations de ce comportement global lorsqu'on change certains détails, via l'utilisation par exemple de \emph{numactl}.
 
@@ -17,12 +17,15 @@ Une fois cela fait, cela permettra d'identifier des potentielles variations de c
 
 C'est à ce besoin que répond NOMDEL4OUTIL : permettre à l'utilisateur de définir ce qu'il exécute et où, et garantir cette exécution, avec un certain nombre de variables observables.
 
-
-TODO : dans la suite on va parler de scenario, qu'est ce que c'est ?
+Dans la suite de ce chapitre, on appellera l'ensemble des paramètres décrivant cette expérience un \emph{scenario}.
 
 \subsection{Description d'un scenario}
 
-Un scenario est défini de la manière suivante :
+Ce qu'on appelle ici un \emph{scenario} n'est ni plus ni moins que la description d'une expérience.
+Par exemple on pourrait vouloir "observer les performances en gigaflops d'une multiplication de matrices carrées sur le coeur 0 d'une machine".
+C'est un scenario simple, et l'exemple que l'on prendra pour illustrer les points un peu plus formel qui vont suivre.
+
+En pratique un scenario est défini de la manière suivante :
 \begin{itemize}
  \item Un ensemble de données et variables
  \item Une liste d'actions à effectuer
@@ -41,7 +44,7 @@ L'utilisateur doit fournir les noms et type des variables utilisées en paramèt
 
 En pratique ces variables peuvent soit être des constantes, ou bien être initialisées par une action dans le scénario.
 
-Si on imagine l'exemple d'un scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un coeur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille de bloc, |block_size|.
+Pour revenir à l'exemple du scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un coeur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille de bloc, |block_size|.
 
 Voici concrêtement à quoi ressemblerait la déclaration de ces données :
 
@@ -157,23 +160,35 @@ Lorsque la dernière action du scenario est terminée, l'ensemble des données d
 
 \subsection{Exemples de noyaux}
 
-\subsubsection{Noyaux BLAS utilisés par Cholesky}
+\subsubsection{Test de bande passante}
+
+Noyau naïf pour estimer la bande passante noeud à noeud
 
 \subsubsection{dgemm naif}
 
 cf les perf plus haut, pour vérifier que le comportement des caches miss était pas lié à l'implem.
 
-\subsubsection{Test de bande passante}
-
-Noyau naïf pour estimer la bande passante noeud à noeud
 
 \subsection{Application aux noyaux de Cholesky}
+
+On a identifié les noyaux BLAS important dans la section~\ref{chap:contribs:apps:kastors:cholesky}.
 
 \subsubsection{Quelles caractéristiques observer ?}
 Perf ctr, perfs tout court
 
-\subsection{Impact de la bibliothèque BLAS}
+\paragraph{Impact de la taille de bloc}
 
+TODO : ajouter des courbes
+Meilleur cas : tout local, quelques tailles < L2, < L3, > L3
+
+\paragraph{Impact des accès distants}
+
+TODO : ajouter des courbes
+Pire cas : tout distant, quelques tailles < L2, < L3, > L3
+
+\subsubsection{Impact de la bibliothèque BLAS}
+
+OpenBLAS, MKL, ATLAS
 matter for top perf, not for overall behavior
 
 \subsection{Conclusion : modélisation de base possible}

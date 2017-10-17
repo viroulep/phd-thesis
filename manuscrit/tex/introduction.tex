@@ -5,31 +5,74 @@
 \chapter{Introduction}
 \chaptertoc
 
-Computer science evolves fast, especially when it comes to the most basic and necessary element: the microprocessor.
-Until around 10 years ago, microprocessors manufacturers were able to increase the frequencies to increase the overall performances of the microprocessor.
-At some point it became less efficient, and if we look at how architectures changed since then, we can notice the focus of microprocessors manufacturers has moved from increasing the chip frequency to increasing the number of chips.
+Le monde de l'informatique évolue rapidement, qui plus est quand il s'agit de la pièce maitresse de la machine : le processeur !
 
-Some goals haven't changed:
- - we still want to exploit hardwares to the best of their potential, either energy-wise, performance-wise, or both.
- - we still need more powerful machines to make programs run faster and cheaper.
+Jusqu'à il y a environ 10 ans, les fabricants de processeurs se livraient à une course à la plus haute fréquence.
+Jusqu'au moment où ce n'était plus rentable au point de vue thermique ou énergétique. À partir de ce moment là, les fabricants ont basculé leur intérêt vers la multiplication des coeurs au sein d'un processeur, et ont stabilisé la fréquence individuelle de chaque coeur.
 
-However a lot of related issues have changed: we can't deal with multiple processors just the same way as we deal with a single processor, and we can't deal with thousands of processors just the same way as we deal with 10 processors.
+Pour illustrer ce phénomène il suffit de regarder par exemple la gamme de produits proposés par Intel : la première série de Pentium 4 - Willamette - lancée par Intel en 2000 avait un unique coeur cadencé à 1.5GHz. 6 ans plus tard, la dernière génération de Pentium 4 - Cedar Mill - avait également un seul coeur, mais cette fois cadencé à 3.6 GHz.
 
-TODO: où et comment formuler la distinction entre mémoire partagée et mémoire distribuée ?
+10 ans plus tard en 2016, les processeurs de la génération Skylake d'Intel i7 ne dépassent pas les 3.4GHz de fréquence, mais tous ont 4 coeurs physiques au lieu d'un seul.
 
-This increase in the number of processing units has lead to several other changes :
+Pendant ce laps de temps, certains objectifs sont restés les même :
+\begin{itemize}
+  \item on souhaite toujours exploiter le matériel au plus fort de leur potentiel, que ce soit du point de vue énergétique, du point de vue de la performance, ou du compromis des deux.
+  \item on souhaite toujours créer des machines de plus en plus puissantes, afin que les programmes s'exécutent plus vite.
+\end{itemize}
 
- - Memory: increasing the number of CPUs accessing the same RAM increases the contention on the memory bus. To accommodate a higher number of CPUs while still avoiding too much contention, most of recent shared memory architectures split their memory into several parts, usually named "nodes". Each of these node has their own memory controller, as well as a group of CPUs. These nodes are linked together through an interconnect, so that the operating system only see one single big machine.
- It is faster for a CPU to access the memory on its own node than the one on a remote node, which is why we refer to this kind of architecture as "Non-Uniform Memory Access" (NUMA).
+En revanche un certains nombres de problématiques sont apparues : l'exploitation efficace de plusieurs processeurs est complètement différentes de l'exploitation d'un seul processeurs.
+
+Lorsqu'on traite avec un seul coeur, on s'attend à ce que le compilateur optimise le code séquentiel en fonction de l'architecture.
+Pour exploiter plusieurs coeurs il faut pouvoir exprimer du \emph{parallélisme} au sein de l'application, c'est à dire décrire les parties séquentielles du programme qui veut s'exécuter en même temps, tout en gardant un comportement correct du programme.
+Le compilateur ne peut pas spontanément trouver ça, il faut donc une modification explicite de la part du programmeur.
+
+On peut avoir plusieurs coeurs au sein d'un même processeur, plusieurs processeurs au sein d'une machine, mais on peut aussi avoir plusieurs machines inter connectées, qui forme une seule "grosse" machine que l'on appelle \emph{supercalculateur}.
+
+La manière d'exprimer du parallélisme est différente en fonction de quel type de machine on cible :
+\begin{itemize}
+  \item Lorsque l'on cible une seule machine avec un ou plusieurs processeurs, généralement tout les coeurs des processeurs peuvent accéder de manière transparente à la mémoire : on dit que ce type d'architecture est à \emph{mémoire partagée}.
+  \item Lorsque l'on cible un supercalculateur, chaque machine aura une \emph{mémoire partagée}, mais ne verra que sa propre mémoire, et pas celle des autres machines. Cela ne les empêche évidement pas de se transférer des données entre elles. On dit que ce type d'architecture est à \emph{mémoire distribuée}.
+\end{itemize}
+
+L'augmentation du nombre de coeurs par processeur et par machine a donné naissance à plusieurs problématiques et thèmes de recherche :
+
+\paragraph{La mémoire}
+L'augmentation du nombres de coeurs accédant à la même mémoire partagée augmente la contention sur le bus mémoire pour y accéder.
+Pour pouvoir gérer un plus grand nombre de coeurs tout en limitant la contention, la majorité des architectures à mémoire partagée récente divisent physiquement la mémoire en sous parties appelées \emph{noeud}.
+Chacun de ces noeuds possède son propre controleur mémoire, ainsi qu'un sous ensemble des coeurs du système.
+Ces noeuds sont liés ensemble via un système d'interconnexion, afin que cette division soit transparent pour le système d'exploitation, qui ne voit toujours qu'une unique machine.
+Pour un coeur donné, l'accès à la mémoire située sur son propre noeud est plus rapide que sur l'un des autres noeuds. Cela veut donc dire que le temps d'accès à la mémoire n'est pas uniforme en fonction de quelle partie est ciblée.
+On qualifie ce type d'architectures de "NUMA", pour "Non-Uniform Memory Access".
+
+\paragraph{L'énergie}
+
  %Note : ~5000 kWh par an par foyer (soit ~570 watts), les rangs 1 et 2 peuvent consommer ~15kW
- - Energy: regardless of if we are talking about a small 16 cores shared memory computer or a big 1 million cores supercomputer, energy is a critical factor. Constantly increasing the number of processing units won't continue to happen without taking care of the energy issue: we need the power of ~25 families in France to power some of the first supercomputers of the top500.
- - Language: regular languages such as C/C++/Fortran are designed for sequential execution. When targeting such large architectures, programmers need to express parallelism, so new languages or extensions to existing languages have to be designed and experimented. Preferably in a portable way.
- - Parallel programming languages rely on a specific software - the runtime - to take care of the load balancing of the program, and make sure every resource is used at its best. Increasing the number of working cores can lead to more complex synchronizations and scheduling decision.
- - Other hardware changes: supercomputers use a mix of CPUs and GPUs, FPGA. Faster interconnect for supercomputer. Faster cache coherent interconnect for shared memory.
+Que l'on utilise une petite machine à mémoire partagée de 16 coeurs, ou un gros supercalculateur avec 1 millions de coeurs, faire attention à l'énergie consommée est critique.
+L'augmentation continue du nombre de coeurs ne pourra pas se faire sans porter une attention particulière à l'énergie : aujourd'hui il faut l'équivalent de la puissance d'environ 25 familles française pour faire tourner certains des premiers supercalculateur du top500.
+
+\paragraph{Les outils}
+
+Les langages de programmation "classique" tels que C/C++/Fortran sont principalement axés sur l'exécution séquentielle du code.
+Les programmeurs ont besoin d'exprimer du parallélisme, donc des extensions aux langages existant ou des nouveaux langages doivent être créés et testés. Si possible de manière portable.
+
+Ces langages ou extensions reposent très souvent sur un programme spécifique pour exécuter une application : le support exécutif.
+Le but d'un programme de ce type est d'optimiser l'utilisation des ressources disponibles, tout en conservant la sémantique et la "correctness" (TODO : trouver une traduction) du programme.
+Augmenter le nombre de ressources signifient plus de synchronisations, et plus de choix d'ordonnancement à effectuer.
+
+\paragraph{Le matériel dédié}
+
+Une partie de l'optimisation des machines passe par l'amélioration du matériel existant.
+
+Il est commun d'utiliser plusieurs types de matériel pour pouvoir répondre efficacement à des besoins spécifiques, c'est pour cela que les supercalculateurs actuels embarquent généralement un ensemble d'accélérateurs tels que des GPUs et des FPGAs, en plus des CPUs traditionnels.
+
+Les systèmes d'interconnexion sont aussi de bon candidats pour des améliorations et optimisations.
+Améliorer la latence et la bande passante entre plusieurs machines ou au sein d'une même machines permet toujours d'améliorer les performances, et les technologies impliquées sont très différentes.
 
 
 
-We can see that there are a lot of opportunities for research about the general "High Performance Computing" topic, and the next section will describe what was the objectives of this thesis.
+Comme on peut le voir il y a un grand nombre d'opportunités pour faire de la recherche dans le calcul haute performance.
+La section suivante sera dédiée à préciser les différents thèmes de recherche qui ont été abordés au cours de la thèse, préciser le contexte dans laquelle elle s'est déroulée, et préciser les objectifs auxquels elles devaient répondre.
+
 
 
 \input{tex/introduction/objectives}
