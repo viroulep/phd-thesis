@@ -1,17 +1,90 @@
-\section{Shared memory architectures}\label{sec:context:numa}
+\section{Architectures à mémoire partagée}\label{sec:context:numa}
 
-causer du bas niveau os
+La majorité des architectures à mémoire partagée récentes sont en fait divisées en plusieurs sous parties - appelées noeuds - interconnectées entre elles, de manière transparente pour le système d'exploitation.
 
-\subsection{Single node design}
+Pour prendre un exemple assez simple, on peut imaginer une machine vu par le système d'exploitation comme ayant 16 coeurs et 64 Go de RAM, qui serait en fait composée de deux noeuds, ayant chacun 8 coeurs et 32 Go de RAM.
 
-Talk about cache hierarchy, maybe give some number and a drawing of how it looks like?
+Le temps d'accès à une zone spécifique de la mémoire dépend du coeur effectuant l'accès.
+En prenant l'exemple de la machine simple décrite ci dessus, et en numérotant les noeuds 0 et 1, il sera plus rapide d'accéder aux 32 Go situé sur le noeud 0 depuis le noeud 0 que depuis le noeud 1.
 
-Typically 3 level of caches (explain size, performances)
+Les sections suivantes décrivent les caractéristiques techniques communes d'un noeud, ainsi que les spécificités liées à l'interconnexion de ces noeuds.
 
-Efficient sequencial code should focus on improving L1/L2 usage.
+\subsection{Descriptions d'un noeuds}
 
-Our interest for parallel programming will focus on L3, see next section.
+Il n'y a pas de nombre standard de coeurs pour un noeud, ni même de quantité standard de RAM associée.
 
-\subsection{Interconnecting nodes}
+En revanche certaines propriétés se retrouvent sur toutes les machines NUMA.
 
-Talk about how nodes are interconnected with each other, give some numbers (?) and some drawing.
+\subsubsection{Les caches}
+Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que pour la mémoire centrale, mais dont la capacité est beaucoup plus restreinte.
+
+\paragraph{Fonctionnement}
+
+TODO : expliquer comment ça se passe ? requète sur un octet -> série de cache miss, puis chargement en cache.
+écriture => dirty => eviction.
+Parler des politiques d'éviction ?
+Parler de l'associativité ?
+
+Au niveau des accès le fonctionnement est légèrement différent : plutôt que de lire uniquement un octet, c'est généralement une partie fixe de la mémoire contenant cet octet qui est chargée.
+On appelle cette quantité une \emph{ligne de cache}, et un exemple de taille standard pour une ligne de cache est 64 octets (8 double).
+
+\paragraph{Niveaux de caches}
+
+Il y a en général 3 niveaux de cache dans ces architectures :
+\begin{itemize}
+  \item L1 : C'est le cache le plus "proche" du CPU, mais aussi le plus petit - généralement quelques Ko. Il est généralement découpé en deux parties distinctes : une partie pour les instructions, une autre pour les données.
+  \item L2 : Ce cache est un peu plus long à accéder que le L1, mais est un peu plus grand. Pour donner une taille représentative des architectures modernes on peut donner 256 Ko.
+  \item L3 : Ce cache est un peu plus long à accèdes que le L2, mais est beaucoup plus grand. En général il fait plusieurs Mo.
+\end{itemize}
+
+En fonction des fabricants, ces caches peuvent être soit \emph{inclusifs} (c'est à dire que toutes les données présentes dans le L1 sont également présentes dans le L2), ou \emph{exclusifs} (c'est à dire qu'une donnée est garantie de n'être présente que dans l'un des caches).
+
+Au sein d'un noeud, le L3 est généralement partagé par tous les coeurs, alors que les caches L1 et L2 sont spécifiques à un coeur.
+
+En général les développeurs d'applications pour le HPC accordent beaucoup d'attention à l'optimisation de leur application pour que les parties de code séquentiel critique utilisent des données qui tiennent dans le L1/L2.
+De même, beaucoup d'optimisations au sein des compilateurs visent également cet objectif.
+
+Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les coeurs d'un même noeud.
+
+\subsubsection{Hyperthreading}
+
+Chaque coeur possède un certain nombre d'UAL (Unité Arithmétique et Logique) qui lui sont privées, lorsqu'il est en attente d'une donnée de la mémoire centrale, ces UALs ne sont pas utilisées, et des cycles CPU sont donc "perdus" à ne rien faire.
+
+Afin de maximiser l'utilisation de ces ressources, certains processeurs Intel sont équipés de la technologie \emph{hyperthreading}.
+Le concept est assez simple : avoir deux coeurs logiques (\emph{hyperthreads}) associés à un seul coeur physique.
+De cette manière lorsqu'un thread est en attente sur une donnée, le second peut profiter des UALs disponibles.
+
+Pour des tâches peu gourmandes en ressources ou utilisant beaucoup de données, cela peut effectivement se traduire par un gain de performances, mais pour le cas des applications HPC il faut regarder le type d'application utilisées pour savoir si on peut espérer un gain ou non.
+
+En particulier les caches L1 et L2 sont partagés par les deux hyperthreads, donc si le code séquentiel généré est optimisé pour les tailles de caches correspondant, exécuter le même type de code séquentiel sur deux hyperthreads va entrainer du \emph{cache trashing} et des baisses de performance.
+
+De même si l'application est compute-intensive, l'hyperthreading n'apportera pas grand chose, voir rien.
+
+L'hyperthreading est généralement une option que l'on peut désactiver dans le BIOS de la machine.
+
+
+\subsection{Interconnexion des noeuds}
+
+La partie la plus importante d'une machine NUMA est le système d'interconnexion entre les différents noeuds.
+
+C'est cette partie qui va déterminer à quel point cela va être couteux de faire un accès mémoire sur un noeud distant, et donc à quel point le côté NUMA de la machine (le \emph{facteur NUMA} (là si je cite pas la thèse de François je me fais tapé dessus ?)) va impacter les performances d'une application.
+
+Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents noeuds par le matériel, est n'est pas la responsabilité du programmeur.
+
+TODO : parler de la hiérarchie possible de l'interconnexion.
+
+TODO : donner quelques chiffres à titre d'exemple ?
+
+
+\subsection{Particularité au niveau du système d'exploitation}
+
+
+Parler de la taille de page (4K vs 2M), et de l'impact que ça a.
+
+Parler du fait que le système voit une machine plate.
+
+Parler d'hwloc ?
+
+Parler de comment le système gère l'hyperthreading ? (mal, de toute façon on pin les threads)
+
+
