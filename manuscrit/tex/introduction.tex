@@ -9,17 +9,67 @@ De quoi il faut parler dans l'intro (dans l'ordre) :
 
 \begin{itemize}
   \item décrire exemples d'applications de simulation
+  \begin{itemize}
+    \item météo
+    \item prévision de séismes
+    \item collisions
+    \item écoulement de fluide
+    \item militaire
+  \end{itemize}
   \item les simulations tournent sur des supercalculateurs, et ils en veulent toujours plus
+  \begin{itemize}
+    \item Plus grosses simulations
+    \item Plus précise
+    \item Ou tout simplement plus de simulations dans le même temps, donc "on" satisfait plus de monde
+  \end{itemize}
   \item les supercalculateurs sont composés de plusieurs machines
-  \item chaque machine est SMP
+  \begin{itemize}
+    \item chaque machine est SMP
+    \item assemblée ensemble pour obtenir une grosse puissance de calcul
+    \item ces machines peuvent avoir des accélérateurs
+    \item Exemple de supercalculateur (parler du nombre de coeur pour enchainer sur la suite)
+  \end{itemize}
   \item description de l'évolution des processeurs (parallélisation)
+  \begin{itemize}
+    \item cf partie rédigée de l'intro sur processeur mono coeur -> processeurs multi coeur
+  \end{itemize}
   \item au final maintenant toutes les machines SMP sont NUMA
-  \item ces machines peuvent avoir des accélérateurs
+  \begin{itemize}
+    \item décrire succinctement le fonctionnement
+    \item spécificité importante : temps d'exécution dépend du placement
+  \end{itemize}
   \item Le but c'est d'améliorer l'exploitation de ces machines pour améliorer l'ensemble
+  \begin{itemize}
+    \item améliorer perf supercalculateur = améliorer perf NUMA
+    \item améliorer perf NUMA = améliorer l'utilisation des noeuds
+    \item => meilleur load balancing
+  \end{itemize}
   \item et en fait le data flow c'est cool pour exploiter ce genre d'architectures, parce qu'on veut du dynamique
+  \begin{itemize}
+    \item statique (via des for, ou des schedules calculés)
+    \item tâche avec synchronisations explicite
+    \item en pratique les tâches à grain fin permettent de maximiser l'utilisation des ressources (moins de temps à synchroniser ou rien faire)
+    \item parler du vol de travail : le concept de toujours essayer d'être actif est bien vendeur, on parlera des problèmes de synchro plus tard
+    \item insister sur le fait que pour le le vol soit efficace il faut un maximum de travail (=le grain fin c'est bien, en plus une tâche c'est pas cher !). (mais quand même pas trop, sinon on passe trop de temps à les gérer)
+  \end{itemize}
   \item les standards de programmation parallèle ont commencé à évoluer
+  \begin{itemize}
+    \item début avec des "simples" for
+    \item ajout des tâches, puis des dépendances dans openmp
+  \end{itemize}
   \item pour l'instant les perfs c'est nul
+  \begin{itemize}
+    \item problème : standard/modèles de programmation actuels pas assez "NUMA-aware"
+    \item implique : gros efforts pour le programmeur pour "corriger" ça, via librairies spécifiques
+    \item "meilleurs" outils : distribution des pages, rendant tous le monde "equally bad".
+  \end{itemize}
   \item cette thèse est fantastique pour plusieurs raison : on peut mieux comprendre comment les applications elles marchent, du coup le programmeur il peut mieux programmer, et du coup le support exécutif il peut mieux exécuter.
+  \begin{itemize}
+    \item évident qu'il y a de la marge à gagner
+    \item aider le programmeur (et le développeur de runtime en fait) à comprendre comment le NUMA réagit aux différents type d'application
+    \item identifier ce que le programmeur peut exprimer en plus pour faciliter de travail du runtime (affinité, tailles des données manipulées, zone d'initialisation)
+    \item indiquer les différentes améliorations du runtime possible (prendre en compte la localité si affinité)
+  \end{itemize}
 \end{itemize}
 
 
