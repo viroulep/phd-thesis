@@ -1,69 +1,86 @@
-\section{OpenMP, evolution of a programming model}\label{sec:context:openmp}
+\section{Évolution d'un modèle de programmation : OpenMP}\label{sec:context:openmp}
 
 TODO: où et comment formuler le fait qu'il faut d'une part maximiser la performance séquentielle, mais aussi maximiser le parallélisme
 
-OpenMP~\cite{openmp40} has been the de-facto standard for shared-memory parallel proramming, and has been adapted as the hardware evolved.
+OpenMP~\cite{openmp40} est le standard de-facto pour les machines à mémoire partagée, au fur et à mesure que le matériel a évolué, le standard a évolué avec lui.
 
-\subsection{Loop constructs}
+\subsection{Boucles}
 
-From the very beginning OpenMP has been designed as a fork-join model (TODO: include a graph), and was mainly used to parallelize highly regular loops.
+OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (TODO: voir graph), et l'utilisation de base ciblait la parallélisation de boucles régulières.
 
-It works the following way: the program is executed sequentially until a \emph{worksharing} construct (such as a for loop) is encountered.
+Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (cela peut être par exemple une boucle).
 
-From this point, several threads are created to execute the construct in parallel.
+À partir de là, plusieurs threads sont créés (ou réutilisés) pour exécuter la construction en parallèle. Cet ensemble de threads forme une \emph{team} de thread pour la région parallèle.
 
-At the end of the construct, all the threads synchronize and the sequential execution is resumed.
+À la fin de la région parallèle, tous les threads se synchronisent et l'exécution séquentielle est reprise.
 
-The programmer can control how many threads can be used, as well as how the loop iterations are distributed among them.
+Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{team}, ainsi que la manière dont sont attribuées les itérations de la boucle.
 
 TODO: parler de static, dynamic, etc ?
 
-During the execution of the program, a dedicated software is in charge of load balancing, and assigning work to threads: the \emph{runtime}.
+Pendant l'exécution de l'application c'est un autre programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différent threads.
 
-If the OpenMP language is unique, several runtimes exist, and the performances of an application directly depend on which one is used.
+Le langage OpenMP est standard et bien défini, mais plusieurs support exécutifs existent et les performances dépendent directement de celui ci.
 
+Pour complémenter le langage, OpenMP propose également plusieurs fonctionnalités à travers une API. Il est possible par exemple de récupérer dynamiquement le nombre total de threads, l'indice du thread courant, ou encore d'ajuster l'ordonnanceur de boucles.
 
-To provide more control to the user, several functions are provided by the OpenMP API: for instance getting the total number of threads, the current thread, ...
-
-All existed in the earliest version of OpenMP.
-
-With the hardware and users' needs evolving, the OpenMP committee added the concept of \emph{task} to OpenMP, starting from version 3.0.
+Tout cela existe depuis les toutes premières versions d'OpenMP.
+Avec l'évolution du matériel et des besoins des utilisateurs, le comité d'architecture d'OpenMP a ajouté le concept de \emph{tâche} à partir de la version 3.0.
 
 
-\subsection{Tasking}
 
-Task-based parallel programming environments provide ways of expressing fine grain parallelism that can be dynamically assigned to processors at runtime.
+\subsection{Tâches}
 
-An OpenMP \emph{task} can be seen as an independent \emph{unit of work} an OpenMP thread can execute.
-Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region.
-As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were too fine grain to be parallelized using only threads.
+Les modèles de programmation à base de tâches permettent d'exprimer du parallélisme à grain fin. L'avantage majeur de ce modèle est qu'il permet au support exécutif d'assigner dynamiquement les différentes tâches, s'adaptant ainsi très bien aux divers temps d'exécution des tâches.
 
-The synchronization of OpenMP 3.0 tasks is performed thanks to the |taskwait| keyword that waits for the completion of all the tasks generated from the current OpenMP parallel region.
+Une \emph{tâche} OpenMP peut être vue comme la plus petite \emph{quantité de travail} qu'un thread OpenMP peut exécuter.
+Les tâches peuvent être créées par un thread OpenMP et exécutées par n'importe quel thread de la région parallèle.
+Comme la gestion des tâches à l'exécution du programme est beaucoup plus économique que de créer et synchroniser des threads, le développeur peut pousser la parallélisation de son application encore plus loin : il peut considérer la parallélisation de portions de code qui avaient un grain trop fin pour être parallélisées avec des threads.
 
-On one hand, the application programmer is responsible for creating and synchronizing OpenMP tasks explicitly.
+Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point, avant de reprendre l'exécution.
 
-On the other hand, the runtime system is in charge of correctly assigning tasks to threads during the application execution.
+Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
 
-OpenMP 4.0 has pushed the concept of task further introducing the |depend| keyword to specify the access mode of each shared variable a task will access during its execution.
+La version 4.0 d'OpenMP pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
 
-Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task.
+Le mode d'accès peut être soit |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
 
-This information is then processed by the underlying runtime system to decide whether a task is ready for execution or should first wait for the completion of other ones.
+Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou si il faut d'abord attendre la complétion d'une ou plusieurs autres tâches.
 
 
-\subsection{Vectorization}
+\subsection{Vectorisation}
+
+
+
+Pour cette section : ok + de parallélisme, mais ça c'est spécifiquement pour améliorer les perfs séquentielles
+
+TODO : faire plus de texte ?
 
 OpenMP 4.0 also brought in SIMD - Single Instruction Multiple Data - constructs.
 The aim was to provide a standard interface for vectorization instructions.
 
 
-\subsection{Accelerators}
+\subsection{Accélérateurs}
 
-Given more and more supercomputers feature a lot of accelerators (such as GPUs), OpenMP introduced support for accelerators through the |target| construct in OpenMP 4.0.
+La majorité des supercalculateurs intègrent des accélérateurs (comme des GPUs), et pour faciliter leur exploitation la construction |target| a été ajoutée au standard dans la version 4.0.
 
-Other standards for programming GPUs exists, such as OpenCL, OpenACC, or cuda (TODO: refs).
+TODO : faire plus de texte ?
 
-\subsection{Affinity}
+\subsection{Affinité}
 
-Talk about thread affinity, open on data affinity?
+La notion d'affinité de thread a été également ajoutée à la version 4.0 d'OpenMP.
+Il s'agit d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
 
+Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer.
+Le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|.
+Elle peut être une liste précise d'indice de coeurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
+
+Il n'y a pas de dépendances entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.
+
+Le contrôle de l'affectation des threads OpenMP aux \emph{places} se fait grâce à la variable d'environnement |OMP_PROC_BIND|.
+Elle peut prendre les valeurs suivantes : \emph{close}, \emph{spread}, \emph{master}.
+
+Avec la valeur \emph{close}, les threads seront successivement affectés aux places les plus proches les unes des autres. Par exemple si les places sont \emph{"cores"} - l'ensemble des coeurs de la machine, et que la machine a deux sockets de 8 coeurs, les threads OpenMP seront affectés successivement aux coeurs 0 (sur le socket 0) jusqu'à 7 (toujours sur le socket 0), puis 8 (sur le socket 1) jusqu'à 15 (sur le socket 1).
+Avec la valeur \emph{spread}, l'ordre d'affectation sera alors le coeur 0 (sur le socket 0), puis 8 (socket 1), puis 1 (socket 0), puis 9 (socket 1), etc...
+Avec la valeur \emph{master}, les threads sont placés sur la même place que le thread master.
+L'exemple typique pour cette valeur est la gestion de régions parallèles imbriquées : en affectant la valeur "sockets" à |OMP_PLACES|, on peut avoir deux régions parallèles imbriquées dont les threads sont correctement affectés aux deux sockets (les deux threads master est affectés à deux sockets distincts, mais pour chaque région tous les threads sont associées au même socket).
