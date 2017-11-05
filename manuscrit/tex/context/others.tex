@@ -1,11 +1,73 @@
 \section{Modèle de programmation à base de tâches}\label{sec:context:others}
 
-Parler plutôt des task-based programming model, en faisant une description assez générique, citant des exemples, et en enchainant sur une description/évolution détaillée d'openmp ?
+Il existe de nombreux modèles de programmation à base de tâches, certaines fonctionnalités diffèrent, mais les concepts de base restent les même, et seront détaillés ci dessous.
 
-\subsection{Cilk}
+\subsection{L'unité de base : la tâche}
+
+Une tâche peut être vue comme la plus petite quantité de travail exécutable sur un processeur.
+En pratique c'est une section de code bien définie du programme, et cela peut être une simple instruction, comme une fonction très complexe.
+
+\subsection{Moyens de synchronisation}
+
+Lorsqu'on parle de programmation parallèle, il faut bien évidemment parler de synchronisation.
+Les différentes tâches définies par l'utilisateur vont être exécutées en parallèle sur la machine, mais dans beaucoup de cas certaines tâches doivent attendre la complétion d'une ou plusieurs tâches avant de pouvoir commencer à être exécutée.
+
+Il y a deux grand types de synchronisations pour la programmation à base de tâche :
+
+\begin{itemize}
+  \item une barrière pure et simple, où tous les threads devront se rejoindre avant de continuer l'exécution des tâches. Dans l'exemple du listing~\ref{lst:context:task-wait}, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
+  \item ajouter des dépendances de données, induisant un ordre sur l'exécution des tâches. Dans le listing~\ref{lst:context:task-dep}, la tâche C sera également garantie d'être exécutée \textbf{après} les tâches A et B, car elle consomme des données que A et B produisent.
+\end{itemize}
+
+\begin{lstlisting}[caption=Synchronisation via une barrière,label=lst:context:task-wait]
+void foo() {
+  #pragma omp task
+  A();
+  #pragma omp task
+  B();
+  #pragma omp taskwait
+  #pragma omp task
+  C();
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Synchronisation via des dépendances,label=lst:context:task-dep]
+void foo() {
+  int a;
+  int b;
+  #pragma omp task depend(out: a)
+  A(&a);
+  #pragma omp task depend(out: b)
+  B(&b);
+  #pragma omp task depend(in: a, b)
+  C(a, b);
+}
+\end{lstlisting}
+
+Les deux ont des avantages et des inconvénients : la barrière représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
+Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
+
+\subsection{Quantité de travail et granularité}
+
+Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources et réduire l'overhead du support exécutif est de trouver le bon \emph{grain} de tâche.
+
+Les tâches doivent être suffisamment petites pour proposer le maximum de parallèlisme, mais pas trop pour ne pas surcharger le support exécutif.
+
+TODO : exemple typique de fibo, où il faut mettre un cutoff !
+
+
+\subsection{Quelques exemples de modèles de programmation}
+
+
+\subsubsection{Cilk}
 
 TODO
 
-\subsection{TBB}
+\subsubsection{TBB}
 
 TODO
+
+\subsubsection{OpenMP}
+
+Pour cette thèse le standard d'application de nos idées était OpenMP, et une description détaillée vient dans la section suivante.
+

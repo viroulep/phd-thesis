@@ -1,9 +1,48 @@
-\section{Techniques d'ordonnancement pour système exécutif}\label{sec:context:runtimes}
+\section{Techniques d'ordonnancement pour supports exécutif}\label{sec:context:runtimes}
 
+\subsection{Statique}
  - static
  cite quelques outils ?
- - dynamic
- -> workstealing !
-TODO: basically some blabla about workstealing
+
+\subsection{Dynamique}
+
+La technique la plus répandue pour l'ordonnancement dynamique de tâches est le vol de travail (TODO cite quelque chose !).
+
+Le concept est plutôt simple : à chaque fois qu'un thread devient inactif, il va aller "voler" des tâches dans une queue de tâches.
+
+Dans le cas le plus basique, on peut utiliser une seule queue centralisée contenant l'ensemble des tâches prêtes à être exécutées, mais il est tout à fait possible d'avoir plusieurs queues de tâches (comme une queue par coeur par exemple !).
+
+Quand elles sont créées, les tâches ne sont généralement pas prêtes à être exécutées, et ne sont donc pas immédiatement présentes dans l'une de ces queues.
+
+Dans une grande partie des cas elles dépendent de la terminaison d'autres tâches, ce qui signifie qu'à chaque fois qu'une tâche se termine, cela peut satisfaire des dépendances d'autres tâches.
+
+Une fois que toutes les dépendances d'une tâche sont satisfaites, celle ci va être placée dans une queue de tâche prête.
+
+On peut déduire de cela qu'il y a deux grandes étapes clés dans le processus :
+
+\subsubsection{Choix de la victime}
+
+La première étape est le choix de la victime.
+
+Imaginons qu'il y ait une queue de tâches prêtes par travailleur.
+Lorsqu'un travailleur devient inactif, il va devoir trouver du travail.
+Il peut par exemple commencer par regarder sa propre queue de tâches prêtes, et si elle est vide il devra en trouver une autre (par exemple en choisir une autre au hasard parmi les autres travailleurs).
+
+Il y a beaucoup d'heuristiques possibles pour le choix de la victime, et une "bonne" heuristique dépend directement du nombre de queues de tâches et de leurs caractéristiques.
+(TODO : lien vers la section plus détaillée des contribs ?)
+
+\subsubsection{Placement d'une tâche prête}
+
+La seconde étape est le placement d'une tâche prête.
+
+Lorsqu'un travailleur termine une tâche, il va devoir indiquer aux successeurs de cette tâches les dépendances qui viennent d'être satisfaites.
+
+Si pour l'une des successeurs toutes les dépendances sont satisfaites, il faut sélectionner une queue où placer cette tâche.
+
+TODO : finir et parler des heuristiques
+
+\subsubsection{Nombre de requêtes de vol}
+
+Parler d'aggrégation ?
 
 
