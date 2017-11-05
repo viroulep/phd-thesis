@@ -35,11 +35,12 @@ Il y a beaucoup d'heuristiques possibles pour le choix de la victime, et une "bo
 
 La seconde étape est le placement d'une tâche prête.
 
-Lorsqu'un travailleur termine une tâche, il va devoir indiquer aux successeurs de cette tâches les dépendances qui viennent d'être satisfaites.
+Lorsqu'un travailleur termine une tâche, il va devoir indiquer aux successeurs de cette tâches les dépendances qui viennent d'être satisfaites, s'il y en a.
 
 Si pour l'une des successeurs toutes les dépendances sont satisfaites, il faut sélectionner une queue où placer cette tâche.
 
-TODO : finir et parler des heuristiques
+Une fois encore, il y a autant de choix que de queues de tâches. Un exemple d'heuristique classique est de sélectionner sa propre queue de tâche.
+(TODO : déjà trop spécifique ? rediriger vers la section plus détaillée ?)
 
 \subsubsection{Nombre de requêtes de vol}
 

@@ -2,7 +2,7 @@
 
 TODO: où et comment formuler le fait qu'il faut d'une part maximiser la performance séquentielle, mais aussi maximiser le parallélisme
 
-OpenMP~\cite{openmp40} est le standard de-facto pour les machines à mémoire partagée, au fur et à mesure que le matériel a évolué, le standard a évolué avec lui.
+OpenMP~\cite{openmp45} est le standard de-facto pour les machines à mémoire partagée, au fur et à mesure que le matériel a évolué, le standard a évolué avec lui.
 
 \subsection{Boucles}
 
@@ -41,7 +41,7 @@ Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâc
 
 Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
 
-La version 4.0 d'OpenMP pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
+La version 4.0 d'OpenMP~\cite{openmp40} pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
 
 Le mode d'accès peut être soit |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
 
