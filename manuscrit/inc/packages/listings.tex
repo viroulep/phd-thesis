@@ -1,4 +1,4 @@
-\usepackage{listings}
+\usepackage{listingsutf8}
 
 \lstset{
 	tabsize=4,
@@ -15,6 +15,7 @@
 	keywordstyle=\color{blue},
 	commentstyle=\color{OliveGreen},
 	stringstyle=\color{red}\itshape,
+	extendedchars=true,
 	inputencoding=utf8,
 	numbers=left,
 	numberstyle=\tiny,
@@ -26,6 +27,18 @@ emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
 emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
     %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
+literate=
+{á}{{\'a}}1
+{à}{{\`a}}1
+{ã}{{\~a}}1
+{é}{{\'e}}1
+{ê}{{\^e}}1
+{í}{{\'i}}1
+{ó}{{\'o}}1
+{õ}{{\~o}}1
+{ú}{{\'u}}1
+{ü}{{\"u}}1
+{ç}{{\c{c}}}1,
 }
 
 %\lstset{
