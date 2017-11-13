@@ -1,3 +1,118 @@
 \section{Techniques d'ordonnancement ciblant les machines NUMA}\label{sec:rw:numa}
 
-Blabla
+\subsection{Études des techniques existantes}
+
+L'ensemble des travaux existant traitant des architectures NUMA est suffisamment grand pour qu'il existe plusieurs papiers résumant ces travaux et synthétisant les avancées.
+
+%NUMA-aware scheduling for both memory- and compute-bound tasks
+\paragraph{Reinman~\cite{Reinman2015}} a regroupé différents travaux selon le type de tâches qu'ils ciblaient, et propose en conclusion des recommandations lorsque l'on cherche à ordonnancer des programmes à base de tâches sur des machines NUMA.
+
+L'auteur distingue principalement deux types de tâches : compute-bound et memory-bound.
+Si certaines des 8 recommandations sont très spécifiques aux types de tâches, d'autres décrivent bien les points qu'il faut avoir en tête lorsque l'on cible les architectures NUMA.
+Il indique notamment l'importance de la distribution des données de l'application sur l'ensemble des noeuds NUMA, l'importance de la localité des données, ainsi que l'importance de garder les tâches et leur données ensemble lors du vol de travail.
+
+
+
+Décrire l'ensemble des travaux qui ont été effectués dans ce domaine n'est pas possible, voir dans certains cas n'est pas pertinent, puisque les architectures et langages évoluent.
+Les sections qui suivent se concentrent sur les travaux qui nous paraissent être toujours d'actualité, et qui ont eu un impact sur le développement de nos travaux.
+
+\subsection{OpenMP : tâches et gestion de la hiérarchie}
+
+L'importance de prendre en compte la hiérarchie dans les architectures NUMA est très bien reflétée par la quantité d'articles en rapport avec ce sujet.
+
+Les travaux évoqués dans cette section ont été réalisés dans un contexte OpenMP, et servent de base pour nos travaux décrits dans la section (TODO).
+
+%Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
+\paragraph{Clet-Ortega et al.~\cite{Clet2014}} ont étudié et évalué plusieurs façons de décorer la topologie de l'architecture, en privilégiant des listes de tâches privées par thread, parcourues de manière hiérarchique.
+
+%OpenMP task scheduling strategies for multicore NUMA systems
+\paragraph{Olivier et al.~\cite{Olivier2012}} ont évalué des stratégies hiérarchiques d'ordonnancement de tâches, en utilisant des structures centralisées ou distribuées.
+Ils introduisent un ensemble de threads par noeud NUMA, appelé \emph{shepherd}, permettant à l'ordonnanceur hiérarchique d'avoir de meilleures performances qu'avec les autres approches.
+
+
+%Towards Efficient OpenMP Strategies for Non-Uniform Architectures
+\paragraph{Tahan et al.~\cite{Tahan2014}} ont étudié le comportement des programmes à base de tâches OpenMP sur les systèmes NUMA, dans le support exécutif Nanos d'OMPSS (voir section~\ref{subsec:rw:ompss}).
+Ils ont ajouté deux ordonnanceurs de tâches, DFWSPT et DFWSRPT, prennant en compte la priorité des tâches, et essayant de également de diminuer la distance à la mémoire lors de l'équilibrage de charge.
+
+%Task-Parallel Programming on NUMA Architectures
+%Optimizing ccNUMA locality for task-parallel execution under OpenMP and TBB on multicore-based systems
+Des travaux similaires ont été réalisés par Terboven et al.~\cite{Terboven2012}, ainsi que par Wittman et Hager~\cite{Wittmann2011}.
+
+
+Ces travaux se sont concentrés sur les tâches indépendantes.
+L'ajout des dépendances avec OpenMP~4.0 amène un nouvel ensemble d'informations concernant l'utilisation des données par les tâches, qui n'a pas été traités par les travaux mentionnés.
+
+\subsection{Graphe de flot de données}
+
+\cite{Broquedis2010a}, ForestGOMP: an efficient OpenMP environment for NUMA architectures
+
+\cite{Drebes2014}, Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
+
+\cite{Al-Omairy2015}, Dense Matrix Computations on NUMA Architectures with Distance-Aware Work Stealing
+Queue par noeud numa, vol seulement dans cette queue, tri par priorité.
+Proche de nos travaux sur cholesky
+
+
+\subsection{La gestion de la localité des données dans d'autres contexte}
+
+La problématique de la localité des données rencontrée sur les architectures NUMA est présente également dans d'autres contexte.
+Les manières dont elle est traitée dans les travaux qui suivent ont servies d'inspiration pour les extensions et techniques proposées dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
+
+\cite{HPF}, HPF (owner compute rule)
+
+\cite{Durand2013}, An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
+
+\cite{Huang2010}, Enabling locality-aware computations in OpenMP
+Boucles, peut être trop vieux ?
+
+
+(vieux?)\cite{Weng2002}, Implementing OpenMP Using Dataflow Execution Model for Data Locality and Efficient Parallel Execution
+
+(vieux?)\cite{Nikolopoulos2001}, Exploiting Memory Affinity in OpenMP Through Schedule Reuse
+
+\cite{Pilla2014}, Topology-Aware Load Balancing for Performance Portability over Parallel High Performance Systems
+
+\cite{Yu2017}, Design and Implementation of Bandwidth-aware Memory Placement and Migration Policies for Heterogeneous Memory Systems
+
+
+\cite{Bleuse2014}, Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
+
+\cite{Lima2015}, Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
+
+
+
+\subsection{Energie et OpenMP (TODO, ou pas)}
+
+
+\cite{Hackenberg2015}, An Energy Efficiency Feature Survey of the Intel Haswell Processor
+
+\cite{Davidovic2015}, Energy efficiency of parallel multicore programs
+
+\cite{Bao2016}, Static and Dynamic Frequency Scaling on Multicore CPUs
+
+\cite{Shafik2015}, Adaptive Energy Minimization of OpenMP Parallel Applications on Many-Core Systems
+
+\cite{Porterfield2013}, Power measurement and concurrency throttling for energy reduction in OpenMP programs
+
+\cite{Porterfield2013a}, OpenMP and MPI application energy measurement variation
+
+\cite{Nandamuri2015}, Power and energy footprint of OpenMP programs using OpenMP runtime API
+
+\cite{Alessi2015}, Application-level energy awareness for OpenMP
+
+
+\subsection{TODO : inclassés}
+
+\cite{Selva2015}, (thèse) Performance Monitoring of Throughput Constrained Dataflow Programs Executed On Shared-Memory Multi-core Architectures
+
+\cite{Zhuravlev2012}, Survey of Scheduling Techniques for Addressing Shared Resources in Multicore Processors
+Travaux point de vue OS, pour un processeur multicoeurs (UMA !).
+Contention-aware scheduler.
+Cool, mais seulement à l'intérieur d'un noeud.
+
+\cite{Olivier2013}, Characterizing and mitigating work time inflation in task parallel programs
+
+
+\cite{Sbirlea2015}, Polyhedral Optimizations for a Data-Flow Graph Language
+Orienté transformation de boucles, pas vraiment en rapport direct avec la thèse
+

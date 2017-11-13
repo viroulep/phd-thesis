@@ -80,30 +80,47 @@ Heureusement les développeurs de libOMP ont implémentés une couche d'intercon
 
 \section{Autres supports exécutifs}\label{sec:rw:runtimes}
 
-\subsection{LIBKOMP/Kaapi}
+Il existe un certain nombres d'autres supports exécutifs, pour OpenMP comme d'autres modèle de programmation.
+Les sections ci après décrivent ceux ayant des thématiques très proches de cette thèse.
 
-À base de tâche légère, vol de travail.
-Support ABI libGOMP (utilisé par GCC), et libiomp
+\subsection{Kaapi - libKOMP}
 
-\cite{Gautier2007}, Kaapi: A Thread Scheduling Runtime System for Data Flow Computations on Cluster of Multi-Processors
+Kaapi~\cite{Gautier2007} est un support exécutif à base de tâche avec dépendances.
+
+Il dispose d'une couche - libKOMP~\cite{Broquedis2012} - implémentant à la fois les ABIs de libGOMP et libOMP, ce qui permet de l'utiliser directement en compilant via GCC ou Clang, et en changeant le support exécutif chargé à l'exécution.
+
+L'ordonnancement des tâches est fait par vol de travail, et le support exécutif propose une vision hiérarchique de la machine, ce qui offre une base pour implémenter des stratégies d'ordonnancement plus complexe (TODO: reformuler).
 
 
-\subsection{OMPSs}
+\subsection{OMPSs}\label{subsec:rw:ompss}
 
-Modèle de programmation inspiré par OpenMP, à base de directives.
+Modèle de programmation - StarSS - inspiré par OpenMP, à base de directives.
 
 Un compilo (mercurium) + un runtime nanos++
 
 \cite{OMPSs}, Ompss: a proposal for programming heterogeneous multi-core architectures
 
-\subsection{StarPU/Kstar}
+\subsection{StarPU}
+
+Support exécutif à base de tâches, permettant de cibler les architectures à mémoire partagée ainsi que des accélérateurs : support exécutif hétérogène.
 
 \cite{StarPU}, StarPU: A Unified Platform for Task Scheduling on Heterogeneous Multicore Architectures
 
+Accessible pour OpenMP via le compilateur Kstar.
 
 Others
 
 \subsection{Quark}
+
+\cite{Kurzak2013}, Multithreading in the PLASMA Library
+TODO : se documenter
+
 \subsection{OpenStream}
+
+Cite Andi
+
+Modèle de programmation par flôt de données.
+Fonctionnalités NUMA.
+
 
 Blabla
