@@ -1,6 +1,6 @@
 \section{Techniques d'ordonnancement ciblant les machines NUMA}\label{sec:rw:numa}
 
-\subsection{Études des techniques existantes}
+\subsection{Introduction}
 
 L'ensemble des travaux existant traitant des architectures NUMA est suffisamment grand pour qu'il existe plusieurs papiers résumant ces travaux et synthétisant les avancées.
 
@@ -16,14 +16,23 @@ Il indique notamment l'importance de la distribution des données de l'applicati
 Décrire l'ensemble des travaux qui ont été effectués dans ce domaine n'est pas possible, voir dans certains cas n'est pas pertinent, puisque les architectures et langages évoluent.
 Les sections qui suivent se concentrent sur les travaux qui nous paraissent être toujours d'actualité, et qui ont eu un impact sur le développement de nos travaux.
 
-\subsection{OpenMP : tâches et gestion de la hiérarchie}
+
+
+\subsection{Grouper les threads de calculs proches de leurs données}
 
 L'importance de prendre en compte la hiérarchie dans les architectures NUMA est très bien reflétée par la quantité d'articles en rapport avec ce sujet.
+De plus la problématique de la localité des données rencontrée sur les architectures NUMA est présente également dans d'autres contexte.
+Les manières dont elle est traitée dans les travaux qui suivent ont servies d'inspiration pour les extensions et techniques proposées dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
 
-Les travaux évoqués dans cette section ont été réalisés dans un contexte OpenMP, et servent de base pour nos travaux décrits dans la section (TODO).
+Les techniques utilisées par les travaux suivant ont tous en commun le groupement des threads sur des éléments topologiquement proches dans la hiérarchie.
+L'objectif derrière cette idée est de rester proches des données.
+
 
 %Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
 \paragraph{Clet-Ortega et al.~\cite{Clet2014}} ont étudié et évalué plusieurs façons de décorer la topologie de l'architecture, en privilégiant des listes de tâches privées par thread, parcourues de manière hiérarchique.
+
+
+
 
 %OpenMP task scheduling strategies for multicore NUMA systems
 \paragraph{Olivier et al.~\cite{Olivier2012}} ont évalué des stratégies hiérarchiques d'ordonnancement de tâches, en utilisant des structures centralisées ou distribuées.
@@ -38,46 +47,47 @@ Ils ont ajouté deux ordonnanceurs de tâches, DFWSPT et DFWSRPT, prennant en co
 %Optimizing ccNUMA locality for task-parallel execution under OpenMP and TBB on multicore-based systems
 Des travaux similaires ont été réalisés par Terboven et al.~\cite{Terboven2012}, ainsi que par Wittman et Hager~\cite{Wittmann2011}.
 
-
 Ces travaux se sont concentrés sur les tâches indépendantes.
 L'ajout des dépendances avec OpenMP~4.0 amène un nouvel ensemble d'informations concernant l'utilisation des données par les tâches, qui n'a pas été traités par les travaux mentionnés.
-
-\subsection{Graphe de flot de données}
-
-\cite{Broquedis2010a}, ForestGOMP: an efficient OpenMP environment for NUMA architectures
-
-\cite{Drebes2014}, Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
 
 \cite{Al-Omairy2015}, Dense Matrix Computations on NUMA Architectures with Distance-Aware Work Stealing
 Queue par noeud numa, vol seulement dans cette queue, tri par priorité.
 Proche de nos travaux sur cholesky
 
 
-\subsection{La gestion de la localité des données dans d'autres contexte}
-
-La problématique de la localité des données rencontrée sur les architectures NUMA est présente également dans d'autres contexte.
-Les manières dont elle est traitée dans les travaux qui suivent ont servies d'inspiration pour les extensions et techniques proposées dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
-
-\cite{HPF}, HPF (owner compute rule)
-
-\cite{Durand2013}, An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
-
-\cite{Huang2010}, Enabling locality-aware computations in OpenMP
-Boucles, peut être trop vieux ?
+\paragraph{HPF~\cite{HPF} (High Performance Fortran)} est une extension de Fortran 90.
+Le principe est de distribuer la \emph{propriété} de chaque élément des tableaux manipulés, et de répartir la charge de travail (les instructions ou groupe d'instructions) sur les processeurs en fonction des éléments manipulés.
 
 
-(vieux?)\cite{Weng2002}, Implementing OpenMP Using Dataflow Execution Model for Data Locality and Efficient Parallel Execution
+%An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
+\paragraph{Durand et al.~\cite{Durand2013}} ont développé un ordonnanceur de boucles irrégulières, permettant de générer du travail à la voler, et de garder les tâches "à proximité".
 
-(vieux?)\cite{Nikolopoulos2001}, Exploiting Memory Affinity in OpenMP Through Schedule Reuse
 
 \cite{Pilla2014}, Topology-Aware Load Balancing for Performance Portability over Parallel High Performance Systems
-
-\cite{Yu2017}, Design and Implementation of Bandwidth-aware Memory Placement and Migration Policies for Heterogeneous Memory Systems
 
 
 \cite{Bleuse2014}, Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
 
 \cite{Lima2015}, Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
+
+\subsection{Déplacer les données en fonction des calculs (ou les deux ?)}
+
+%ForestGOMP: an efficient OpenMP environment for NUMA architectures
+\paragraph{ForestGOMP~\cite{Broquedis2010a}} est un support exécutif ciblant spécifiquement les architectures NUMA.
+Ses fonctionnalités incluent un ordonnanceur de threads hiérarchiques, groupés selon les équipes de threads OpenMP afin de maximiser la localité des données.
+
+\cite{Yu2017}, Design and Implementation of Bandwidth-aware Memory Placement and Migration Policies for Heterogeneous Memory Systems
+
+
+\cite{Drebes2014}, Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
+
+
+
+
+
+(vieux?)\cite{Weng2002}, Implementing OpenMP Using Dataflow Execution Model for Data Locality and Efficient Parallel Execution
+
+(vieux?)\cite{Nikolopoulos2001}, Exploiting Memory Affinity in OpenMP Through Schedule Reuse
 
 
 

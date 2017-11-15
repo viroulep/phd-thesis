@@ -47,6 +47,8 @@ void foo() {
 Les deux ont des avantages et des inconvénients : la barrière représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
 
+GRAPHE : 2.2.2 mini schéma dataflow du graphe correspondant au programme écrit.
+
 \subsection{Quantité de travail et granularité}
 
 Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources et réduire l'overhead du support exécutif est de trouver le bon \emph{grain} de tâche.

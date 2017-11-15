@@ -178,16 +178,18 @@ Perf ctr, perfs tout court
 
 \paragraph{Impact de la taille de bloc}
 
-TODO : ajouter des courbes
+GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : graphe sur tailles de bloc critiques vis à vis L2/L3, accès locaux (obj: voir l'impact de la taille de bloc)
 Meilleur cas : tout local, quelques tailles < L2, < L3, > L3
 
 \paragraph{Impact des accès distants}
 
-TODO : ajouter des courbes
+GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : Pour "bons" blocs, montrer impact de lecture distante, + écriture distante.
+
 Pire cas : tout distant, quelques tailles < L2, < L3, > L3
 
 \subsubsection{Impact de la bibliothèque BLAS}
 
+GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : étude de comportement sur des paramètres représentatifs (obj : montrer l'impact des blas)
 OpenBLAS, MKL, ATLAS
 matter for top perf, not for overall behavior
 

@@ -46,6 +46,8 @@ De même, beaucoup d'optimisations au sein des compilateurs visent également ce
 
 Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les coeurs d'un même noeud.
 
+GRAPHE : 2.1.1 schéma de l'architecture des chaches
+
 \subsubsection{Hyperthreading}
 
 Chaque coeur possède un certain nombre d'UAL (Unité Arithmétique et Logique) qui lui sont privées, lorsqu'il est en attente d'une donnée de la mémoire centrale, ces UALs ne sont pas utilisées, et des cycles CPU sont donc "perdus" à ne rien faire.
@@ -74,6 +76,8 @@ Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent
 TODO : parler de la hiérarchie possible de l'interconnexion.
 
 TODO : donner quelques chiffres à titre d'exemple ?
+
+GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA
 
 
 \subsection{Particularité au niveau du système d'exploitation}
