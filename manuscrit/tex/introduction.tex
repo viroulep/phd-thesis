@@ -6,24 +6,20 @@
 \chaptertoc
 
 L'évolution du calcul haute performance est aujourd'hui dirigée par les besoins des applications de simulation numérique.
-
 Ces applications sont omniprésentes dans l'industrie, et concerne parfois même directement le grand public.
-Par exemple, les prévisions météorologiques sont faites à l'aide d'applications simulant les intéractions entre les différents éléments de l'atmosphère.
+
+Par exemple des secteurs comme l'aéronautique, les applications militaires, ou encore le nucléaire ont besoin de simuler des phénomènes à grande échelle, se traduisant parfois par la résolution de systèmes de systèmes linéaires à plusieurs millions d'inconnues.
+Les prévisions météorologiques à destination du grand public sont faites à l'aide d'applications simulant les intéractions entre les différents éléments de l'atmosphère.
 Il en va de même pour tout ce qui se rapporte à l'étude de la propagation des ondes sismiques dans le sol, ou de la prévision de l'impact d'un séisme sur un bassin de population.
 
-Dans un cadre plus industriel, les secteurs comme l'aéronautique, les applications militaires, ou encore le nucléaire ont eux aussi besoin de simuler des phénomènes à grande échelle, se traduisant parfois par la résolution de systèmes de systèmes linéaires à plusieurs millions d'inconnues.
-
 Toutes ces simulations sont au final exécutées sur des supercalculateurs, et il n'y a pas de limite aux nombres de ressources qu'elle peuvent utiliser : que ce soit pour améliorer la précision de la simulation, ou augmenter la taille de l'ensemble simulé, elles pourront toujours bénéficier d'un plus grand nombres de ressources.
-
 De plus un grand nombre de ressources peut également permettre d'exécuter un plus grand nombre de simulations simultanément, voire de les coupler entre elles.
 
 Si les supercalculateurs peuvent proposer plusieurs milliers de coeurs, ils sont en fait composés d'un grand nombre de noeuds de calcul avec un nombre de coeurs beaucoup plus faible.
 Ces machines peuvent proposer, en plus de processeurs traditionnels, accélérateurs plus ou moins spécifiques comme des GPUs ou des FPGA, formant une architecture dite \emph{hétérogène}.
-
 La très grande majorité des noeuds de calcul intègrent plusieurs processeurs qui accèdent à une mémoire commune.
 
 Contrairement aux processeurs du siècle dernier pour lesquels un changement de génération s'accompagnait d'une augmentation de leur fréquence de fonctionnement, l'évolution des processeurs contemporains se traduit aujourd'hui par la multiplication du nombres de coeurs de calcul qu'ils embarquent.
-
 Pour illustrer ce phénomène il suffit de regarder par exemple la gamme de produits proposés par Intel : la première génération de Pentium 4 - Willamette - lancée par Intel en 2000 était constituée d'un unique coeur cadencé à 1.5GHz. 6 ans plus tard, la dernière génération de Pentium 4 - Cedar Mill - était également consituée d'un seul coeur, mais cette fois cadencé à 3.6 GHz. 10 ans plus tard en 2016, les processeurs de la génération Skylake d'Intel i7 ne dépassent pas les 3.4GHz de fréquence, mais tous ont 4 coeurs physiques au lieu d'un seul.
 
 Avec ce changement de design, les modalités d'accès à la mémoire ont été repensées pour éviter les goulots d'étranglement se formant lors des accès concurrents de plusieurs coeurs au même bus mémoire. Le moyen qui a été trouvé pour éviter trop de contention sur le bus mémoire fut de diviser la mémoire en plusieurs bloc physique différents, avec chacun leur contrôleur.
@@ -31,7 +27,6 @@ La conséquence directe de ce changement est que le temps d'accès à la mémoir
 On appelle ce genre d'architectures NUMA (pour \emph{Non Uniform Memory Access}) et elles sont aujourd'hui la brique de base pour créer des supercalculateurs.
 
 L'amélioration des performances générales d'un supercalculateur passe donc directement par l'optimisation de l'exploitation des machines NUMA.
-
 Plusieurs techniques de programmation permette de cibler ce genre d'architectures.
 On peut notamment citer des techniques statiques à base de boucles parallèles.
 En pratique cela marche particulièrement bien pour les applications où toutes les itérations des boucles sont régulières et où leur temps d'exécution est prévisible.
@@ -46,7 +41,6 @@ Un programme dédié - le support exécutif - a la charge d'exécuter ce graphe 
 Pour que cela soit efficace, il faut pouvoir exprimer un maximum de parallélisme : plus il y a de parallélisme, mieux on est capable d'équilibrer la charge au cours de l'exécution.
 
 Les modèles de programmation standard on su s'adapter : par exemple OpenMP, qui est le standard \emph{de-facto} pour ce genre d'architectures, ne proposait au départ que du parallélisme de boucles. Les dernières versions proposent de la programmation par tâche avec dépendances de données.
-
 En revanche ces modèles de programmation présentent toujours un manque lorsqu'il s'agit d'exploiter efficacement les machines NUMA.
 Le programmeur doit donc faire de gros efforts pour effectuer des optimisations spécifiques peu portables, par exemple via des bibliothèques externes pour contrôler précisément le placement des données.
 Les outils standard et non intrusifs permettent simplement de distribuer les pages de la mémoire sur les différentes parties physiques : cela a pour avantage d'améliorer l'uniformité des temps d'accès à la mémoire, mais pas d'améliorer le temps d'accès moyen.

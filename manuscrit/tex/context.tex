@@ -7,22 +7,15 @@
 \chapter{Contexte}
 \chaptertoc
 
-The section~\ref{sec:context:numa} describes the kind of hardware we'll be referring to during this thesis.
+L'objectif de ce chapitre est de donner au lecteur les connaissances de base nécessaires pour l'appréciation du reste de la thèse.
 
-The section~\ref{sec:context:openmp} describes OpenMP, and specifically its task model, which suits large parallel application, and on which we'll focus.
-+runtime
-
+Cela peut se classer en 3 catégories : la première concerne les architectures cibles pour nos travaux. Il y a une grande variété de matériels disponibles pour le calcul haute performance, et la section~\ref{sec:context:numa} décrit en détails les architectures à mémoire partagée actuelles (NUMA).
+La seconde concerne les modèles de programmation à base de tâche. La section~\ref{sec:context:others} décrit les techniques modernes utilisées pour cibler les architectures NUMA, et décrit en détails les concepts de base ainsi que les points clés pertinents à nos travaux. La section~\ref{sec:context:openmp} est dédiée à OpenMP, modèle de programmation qui a été utilisé pour l'application des travaux de la thèse.
+Enfin la section~\ref{sec:context:runtimes} regroupe des informations générales concernant l'ordonnancement d'applications par des supports exécutifs.
 
 \input{tex/context/numa}
 \input{tex/context/others}
-\input{tex/context/openmp}
 \input{tex/context/runtimes}
+\input{tex/context/openmp}
 
-
-\cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
-  %\item NUMA (with ref to the "main" chapter)
-  %\item task + Workstealing (with ref to the "main" chapter)
-
-
-\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
 

@@ -1,15 +1,20 @@
 \section{Architectures à mémoire partagée}\label{sec:context:numa}
 
-La majorité des architectures à mémoire partagée récentes sont en fait divisées en plusieurs sous parties - appelées noeuds - interconnectées entre elles, de manière transparente pour le système d'exploitation.
+Les architectures à mémoire partagée on vécue des changements majeures avec l'évolution des processeurs.
+L'augmentation du nombre de coeurs par processeur a introduit des problèmes d'accès à la mémoire centrale : en effet comme plusieurs coeurs accèdent à la mémoire en même temps et que la bande passante n'est pas infinie, des problèmes de contention sur le bus mémoire apparaissent.
 
-Pour prendre un exemple assez simple, on peut imaginer une machine vu par le système d'exploitation comme ayant 16 coeurs et 64 Go de RAM, qui serait en fait composée de deux noeuds, ayant chacun 8 coeurs et 32 Go de RAM.
+Pour palier à ce problème, les constructeurs ont divisé la mémoire centrale en plusieurs parties physiquement distinctes, appelées \emph{noeuds}.
+Chaque noeud est constitué d'une partie de la mémoire centrale, d'un contrôleur local d'accès à ce bloc mémoire, ainsi que d'un certains nombre de coeurs de calcul.
+L'ensemble des noeuds de la machine sont ensuite reliés entre eux par un système d'interconnexion.
+La topologie de l'interconnexion ne permet généralement pas d'avoir des noeuds équidistant, ce qui introduit une hiérarchie mémoire.
 
-Le temps d'accès à une zone spécifique de la mémoire dépend du coeur effectuant l'accès.
-En prenant l'exemple de la machine simple décrite ci dessus, et en numérotant les noeuds 0 et 1, il sera plus rapide d'accéder aux 32 Go situé sur le noeud 0 depuis le noeud 0 que depuis le noeud 1.
+En revanche cette complexité est invisible pour le système d'exploitation, qui ne voit qu'un seul système constitué par l'ensemble des coeurs et de la mémoire des différents noeuds.
+Par exemple dans le cas simple d'une machine constituée de deux noeuds de 8 coeurs et 32 Go de RAM, le système verra de manière transparente une machine à 16 coeurs et 64 Go de RAM.
 
-Les sections suivantes décrivent les caractéristiques techniques communes d'un noeud, ainsi que les spécificités liées à l'interconnexion de ces noeuds.
+Nous décrivons dans un premier temps les caractéristiques techniques communes d'un noeud dans la section~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des noeuds dans la section~\ref{sec:context:numa:interconnect}.
+Enfin la section~\ref{sec:context:numa:os} revient sur quelques particularités de traitement au sein du système d'exploitation.
 
-\subsection{Descriptions d'un noeuds}
+\subsection{Descriptions d'un noeud}\label{sec:context:numa:node}
 
 Il n'y a pas de nombre standard de coeurs pour un noeud, ni même de quantité standard de RAM associée.
 
@@ -65,7 +70,7 @@ De même si l'application est compute-intensive, l'hyperthreading n'apportera pa
 L'hyperthreading est généralement une option que l'on peut désactiver dans le BIOS de la machine.
 
 
-\subsection{Interconnexion des noeuds}
+\subsection{Interconnexion des noeuds}\label{sec:context:numa:interconnect}
 
 La partie la plus importante d'une machine NUMA est le système d'interconnexion entre les différents noeuds.
 
@@ -80,12 +85,12 @@ TODO : donner quelques chiffres à titre d'exemple ?
 GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA
 
 
-\subsection{Particularité au niveau du système d'exploitation}
+\subsection{Particularité au niveau du système d'exploitation}\label{sec:context:numa:os}
 
 
 Parler de la taille de page (4K vs 2M), et de l'impact que ça a.
 
-Parler du fait que le système voit une machine plate.
+Parler de~\cite{Dobson2003}
 
 Parler d'hwloc ?
 

@@ -1,8 +1,9 @@
-\section{Techniques d'ordonnancement ciblant les machines NUMA}\label{sec:rw:numa}
+\section{Techniques d'amélioration de la localité des données}\label{sec:rw:numa}
 
 \subsection{Introduction}
 
-L'ensemble des travaux existant traitant des architectures NUMA est suffisamment grand pour qu'il existe plusieurs papiers résumant ces travaux et synthétisant les avancées.
+La problématique de la localité des données a été abordée dans plusieurs contextes.
+Rien qu'en prenant les travaux se restreignant aux architectures NUMA, on obtient une quantité d'articles qui est suffisamment grande pour qu'il existe plusieurs papiers résumant ces travaux et synthétisant les avancées.
 
 %NUMA-aware scheduling for both memory- and compute-bound tasks
 \paragraph{Reinman~\cite{Reinman2015}} a regroupé différents travaux selon le type de tâches qu'ils ciblaient, et propose en conclusion des recommandations lorsque l'on cherche à ordonnancer des programmes à base de tâches sur des machines NUMA.
@@ -14,35 +15,44 @@ Il indique notamment l'importance de la distribution des données de l'applicati
 
 
 Décrire l'ensemble des travaux qui ont été effectués dans ce domaine n'est pas possible, voir dans certains cas n'est pas pertinent, puisque les architectures et langages évoluent.
-Les sections qui suivent se concentrent sur les travaux qui nous paraissent être toujours d'actualité, et qui ont eu un impact sur le développement de nos travaux.
+
+Les sections décrivent quelques approches standards et des travaux représentatifs de ces techniques, qui ont eu un impact sur le développement de nos travaux décrits dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
 
 
 
-\subsection{Grouper les threads de calculs proches de leurs données}
-
-L'importance de prendre en compte la hiérarchie dans les architectures NUMA est très bien reflétée par la quantité d'articles en rapport avec ce sujet.
-De plus la problématique de la localité des données rencontrée sur les architectures NUMA est présente également dans d'autres contexte.
-Les manières dont elle est traitée dans les travaux qui suivent ont servies d'inspiration pour les extensions et techniques proposées dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
+\subsection{Grouper les threads de calculs ensemble}
 
 Les techniques utilisées par les travaux suivant ont tous en commun le groupement des threads sur des éléments topologiquement proches dans la hiérarchie.
-L'objectif derrière cette idée est de rester proches des données.
 
+L'objectif derrière cette idée est de "cloisonner" la charge de travail (eg: les itérations de boucles) afin de limiter les accès distant.
 
 %Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
 \paragraph{Clet-Ortega et al.~\cite{Clet2014}} ont étudié et évalué plusieurs façons de décorer la topologie de l'architecture, en privilégiant des listes de tâches privées par thread, parcourues de manière hiérarchique.
-
-
-
 
 %OpenMP task scheduling strategies for multicore NUMA systems
 \paragraph{Olivier et al.~\cite{Olivier2012}} ont évalué des stratégies hiérarchiques d'ordonnancement de tâches, en utilisant des structures centralisées ou distribuées.
 Ils introduisent un ensemble de threads par noeud NUMA, appelé \emph{shepherd}, permettant à l'ordonnanceur hiérarchique d'avoir de meilleures performances qu'avec les autres approches.
 
 
+%An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
+\paragraph{Durand et al.~\cite{Durand2013}} ont développé un ordonnanceur de boucles irrégulières, permettant de générer du travail à la voler, et de garder les tâches "à proximité".
+
+
+
+
+\subsection{Déplacer les threads vers les données}
+
+
+
+
+
+
+
 %Towards Efficient OpenMP Strategies for Non-Uniform Architectures
 \paragraph{Tahan et al.~\cite{Tahan2014}} ont étudié le comportement des programmes à base de tâches OpenMP sur les systèmes NUMA, dans le support exécutif Nanos d'OMPSS (voir section~\ref{subsec:rw:ompss}).
-Ils ont ajouté deux ordonnanceurs de tâches, DFWSPT et DFWSRPT, prennant en compte la priorité des tâches, et essayant de également de diminuer la distance à la mémoire lors de l'équilibrage de charge.
+Ils ont ajouté deux ordonnanceurs de tâches, DFWSPT et DFWSRPT, prennant en compte la priorité des tâches, et essayant de également de diminuer la distance à la mémoire lors de l'équilibrage de charge (en considérant le nombre de "hops" entre noeuds).
 
+% TODO : ces deux là vont peut être dans la section d'avant
 %Task-Parallel Programming on NUMA Architectures
 %Optimizing ccNUMA locality for task-parallel execution under OpenMP and TBB on multicore-based systems
 Des travaux similaires ont été réalisés par Terboven et al.~\cite{Terboven2012}, ainsi que par Wittman et Hager~\cite{Wittmann2011}.
@@ -50,17 +60,21 @@ Des travaux similaires ont été réalisés par Terboven et al.~\cite{Terboven20
 Ces travaux se sont concentrés sur les tâches indépendantes.
 L'ajout des dépendances avec OpenMP~4.0 amène un nouvel ensemble d'informations concernant l'utilisation des données par les tâches, qui n'a pas été traités par les travaux mentionnés.
 
-\cite{Al-Omairy2015}, Dense Matrix Computations on NUMA Architectures with Distance-Aware Work Stealing
-Queue par noeud numa, vol seulement dans cette queue, tri par priorité.
-Proche de nos travaux sur cholesky
+%Dense Matrix Computations on NUMA Architectures with Distance-Aware Work Stealing
+%4.2. Data distribution and locality detection The runtime is able to track the location of the data and schedule tasks in the node with
+%the highest number of bytes. To track the locality, it assumes a first touch policy and looks for initialization tasks. The criteria to detect such tasks is plain and simple: tasks with an output dependency (at least one) where it is the first time that data will be written. In our Cholesky implementation those tasks are the ones that initialize a block of the matrix. Initialization tasks are scheduled in round robin across the available NUMA nodes, enabling
+%us to use a similar data distribution. When a task of that type is executed, the data it initializes will be marked as located in the NUMA node of the running thread. Otherwise, when a non initialization task is submitted, the number of bytes accessed by each
+%node will be computed, based on the dependency information provided by the programmer, and the task will be scheduled in the node with the largest amount of data. Note that once work stealing is introduced, the locality information becomes a hint that the
+%runtime will always follow unless there is starvation in the local node. Kurzak [23] described an implementation of the Cholesky factorization using static schedul- ing where threads work only on a one-dimensional cyclic distribution in order to keep locality
+\paragraph{Al-Omairy et al.~\cite{Al-Omairy2015}} ont concentré leurs travaux sur l'inversion de matrices symétriques et la factorisation de Cholesky.
+Ils ont étendu le support exécutif et le modèle de programmation d'OmpSs afin de permettre de prendre en compte la distance aux données lors du vol de travail.
+Leur premier axe est de restreindre le vol de travail à l'intérieur du noeud : les threads ne peuvent voler que dans une queue commune au noeud NUMA.
+Le second est de tracer la localité des données : ils utilisent des tâches d'initialisations pour détecter où sont allouées les données. Lors de l'exécution du programme cette information est utilisée pour ordonnancer une tâche sur le noeud où il y a le plus de données manipulées par la tâche.
+
 
 
 \paragraph{HPF~\cite{HPF} (High Performance Fortran)} est une extension de Fortran 90.
 Le principe est de distribuer la \emph{propriété} de chaque élément des tableaux manipulés, et de répartir la charge de travail (les instructions ou groupe d'instructions) sur les processeurs en fonction des éléments manipulés.
-
-
-%An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
-\paragraph{Durand et al.~\cite{Durand2013}} ont développé un ordonnanceur de boucles irrégulières, permettant de générer du travail à la voler, et de garder les tâches "à proximité".
 
 
 \cite{Pilla2014}, Topology-Aware Load Balancing for Performance Portability over Parallel High Performance Systems
@@ -70,7 +84,7 @@ Le principe est de distribuer la \emph{propriété} de chaque élément des tabl
 
 \cite{Lima2015}, Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
 
-\subsection{Déplacer les données en fonction des calculs (ou les deux ?)}
+\subsection{Migrations de données et des threads}
 
 %ForestGOMP: an efficient OpenMP environment for NUMA architectures
 \paragraph{ForestGOMP~\cite{Broquedis2010a}} est un support exécutif ciblant spécifiquement les architectures NUMA.
@@ -125,4 +139,12 @@ Cool, mais seulement à l'intérieur d'un noeud.
 
 \cite{Sbirlea2015}, Polyhedral Optimizations for a Data-Flow Graph Language
 Orienté transformation de boucles, pas vraiment en rapport direct avec la thèse
+
+
+\cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
+  %\item NUMA (with ref to the "main" chapter)
+  %\item task + Workstealing (with ref to the "main" chapter)
+
+
+\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
 
