@@ -25,13 +25,53 @@ Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que 
 
 \paragraph{Fonctionnement}
 
-TODO : expliquer comment ça se passe ? requète sur un octet -> série de cache miss, puis chargement en cache.
-écriture => dirty => eviction.
-Parler des politiques d'éviction ?
-Parler de l'associativité ?
-
-Au niveau des accès le fonctionnement est légèrement différent : plutôt que de lire uniquement un octet, c'est généralement une partie fixe de la mémoire contenant cet octet qui est chargée.
+Au niveau des accès le fonctionnement d'un cache est légèrement différent de celui de la mémoire centrale : plutôt que de lire uniquement un octet, c'est généralement une partie fixe de la mémoire contenant cet octet qui est chargée.
 On appelle cette quantité une \emph{ligne de cache}, et un exemple de taille standard pour une ligne de cache est 64 octets (8 double).
+
+Lorsqu'une instruction demande le chargement d'une valeur située en mémoire, le contrôleur du cache reçoit la requête du processeur, détermine la ligne de cache correspondante, et effectue l'une des deux opérations suivantes :
+\begin{itemize}
+    \item Si la ligne correspondante est déjà présente dans le cache - \emph{cache hit} - la donnée est directement retournée.
+    \item Si la ligne n'est pas présente - \emph{cache miss} - il va charger la valeur depuis la mémoire centrale dans le cache, et retourner la valeur au processeur.
+\end{itemize}
+
+Si le cache a plusieurs niveaux, la requête est transférée au niveau supérieur, et seul le dernier niveau effectue la requête à la mémoire centrale. TODO : ça doit être vrai que pour les caches inclusifs.
+
+Une fois qu'une ligne est chargée dans le cache, elle n'y reste pas de manière permanente, plusieurs raisons décrit ci après peuvent entraîner son \emph{eviction} du cache :
+
+\begin{itemize}
+  \item Le maintient de la cohérence. Lorsqu'un processeur modifie une ligne de cache dans son propre cache, cette même ligne est \emph{invalidée} dans les caches des autres processeurs, si elle y est présente.
+Si un processeur essaie de faire un accès sur une ligne invalidée, elle sera rechargée depuis la mémoire centrale, générant un \emph{cache miss}.
+  \item Le dépassement de la capacité du cache. Il est assez commun que l'ensemble des données manipulées par le programme ne tienne pas dans le cache.
+Lorsqu'une requête est effectuée sur une ligne, qu'elle n'est pas présente dans le cache, et que le cache est rempli, le contrôleur choisira une ligne à évicter du cache pour faire de la place à la nouvelle ligne.
+Le choix de la ligne à évicter est un sujet très étudié, et le prochain paragraphe revient sur les politiques d'éviction communément utilisées.
+  \item Le conflit d'adresse. En fonction de l'\emph{associativité} du cache, une ligne de cache peut avoir un emplacement précis dans le cache, qu'elle peut partager avec une ou plusieurs autres ligne de cache.
+Ces lignes ne pouvant pas être présentes en même temps dans le cache, elles s'évicteront donc mutuellement si elles sont requises en même temps.
+\end{itemize}
+
+
+
+\paragraph{Politiques d'éviction}
+
+TODO
+
+\paragraph{Associativité}
+
+Le cache ne pouvant être suffisamment grand pour contenir toute la mémoire, il faut pouvoir déterminer l'association entre l'adresse d'une ligne dans la mémoire centrale et son emplacement dans le cache.
+
+Il y a trois grandes catégories d'associativité utilisées par les caches :
+\begin{itemize}
+  \item Les caches à association directe (\emph{direct-mapped cache})
+    Dans ce système, chaque ligne de la mémoire est associée à exactement un emplacement dans le cache.
+    Ce système est simple, propose le meilleur temps de réponse, mais est peu prévisible et n'est pas optimal en terme d'efficacité par rapport à la taille.
+  \item Les caches complètement associatifs (\emph{fully associative cache})
+    Dans ce système, chaque ligne de la mémoire peut être associée à n'importe quel emplacement dans le cache.
+    Cela permet de maximiser l'utilisation de l'espace disponible, mais cela induit un coût supplémentaire pour déterminer l'association entre une ligne et son emplacement.
+  \item Les caches N-associatifs (\emph{N-way associative cache})
+    Ce système est un compromis entre les deux précédents.
+    Chaque ligne de la mémoire peut être associée à exactement N emplacements dans le cache.
+    Cela implique un certain nombre d'opérations sur les adresses des lignes, et l'espace pris par le composant ainsi que le temps d'accès moyen dépend directement de la valeur de N.
+\end{itemize}
+
 
 \paragraph{Niveaux de caches}
 
@@ -52,6 +92,10 @@ De même, beaucoup d'optimisations au sein des compilateurs visent également ce
 Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les coeurs d'un même noeud.
 
 GRAPHE : 2.1.1 schéma de l'architecture des chaches
+
+TODO : tableau latences accès caches vs processeurs (sandy, broadwell, knl, bulldozer, ryzen).
+
+TODO : ref + paragraph sur les caches configurables du ryzen
 
 \subsubsection{Hyperthreading}
 
