@@ -109,7 +109,32 @@ TODO : tableau latences accès caches vs processeurs (sandy, broadwell, knl, bul
 
 TODO : ref + paragraph sur les caches configurables du ryzen
 
-\subsubsection{SIMD}
+\subsubsection{Instructions vectorielles}
+
+Le concept de vectorisation est l'action de grouper ensemble, dans une même instruction, plusieurs éléments nécessitant la même opération.
+Ce type d'instructions est appelée SIMD, pour \emph{Single Instruction Multiple Data}.
+
+Afin d'illustrer ce point, il suffit d'imaginer que l'on souhaite additionner deux vecteurs d'entiers :
+\begin{lstlisting}
+int vecteur_a[8] = { 1 };
+int vecteur_b[8] = { 1 };
+int addition[8];
+for (int i = 0; i < 8; i++) {
+  addition[i] = vecteur_a[i] + vecteur_b[i];
+}
+\end{lstlisting}
+
+Exécuter la boucle en entier effectuerait 8 additions sur des entiers.
+En supposant que la largeur des registres (et des instructions) du processeur est de 64 bits, et que la taille d'un |int| est 32 bits, on gaspillerait en fait 32 bits par additions.
+
+Étant donné que l'on souhaite effectuer la même opération (une addition), sur des éléments indépendant du tableau, on peut alors aisément grouper deux additions successives dans la même instructions : il suffit de mettre un entier de 32 bits sur la partie haute du registre, et un deuxième entier sur la partie basse, d'effectuer l'instruction, et de faire l'opération inverse pour stocker le résultat dans le tableau.
+On divise alors le nombre d'itérations par 2.
+
+Des extensions au jeu d'instruction x86 ont été créée afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus large que le type le plus large en C (|long long|, 64 bits).
+
+La première d'entre elle SSE (\emph{Streaming SIMD Extensions}), a été introduit par Intel dès 1999, et a évolué régulièrement jusqu'à l'extention AVX-512, permettant d'effectuer des instructions sur des registres de 512 bits (soit 64 double).
+
+La plupart des processeurs actuels (depuis les Sandy Bridge d'Intel, et les Bulldozer d'AMD, en 2011) supportent au moins l'extension AVX avec des registres de 128 bits.
 
 \subsubsection{Hyperthreading}
 
