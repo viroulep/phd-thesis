@@ -131,8 +131,7 @@ En supposant que la largeur des registres (et des instructions) du processeur es
 On divise alors le nombre d'itérations par 2.
 
 Des extensions au jeu d'instruction x86 ont été créée afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus large que le type le plus large en C (|long long|, 64 bits).
-
-La première d'entre elle SSE (\emph{Streaming SIMD Extensions}), a été introduit par Intel dès 1999, et a évolué régulièrement jusqu'à l'extention AVX-512, permettant d'effectuer des instructions sur des registres de 512 bits (soit 64 double).
+La première d'entre elle, SSE (\emph{Streaming SIMD Extensions}), a été introduit par Intel dès 1999, et a évolué régulièrement jusqu'à l'extention AVX-512, permettant d'effectuer des instructions sur des registres de 512 bits (soit 64 double).
 
 La plupart des processeurs actuels (depuis les Sandy Bridge d'Intel, et les Bulldozer d'AMD, en 2011) supportent au moins l'extension AVX avec des registres de 128 bits.
 
@@ -145,9 +144,7 @@ Le concept est assez simple : avoir deux coeurs logiques (\emph{hyperthreads}) a
 De cette manière lorsqu'un thread est en attente sur une donnée, le second peut profiter des UALs disponibles.
 
 Pour des tâches peu gourmandes en ressources ou utilisant beaucoup de données, cela peut effectivement se traduire par un gain de performances, mais pour le cas des applications HPC il faut regarder le type d'application utilisées pour savoir si on peut espérer un gain ou non.
-
 En particulier les caches L1 et L2 sont partagés par les deux hyperthreads, donc si le code séquentiel généré est optimisé pour les tailles de caches correspondant, exécuter le même type de code séquentiel sur deux hyperthreads va entrainer du \emph{cache trashing} et des baisses de performance.
-
 De même si l'application est compute-intensive, l'hyperthreading n'apportera pas grand chose, voir rien.
 
 L'hyperthreading est généralement une option que l'on peut désactiver dans le BIOS de la machine.
