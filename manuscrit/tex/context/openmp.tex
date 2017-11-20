@@ -6,7 +6,9 @@ OpenMP~\cite{openmp45} est le standard de-facto pour les machines à mémoire pa
 
 \subsection{Boucles}
 
-OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (TODO: voir graph), et l'utilisation de base ciblait la parallélisation de boucles régulières.
+OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (illustré sur la figure~\ref{fig:context:fork-join}), et l'utilisation de base ciblait la parallélisation de boucles régulières.
+
+\label{fig:context:fork-join}TODO : graphe fork join
 
 Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (cela peut être par exemple une boucle).
 

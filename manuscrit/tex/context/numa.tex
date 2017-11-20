@@ -50,10 +50,6 @@ Ces lignes ne pouvant pas être présentes en même temps dans le cache, elles s
 
 
 
-\paragraph{Politiques d'éviction}
-
-TODO
-
 \paragraph{Associativité}
 
 Le cache ne pouvant être suffisamment grand pour contenir toute la mémoire, il faut pouvoir déterminer l'association entre l'adresse d'une ligne dans la mémoire centrale et son emplacement dans le cache.
@@ -72,6 +68,22 @@ Il y a trois grandes catégories d'associativité utilisées par les caches :
     Cela implique un certain nombre d'opérations sur les adresses des lignes, et l'espace pris par le composant ainsi que le temps d'accès moyen dépend directement de la valeur de N.
 \end{itemize}
 
+\paragraph{Politiques d'éviction}
+
+Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impact direct sur les performances, et les politique de remplacement ont été très étudiées par les constructeurs et les chercheurs.
+
+La politique optimale serait de remplacer la ligne qui sera réutilisée le plus tard, mais ce genre de clairvoyance est impossible à implémenter en pratique.
+Un certain nombre d'alternatives ont donc été imaginées, et sont décrites ci-après :
+\begin{itemize}
+  \item Random : cette politique choisi une ligne à remplacer au hasard. Sa simplicité la rend simple à implémenter en pratique, et a notamment été utilisée dans les processeurs ARM Cortex-R~\cite{ARM-Cortex-R}.
+  \item First-In First-Out : comme son nom l'indique, la ligne remplacée est la première qui est rentrée dans le cache parmi celles présentes.
+  \item Least Recently Used (LRU) : dans cette politique, chaque ligne dispose de plusieurs bits représentant la dernière utilisation de cette ligne. La ligne remplacée est celle ayant été utilisée il y a le plus longtemps.
+  \item Pseudo-LRU : cette politique offre un compromis à LRU.
+Lorsque l'associativité du cache dépasse un certain seuil, le coût d'implémentation de LRU devient trop important~\cite{Kedzierski2010}, l'alternative proposée par les politiques pseudo-LRU est donc de remplacer une ligne parmi celles utilisées il y a le plus longtemps.
+Cela permet de limiter le nombre de bits nécessaire pour tracer les lignes à remplacer potentielles.
+\end{itemize}
+
+La politique pseudo-LRU semble être la plus utilisée par les fabricants de processeurs, Al-Zoubi et al.~\cite{Al-Zoubi2004} proposent une évaluation complète et détaillée de l'impact des politiques d'éviction en fonction de l'associativité du cache, justifiant le choix des constructeurs.
 
 \paragraph{Niveaux de caches}
 
@@ -91,11 +103,13 @@ De même, beaucoup d'optimisations au sein des compilateurs visent également ce
 
 Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les coeurs d'un même noeud.
 
-GRAPHE : 2.1.1 schéma de l'architecture des chaches
+GRAPHE : 2.1.1 schéma de l'architecture des caches
 
 TODO : tableau latences accès caches vs processeurs (sandy, broadwell, knl, bulldozer, ryzen).
 
 TODO : ref + paragraph sur les caches configurables du ryzen
+
+\subsubsection{SIMD}
 
 \subsubsection{Hyperthreading}
 
