@@ -4,7 +4,7 @@ L'objectif principal de cette thèse était d'étudier les améliorations possib
 Cela a été découpé en trois axes de travail.
 
 
-\subsection{Analyse du comportement d'applications sur machine NUMA}
+\subsection*{Analyse du comportement d'applications sur machine NUMA}
 
 Avant de pouvoir penser aux améliorations, il faut commencer par analyser les différents points améliorables, tant du côté logiciel que matériel.
 Si l'on souhaitait cibler les modèles de programmation à base de tâches, il fallait néanmoins choisir l'un des modèles existant pour l'étude concrète, et ce choix c'est porté sur OpenMP.
@@ -17,7 +17,7 @@ L'objectif derrière cet outil est de se libérer de certaines contraintes se pr
 En extrayant les parties critiques on peut faire varier à loisir, et précisément, des paramètres tels que le placement des données ou le jeu de donnée en entrée, afin d'analyser finement quels impacts ils ont et comment l'architecture sous-jacente réagit.
 
 
-\subsection{Quelles améliorations pour l'utilisateur et le support exécutif ?}
+\subsection*{Quelles améliorations pour l'utilisateur et le support exécutif ?}
 
 À partir des conclusions tirées du point précédent, le second objectif était de trouver, proposer, et évaluer des améliorations possibles, tant pour l'utilisateur que pour le support exécutif.
 
@@ -25,7 +25,7 @@ Ces réflexions ont données lieu à deux contributions : la première est axée
 La seconde est axée sur l'extension du support exécutif~\cite{Virouleau2016a}, d'une part pour faciliter la distribution des données sur la machine, et d'autre part pour exploiter les informations disponibles sur les données manipulées par les tâches, dans le but d'améliorer la localité des données au cours de l'exécution.
 
 
-\subsection{Place des travaux dans l'évolution du matériel et du logiciel}
+\subsection*{Place des travaux dans l'évolution du matériel et du logiciel}
 
 Au cours de cette thèse les architectures NUMA ont évoluées, dans quelle mesure l'évolution du matériel impacte les travaux de cette thèse ?
 Le dernier objectif est d'analyser les travaux effectués - voir les compléter - afin de proposer des approches indépendantes du matériel, dans l'objectif de faciliter le travail du programmeur et du développeur de support exécutif à l'avenir.
