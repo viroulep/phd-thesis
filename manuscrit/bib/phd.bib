@@ -425,7 +425,7 @@ url = {http://hal.inria.fr/inria-00496295},
 keywords = {Marcel, ForestGOMP, MaMI, NUMA, hwloc} 
 }
 
-@inbook{Virouleau2016,
+@inbook{Virouleau2016b,
 address = {Cham},
 annote = {NULL},
 author = {Virouleau, Philippe and Roussel, Adrien and Broquedis, Fran{\c{c}}ois and Gautier, Thierry and Rastello, Fabrice and Gratien, Jean-Marc},
@@ -442,7 +442,7 @@ year = {2016}
 }
 @book{Virouleau2014,
 abstract = {{\textcopyright} Springer International Publishing Switzerland 2014. The recent introduction of task dependencies in the OpenMP specification provides new ways of synchronizing tasks. Application programmers can now describe the data a task will read as input and write as output, letting the runtime system resolve fine-grain dependencies between tasks to decide which task should execute next. Such an approach should scale better than the excessive global synchronization found in most OpenMP 3.0 applications. As promising as it looks however, any new feature needs proper evaluation to encourage application programmers to embrace it. This paper introduces the KASTORS benchmark suite designed to evaluate OpenMP tasks dependencies.We modified state-of-theart OpenMP 3.0 benchmarks and data-flow parallel linear algebra kernels to make use of tasks dependencies. Learning from this experience, we propose extensions to the current OpenMP specification to improve the expressiveness of dependencies. We eventually evaluate both the GCC/libGOMP and the CLANG/libIOMP implementations of OpenMP 4.0 on our KASTORS suite, demonstrating the interest of task dependencies compared to taskwait-based approaches.},
-author = {Virouleau, P. and Brunet, P. and Broquedis, F. and Furmento, N. and Thibault, S. and Aumage, O. and Gautier, T.},
+author = {Virouleau, Philippe and Brunet, Pierrick and Broquedis, François and Furmento, Nathalie and Thibault, Samuel and Aumage, Olivier and Gautier, Thierry},
 booktitle = {Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture Notes in Bioinformatics)},
 issn = {16113349},
 keywords = {Benchmarks,KASTORS,OpenMP,Runtime systems,Task dependencies},
@@ -450,9 +450,9 @@ title = {{Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite}
 volume = {8766},
 year = {2014}
 }
-@book{Virouleau2016b,
+@book{Virouleau2016a,
 abstract = {{\textcopyright} Springer International Publishing Switzerland 2016. The recent addition of data dependencies to the OpenMP 4.0 standard provides the application programmer with a more flexible way of synchronizing tasks. Using such an approach allows both the compiler and the runtime system to know exactly which data are read or written by a given task, and how these data will be used through the program lifetime. Data placement and task scheduling strategies have a significant impact on performances when considering NUMA architectures. While numerous papers focus on these topics, none of them has made extensive use of the information available through dependencies. One can use this information to modify the behavior of the application at several levels: during initialization to control data placement and during the application execution to dynamically control both the task placement and the tasks stealing strategy, depending on the topology. This paper introduces several heuristics for these strategies and their implementations in our OpenMP runtime Xkaapi.We also evaluate their performances on linear algebra applications executed on a 192-core NUMA machine, reporting noticeable performance improvement when considering both the architecture topology and the tasks data dependencies. We finally compare them to strategies presented previously by related works.},
-author = {Virouleau, P. and Broquedis, F. and Gautier, T. and Rastello, F.},
+author = {Virouleau, Philippe and Broquedis, François and Gautier, Thierry and Rastello, Fabrice},
 booktitle = {Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture Notes in Bioinformatics)},
 doi = {10.1007/978-3-319-43659-3_39},
 isbn = {9783319436586},

@@ -6,13 +6,30 @@ Cela a été découpé en trois axes de travail.
 
 \subsection{Analyse du comportement d'applications sur machine NUMA}
 
-TODO : parler du fait qu'on prend une application par partie, qu'on regarde les variables côté applications qui font changer les perf, et qu'est ce qui est limitant côté machine.
+Avant de pouvoir penser aux améliorations, il faut commencer par analyser les différents points améliorables, tant du côté logiciel que matériel.
+Si l'on souhaitait cibler les modèles de programmation à base de tâches, il fallait néanmoins choisir l'un des modèles existant pour l'étude concrète, et ce choix c'est porté sur OpenMP.
+
+Face à l'absence de suite de benchmarks ciblant certaines fonctionnalités d'OpenMP que nous souhaitions utiliser, nous avons commencer par publier une suite de benchmark, les KASTORS~\cite{Virouleau2014}.
+Les applications présentes dans cette suite ont été adaptées depuis des applications existantes, afin d'utiliser les constructions dont nous avions besoin.
+
+Nous avons également écrit un outil plus générique, NOMDEL4OUTIL, afin de pouvoir évaluer plus précisément certaines parties ciblées des applications.
+L'objectif derrière cet outil est de se libérer de certaines contraintes se présentant lors de l'observation de ces parties de code au cours de l'exécution complète du programme.
+En extrayant les parties critiques on peut faire varier à loisir, et précisément, des paramètres tels que le placement des données ou le jeu de donnée en entrée, afin d'analyser finement quels impacts ils ont et comment l'architecture sous-jacente réagit.
+
 
 \subsection{Quelles améliorations pour l'utilisateur et le support exécutif ?}
 
-TODO : à partir du constat précédent, comment on améliore l'existant ?
+À partir des conclusions tirées du point précédent, le second objectif était de trouver, proposer, et évaluer des améliorations possibles, tant pour l'utilisateur que pour le support exécutif.
+
+Ces réflexions ont données lieu à deux contributions : la première est axée sur la réponse au besoin de l'utilisateur, en proposant une clause |affinity| pour les tâches OpenMP~\cite{Virouleau2016b}. Cette clause à pour but de permettre à l'utilisateur d'indiquer explicitement un lien fort entre une tâche et une ressource de la machine, que ce soit un coeur, un noeud, ou une donnée.
+La seconde est axée sur l'extension du support exécutif~\cite{Virouleau2016a}, d'une part pour faciliter la distribution des données sur la machine, et d'autre part pour exploiter les informations disponibles sur les données manipulées par les tâches, dans le but d'améliorer la localité des données au cours de l'exécution.
+
 
 \subsection{Place des travaux dans l'évolution du matériel et du logiciel}
 
-TODO : sur 3 ans on a vu les archis et les modèle de programmation évoluer, comment notre travail s'inscrit dans cette évolution, et vers quoi se tourner ?
+Au cours de cette thèse les architectures NUMA ont évoluées, dans quelle mesure l'évolution du matériel impacte les travaux de cette thèse ?
+Le dernier objectif est d'analyser les travaux effectués - voir les compléter - afin de proposer des approches indépendantes du matériel, dans l'objectif de faciliter le travail du programmeur et du développeur de support exécutif à l'avenir.
 
+Parmi nos travaux, NOMDEL4OUTIL propose une approche transposable à tout type d'architecture, et nous avons fait des travaux préliminaires sur un simulateur, qui à partir des données de cet outil peut donner un aperçu des performances de l'application complète.
+Le coût - en temps - de changer l'implémentation utilisée par un support exécutif est assez important, ces travaux préliminaires ont pour objectif de donner un premier aperçu de l'impact que pourrait avoir une modification de l'ordonnancement par le support exécutif.
+Permettant ainsi, lors du "portage" d'une application ou d'un support exécutif sur une nouvelle architecture, d'estimer son comportement, et évaluer si des changements dans l'un des deux sont nécessaires.
