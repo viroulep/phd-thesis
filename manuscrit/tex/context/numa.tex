@@ -153,27 +153,41 @@ L'hyperthreading est généralement une option que l'on peut désactiver dans le
 \subsection{Interconnexion des noeuds}\label{sec:context:numa:interconnect}
 
 La partie la plus importante d'une machine NUMA est le système d'interconnexion entre les différents noeuds.
+C'est cette partie qui va déterminer à quel point cela va être couteux de faire un accès mémoire sur un noeud distant, et donc à quel point l'aspect NUMA de la machine (le \emph{facteur NUMA}) va impacter les performances d'une application.
 
-C'est cette partie qui va déterminer à quel point cela va être couteux de faire un accès mémoire sur un noeud distant, et donc à quel point le côté NUMA de la machine (le \emph{facteur NUMA} (là si je cite pas la thèse de François je me fais tapé dessus ?)) va impacter les performances d'une application.
+Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents noeuds par le matériel, est n'est pas la responsabilité du programmeur ou du support exécutif.
+La topologie du système d'interconnexion peut être très différentes d'une machine à une autre, et de multiples exemples existent dans les machines commercialisées.
+Il existe des topologies plates, où chaque noeud est directement connecté aux autres (TODO: ref graph 2.1.2), des topologies où les noeuds du même socket passent par le même contrôleur local, mais passent par un ou deux autres liens du système d'interconnexion (TODO: ref graph idchire).
 
-Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents noeuds par le matériel, est n'est pas la responsabilité du programmeur.
+Le nombre de rebonds - \emph{hops} - à effectuer avant d'accéder à la mémoire demandée impacte directement la latence et la bande passante, comme le montre le tableau comparatif de la figure~(TODO).
 
-TODO : parler de la hiérarchie possible de l'interconnexion.
-
-TODO : donner quelques chiffres à titre d'exemple ?
-
-GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA
+GRAPHE : 2.1.2 les chiffres de base !
+GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 socket/2 noeuds, idchire, knl)
 
 
 \subsection{Particularité au niveau du système d'exploitation}\label{sec:context:numa:os}
 
+Le support des machines NUMA dans Linux est arrivé dès 2003~\cite{Dobson2003}.
+Il est donc possible, d'une part d'obtenir des informations à propos de la machine, telles que le numéro de noeud d'un coeur donné, ou le numéro de noeud d'une adresse mémoire donnée.
+Et d'autre part de contrôler le placement d'un thread sur un ensemble de coeur physique à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un noeud.
 
-Parler de la taille de page (4K vs 2M), et de l'impact que ça a.
+D'autres outils existent pour avoir encore plus d'informations et de contrôle, et particulièrement hwloc~\cite{Broquedis2010}.
+Il permet d'avoir des informations précises sur la topologie de l'architecture, incluant les distances théoriques (fournies par le matériel) entre noeud, mais également de garantir des allocations de mémoire sur les noeuds fournis par l'utilisateur.
 
-Parler de~\cite{Dobson2003}
+La compréhension de la gestion de l'allocation de la mémoire par le système d'exploitation est d'ailleurs un point critique lorsque l'on traite des machines NUMA.
+Le système d'exploitation gère la mémoire par petit fragments, appelés \emph{pages}.
+Lors de l'allocation d'un tableau par exemple, si sa taille dépasse celle d'une \emph{page}, l'espace mémoire alloué consistera donc de plusieurs pages.
 
-Parler d'hwloc ?
+Il faut savoir que, par défaut, le système ne donne pas une \emph{page} physique directement lors d'une simple allocation mémoire (comme par exemple lors d'un appel à |malloc|).
+La mémoire n'est physiquement allouée que lors du premier accès à la donnée (\emph{first-touch}).
+Certains outils, tels que \emph{numactl}~\cite{numactl} permettent de modifier la politique d'allocation physique des pages (par exemple en faisant en sorte de répartir les pages successives sur l'ensemble des noeud NUMA automatiquement).
 
-Parler de comment le système gère l'hyperthreading ? (mal, de toute façon on pin les threads)
+L'allocateur par défaut de la libc fait de la réutilisation de pages. Cela veut dire qu'après plusieurs allocations/libération successives de mémoire, vous n'obtenez pas forcément des nouvelles pages.
+L'objectif derrière cela est de réduire le coût général d'une allocation, puisque l'allocation et la libération physique de nouvelles pages est couteux, et que réutiliser des pages supprime ce coût.
+En revanche le corollaire de ce constat est que le contrôle de l'allocation physique par \emph{first-touch} n'est possible que lors de la première allocation des pages.
+Pour palier à ce problème, hwloc proposent des fonctions d'allocations qui garantissent l'attribution de nouvelles pages, permettant dans ce cas de faire confiance au \emph{first-touch}.
 
-
+Enfin, un dernier détail mérite de l'attention, il s'agit de la taille des pages manipulées par le système.
+En effet celle ci est configurable, et deux options sont généralement possibles : soit des pages de 4 Kilo octets, soit des - \emph{huge} - pages de 2 Mega octets.
+L'impact de cette taille peut être importante dans le cas d'un bloc de données s'étendant sur plusieurs pages : plusieurs requêtes de page de petites tailles seront plus sensible à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
+De plus lors de l'utilisation d'un outil tel que \emph{numactl} pour répartir les pages sur la machine, l'effet de la répartition sera plus visible avec des pages de petites tailles.
