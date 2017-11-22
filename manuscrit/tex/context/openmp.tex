@@ -1,32 +1,27 @@
 \section{Évolution d'un modèle de programmation : OpenMP}\label{sec:context:openmp}
 
-TODO: où et comment formuler le fait qu'il faut d'une part maximiser la performance séquentielle, mais aussi maximiser le parallélisme
-
 OpenMP~\cite{openmp45} est le standard de-facto pour les machines à mémoire partagée, au fur et à mesure que le matériel a évolué, le standard a évolué avec lui.
+
+Les sections suivantes décrivent les différentes fonctionnalités d'OpenMP, dans l'ordre chronologique où elles sont apparues.
 
 \subsection{Boucles}
 
 OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (illustré sur la figure~\ref{fig:context:fork-join}), et l'utilisation de base ciblait la parallélisation de boucles régulières.
 
-\label{fig:context:fork-join}TODO : graphe fork join
+GRAPHE: \label{fig:context:fork-join}fork join
 
 Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (cela peut être par exemple une boucle).
-
 À partir de là, plusieurs threads sont créés (ou réutilisés) pour exécuter la construction en parallèle. Cet ensemble de threads forme une \emph{team} de thread pour la région parallèle.
-
 À la fin de la région parallèle, tous les threads se synchronisent et l'exécution séquentielle est reprise.
 
-Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{team}, ainsi que la manière dont sont attribuées les itérations de la boucle.
-
-TODO: parler de static, dynamic, etc ?
+Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{team}, ainsi que la manière dont sont attribuées les itérations de la boucle, via la clause |schedule|.
 
 Pendant l'exécution de l'application c'est un autre programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différent threads.
-
 Le langage OpenMP est standard et bien défini, mais plusieurs support exécutifs existent et les performances dépendent directement de celui ci.
 
 Pour complémenter le langage, OpenMP propose également plusieurs fonctionnalités à travers une API. Il est possible par exemple de récupérer dynamiquement le nombre total de threads, l'indice du thread courant, ou encore d'ajuster l'ordonnanceur de boucles.
-
 Tout cela existe depuis les toutes premières versions d'OpenMP.
+
 Avec l'évolution du matériel et des besoins des utilisateurs, le comité d'architecture d'OpenMP a ajouté le concept de \emph{tâche} à partir de la version 3.0.
 
 
@@ -40,33 +35,38 @@ Les tâches peuvent être créées par un thread OpenMP et exécutées par n'imp
 Comme la gestion des tâches à l'exécution du programme est beaucoup plus économique que de créer et synchroniser des threads, le développeur peut pousser la parallélisation de son application encore plus loin : il peut considérer la parallélisation de portions de code qui avaient un grain trop fin pour être parallélisées avec des threads.
 
 Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point, avant de reprendre l'exécution.
-
 Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
 
 La version 4.0 d'OpenMP~\cite{openmp40} pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
-
 Le mode d'accès peut être soit |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
-
 Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou si il faut d'abord attendre la complétion d'une ou plusieurs autres tâches.
 
 
 \subsection{Vectorisation}
 
+Nous avons vu dans la section~\ref{sec:context:numa:simd} que les processeurs disposent d'instructions vectorielles - \emph{SIMD} - depuis le début des années 2000.
+Avec la multiplications des architectures et de la taille des registres, beaucoup de nouvelles instructions spécifiques à certaines tailles de registre sont apparues.
 
-
-Pour cette section : ok + de parallélisme, mais ça c'est spécifiquement pour améliorer les perfs séquentielles
-
-TODO : faire plus de texte ?
-
-OpenMP 4.0 also brought in SIMD - Single Instruction Multiple Data - constructs.
-The aim was to provide a standard interface for vectorization instructions.
+Si la vectorisation automatique n'est pas possible, il est coûteux pour le programmeur de modifier son code en fonction des architectures.
+OpenMP~4.0 tente de résoudre se problème par l'introduction d'une construction |simd|, qui permet au programmeur d'indiquer quelles parties de son code peuvent être vectorisées et avec quelles contraintes (longeur maximale, alignement, quelles sont les variables d'itérations, ...).
 
 
 \subsection{Accélérateurs}
 
-La majorité des supercalculateurs intègrent des accélérateurs (comme des GPUs), et pour faciliter leur exploitation la construction |target| a été ajoutée au standard dans la version 4.0.
+La majorité des supercalculateurs intègrent des accélérateurs (comme des GPUs).
+L'exploitation de ces accélérateurs imposent parfois l'usage d'un language spécifique au constructeur (tel que Cuda).
 
-TODO : faire plus de texte ?
+Bien que des standards, comme OpenCL~\cite{Stone2010}, existent pour cibler différents types d'accélérateurs, cibler ce type d'architecture via OpenMP était impossible.
+
+OpenMP~4.0 introduit la construction |target|, qui permet de demander au compilateur de créer une tâche à partir de la région de code sélectionnée, qui peut ensuite être exporté sur accélérateur.
+Plusieurs clauses permettent de spécifier des dépendances, ainsi que l'ensemble des données à transférer vers l'accélérateur, et l'ensemble des données à rapatrier depuis l'accélérateur à l'issue des calculs.
+
+Si la norme indique le support de plusieurs accélérateurs, ils doivent cependant être tous du même type, et la transformation du code C/C++/Fortran du bloc est laissé au compilateur implémentant la norme.
+Dans le cas d'utilisation d'appels de fonctions, le programmeur doit indiquer qu'elles disposeront d'une définition pour l'\emph{hôte} et l'\emph{accélérateur} via une construction |declare target|.
+
+Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adoptée telle quelle par les programmeurs d'architectures hétérogènes.
+
+TODO parler du fait que c'est pas un succès fou, sans vraiment de référence ça le fait ?
 
 \subsection{Affinité}
 
