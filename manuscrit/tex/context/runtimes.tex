@@ -1,54 +1,101 @@
 \section{Techniques d'ordonnancement pour supports exécutif}\label{sec:context:runtimes}
 
-\subsection{Statique}
- - static
- cite quelques outils ?
-Kurzak : J. Kurzak, H. Ltaief, J. J. Dongarra, and R. M. Badia. Scheduling Dense Linear Algebra Op- erations on Multicore Processors. Concurrency and Computation: Practice and Experience,
+On peut distinguer deux grands types d'ordonnancement : les techniques dites \emph{online}, et les techniques dites \emph{offline}~\cite{Karp1992}.
+Les sections suivantes décrivent les différentes caractéristiques de ces techniques, ainsi que quelques exemples en rapport avec nos travaux.
+En particulier la section~\ref{sec:context:runtimes:ws} décrit en détail le \emph{vol de travail}, un concept largement utilisé dans les supports exécutifs auxquels nous nous sommes intéressés.
 
-Cholesky : round robin init and compute to ensure locality.
+\subsection{Ordonnancement \emph{offline}}
 
-Citer Emmanuel
+Les techniques d'ordonnancement offline tirent parti des informations connues à propos du matériel et des tâche à exécuter, telles que leur temps d'exécution en utilisant telle où telle ressource, ou encore les contraintes de précédence à respecter pour l'exécution.
+Avant l'exécution un ordonnancement des tâches est généré à partir de ces informations, et il est stocké pour être ensuite utilisé à l'exécution.
 
-\subsection{Dynamique}
+Ce type d'ordonnancements a plusieurs avantages : d'une part l'exécution de l'application est totalement déterministe et reproductible ; ensuite cela entraine très peu de coût au niveau du support exécutif lors de l'exécution du programme, puisque les décisions ont déjà été prises ; et enfin cela permet d'optimiser au maximum le temps d'utilisation des processeurs, même en cas de dépendances complexes.
 
-La technique la plus répandue pour l'ordonnancement dynamique de tâches est le vol de travail (TODO cite quelque chose !).
+En revanche il y a plusieurs détails qui peuvent jouer contre l'utilisation de telles techniques~\cite{Locke1992} : l'ordonnancement généré est très sensible à la justesse des informations utilisées. Si une ou plusieurs tâches viennent à durer plus longtemps que prévu, cela peut tout simplement rendre l'ordonnancement très inefficace.
+Pour cette raison beaucoup de supports exécutifs décident d'utiliser des techniques \emph{online}.
 
-Le concept est plutôt simple : à chaque fois qu'un thread devient inactif, il va aller "voler" des tâches dans une queue de tâches.
+Comme on l'a vu dans la section précédente, dans un modèle de programmation à base de tâches, le programme est représenté par un DAG.
+La "meilleure" exécution de l'application revient donc à calculer l'ordonnancement optimal de ce DAG sur les ressources disponibles.
+Malheureusement ce problème est NP-complet~\cite{Cook1971}, il faut donc trouver des approximations, ou ajouter des restrictions sur le DAG ou les ressources.
+Nous mentionnons ci-après quelques techniques offline, qui ont d'ailleurs parfois été adaptées pour être - partiellement - utilisées dans des méthodes online.
 
-Dans le cas le plus basique, on peut utiliser une seule queue centralisée contenant l'ensemble des tâches prêtes à être exécutées, mais il est tout à fait possible d'avoir plusieurs queues de tâches (comme une queue par coeur par exemple !).
+Dominant Sequence Clustering (DSC)~\cite{Yang1994} est un algorithme permettant de trouver un ordonnancement optimal pour certaines classes de DAG, et de trouver des 2-approximation pour tout type de DAG, sur des architectures homogènes non bornées.
+Pour l'ordonnancement sur des ressources hétérogènes, Heterogeneous Earliest Finish Time (HEFT), et Critical-Path-on-a-Processor (CPOP)~\cite{HEFT}, sont des heuristiques très populaires qui analysent le DAG de l'application et assignent une priorité aux tâches en fonction d'informations connues statiquement, tels que le coût des transferts de données vers chaque ressources, où les durées estimées des tâches.
+CPOP ajoute en plus la prise en compte du \emph{chemin critique} dans cette priorité.
 
-Quand elles sont créées, les tâches ne sont généralement pas prêtes à être exécutées, et ne sont donc pas immédiatement présentes dans l'une de ces queues.
+On peut également remarquer que des techniques de ce type sont adaptées pour être utilisées lors de l'ordonnancement online de l'application, ce qui est par exemple le cas dans StarPU~\cite{StarPU} ou Kaapi~\cite{Gautier2007}.
 
-Dans une grande partie des cas elles dépendent de la terminaison d'autres tâches, ce qui signifie qu'à chaque fois qu'une tâche se termine, cela peut satisfaire des dépendances d'autres tâches.
+Certaines applications que l'on a étudié et utilisé sont des applications d'algèbre linéaire, et Jakub Kurzak et al.~\cite{Kurzak2010} ont étudiés l'ordonnancement offline de ce type d'application, afin de trouver les meilleurs ordonnancement possibles.
 
-Une fois que toutes les dépendances d'une tâche sont satisfaites, celle ci va être placée dans une queue de tâche prête.
+TODO : citer SPAGHETti~\cite{Barthou2014} ? (ordo statique sur ressources hétérogène)
 
-On peut déduire de cela qu'il y a deux grandes étapes clés dans le processus :
 
-\subsubsection{Choix de la victime}
 
-La première étape est le choix de la victime.
+\subsection{Ordonnancement \emph{online}}
 
-Imaginons qu'il y ait une queue de tâches prêtes par travailleur.
-Lorsqu'un travailleur devient inactif, il va devoir trouver du travail.
-Il peut par exemple commencer par regarder sa propre queue de tâches prêtes, et si elle est vide il devra en trouver une autre (par exemple en choisir une autre au hasard parmi les autres travailleurs).
+Contrairement à l'ordonnancement offline, les techniques d'ordonnancement online vont prendre les décisions concernant l'ordonnancement des tâches à l'exécution.
+Ces techniques n'ont pas besoin d'information préalable sur les tâches, cela les rend donc beaucoup plus flexibles que les techniques offline.
+En contrepartie, la prise de décision à l'exécution introduit un surcout pour le support exécutif, se répercutant directement sur le temps total d'exécution.
 
-Il y a beaucoup d'heuristiques possibles pour le choix de la victime, et une "bonne" heuristique dépend directement du nombre de queues de tâches et de leurs caractéristiques.
-(TODO : lien vers la section plus détaillée des contribs ?)
 
-\subsubsection{Placement d'une tâche prête}
+Nous détaillons ci après deux types d'ordonnancement online populaires : l'ordonnancement de listes glouton, et le vol de travail.
 
-La seconde étape est le placement d'une tâche prête.
+\subsubsection{Algorithmes de listes gloutons}
 
-Lorsqu'un travailleur termine une tâche, il va devoir indiquer aux successeurs de cette tâches les dépendances qui viennent d'être satisfaites, s'il y en a.
+L'ordonnancement glouton fonctionne assez simplement : le support exécutif maintien une liste de tâches \emph{prête}.
+À chaque fois qu'un processeur devient disponible, l'ordonnanceur lui assigne une tâche prête.
+Il met ensuite à jour la liste des tâches prêtes, et recommence l'étape précédente jusqu'à ce qu'il n'y ait plus de tâche à exécuter.
 
-Si pour l'une des successeurs toutes les dépendances sont satisfaites, il faut sélectionner une queue où placer cette tâche.
+Les heuristiques pour le choix de la tâche prête à exécuter sont nombreuses, et la plupart d'entre elles prennent en compte la position de la tâche sur le \emph{chemin critique} de l'application.
 
-Une fois encore, il y a autant de choix que de queues de tâches. Un exemple d'heuristique classique est de sélectionner sa propre queue de tâche.
-(TODO : déjà trop spécifique ? rediriger vers la section plus détaillée ?)
+\subsubsection{Vol de travail}\label{sec:context:runtimes:ws}
 
-\subsubsection{Nombre de requêtes de vol}
+Le vol de travail fait partie des techniques d'ordonnancement online les plus répandues, et est notamment utilisé dans les supports exécutifs étudiés lors de cette thèse.
+Cette section revient donc en détail sur les mécaniques clées de ce type d'ordonnancements.
+
+Le principe de base est le suivant : le support exécutif disposent d'un certain nombre de queues de tâches prêtes, typiquement associées aux différentes ressources (tels que des coeurs de calcul).
+À chaque fois qu'un thread devient inactif, celui ci va aller "voler" du travail dans une queue de tâches prête.
+S'il réussi à récupérer du travail (une tâche), il va l'exécuter.
+Une fois sa tâche terminée, il va déterminer s'il y a des nouvelles tâches prêtes suite à la complétion de son travail, et les introduire dans une des queues de tâches prêtes.
+Il redevient ensuite inactif, et va de nouveau essayer de voler du travail.
+
+On constate donc qu'il y a deux moments clés où le thread doit prendre une décision importante : le choix de la victime pour le vol, et le choix de la queue pour l'ajout des nouvelles tâches prêtes.
+
+\paragraph{Choix de la victime}
+
+Lors du vol de travail, le thread voleur se retrouve à devoir choisir à qui envoyer une requête de vol parmi les queues de tâches disponibles.
+Il y a évidemment plusieurs heuristiques possibles, et concrètement la "bonne" heuristique dépend directement du nombre de queues de tâches disponibles et de leurs caractéristiques, mais aussi du type de la ressource effectuant la requête de vol.
+
+Il y a quelques principes simples qui sont généralement utilisés, tels que commencer par voler dans sa propre queue de tâches avant d'aller voler ailleurs, mais généralement quand il y a peu d'information sur les tâches et les ressources, il suffit de choisir une victime aléatoirement.
+
+\paragraph{Placement d'une tâche prête}
+
+La deuxième prise de décision concerne le placement des tâches.
+Lorsqu'un thread termine une tâche, il va devoir indiquer aux successeurs de cette tâche les dépendances qui viennent d'être satisfaites, s'il y en a.
+Si pour l'une des successeurs toutes les dépendances sont satisfaites, alors cette tâche devient prête, et il faut sélectionner une queue où la placer.
+
+Encore une fois de nombreuses heuristiques sont possibles. Un choix relativement commun est de faire en sorte que le thread place cette tâche dans sa propre queue de tâches.
+
+
+Dans la section~\ref{sec:contrib:ws:heuristics}, nous revenons sur comment nous avons pu agir au niveau des deux prises de décisions précédent, afin de prendre en compte la topologie des machines NUMA.
+
+\paragraph{Ordre des tâches dans leurs queues}
+
+En parler ?
+Pour nous c'est une stack si je me souviens bien, ça pourrait être une liste trié par priorité.
+
+\paragraph{Nombre de requêtes de vol}
 
 Parler d'aggrégation ?
+
+
+\subsection{Offline vs Online, lequel choisir ?}
+
+Il n'y a en fait pas besoin de faire un choix radical !
+
+Compte tenu du type d'architectures visées, et du potentiel déséquilibre de charge possible même pour des applications a première vue stables, une technique de base \emph{online} telle que le vol de travail semble indispensable.
+En revanche il est important que cette approche soit complétée par des techniques a priori \emph{offline}, afin de rassembler un maximum d'information sur les tâches exécutées, pour au final améliorer la prise de décision.
+
+
 
 

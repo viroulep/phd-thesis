@@ -12,7 +12,7 @@ En pratique c'est une section de code bien définie du programme, et cela peut �
 Lorsqu'on parle de programmation parallèle, il faut bien évidemment parler de synchronisation.
 Les différentes tâches définies par l'utilisateur vont être exécutées en parallèle sur la machine, mais dans beaucoup de cas certaines tâches doivent attendre la complétion d'une ou plusieurs tâches avant de pouvoir commencer à être exécutée.
 
-Il y a deux grand types de synchronisations pour la programmation à base de tâche :
+Il y a deux grand types de synchronisations pour la programmation à base de tâche~:
 
 \begin{itemize}
   \item la synchronisation dans le thread courant : le thread se bloque sur un point de synchronisation, et attend que l'ensemble des tâches qu'il a créé ait été exécutées avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
@@ -163,5 +163,11 @@ int fib(int n) {
   return x + y;
 }
 \end{lstlisting}
+
+\subsection*{Conclusion}
+
+Peu importe le modèle de programmation, car au final dans tous ces modèles l'application est décrite par un graphe de tâches direct et acyclique (DAG).
+
+L'étape suivante consiste à exécuter ce graphe sur la machine, et pour cela le support exécutif peut se reposer sur un ensemble important de techniques d'ordonnancement. 
 
 
