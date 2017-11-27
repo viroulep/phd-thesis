@@ -1,8 +1,13 @@
-\section{Applications par flots de données sur architectures à mémoire partagée}
+\section{Utilisation des machines NUMA à travers OpenMP}
+
+\subsection{Constructions, clauses, et outils utilisés}
 
 
 \subsection{Une suite de benchmark utilisant les dépendances de données d'OpenMP : KASTORS}
 
+\begin{todo}
+\cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
+\end{todo}
 Le support pour les applications à base de flots de données dans OpenMP est arrivé avec la version 4.0, qui est sortie au démarrage de cette thèse.
 
 Il existait évidemment plusieurs suites de benchmarks : d'une part pour les applications à base de tâches indépendantes et utilisant OpenMP~3.1, et d'autre part pour les applications à base de flots de données, mais écrites dans des languages différents.
@@ -123,6 +128,10 @@ for (k=0; k<NB; k++) {
 }
 \end{lstlisting}
 
+\begin{todo}
+citer correctement \cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
+\end{todo}
+
 Cette application calcule la factorisation LU d'une matrice creuse.
 Nous avons modifié l'implémentation originale des BOTS pour ajouter des dépendances de données.
 Ces modificiations sont décrites dans les listings~\ref{lst:kastors:sparseLU} and~\ref{lst:kastors:sparseLU-deps}.
@@ -139,12 +148,4 @@ TODO : ajouter des courbes, des détails sur les compilos/runtimes utilisés, et
 
 GRAPHE : 4.2.3 performances générales kastors, tâches vs dépendances (probablement du papier). opportunité pour noter le problème sur jacobi taskdep.
 
-\subsection{Étude de cas : Cholesky}
-\label{chap:contribs:apps:kastors:cholesky}
-
-TODO : décrire en détail l'algorithme de Cholesky, et faire un point sur les différentes performances que l'on obtient en fonction de comment on fait varier l'initialisation de données.
-
-GRAPHE : 4.2.4 schéma du DAG de Cholesky, un joli graph en couleur avec une couleur par noyau. point bonus pour un schéma explicatif du fait que dpotrf est la clé pour générer le parallélisme.
-
-GRAPHE : 4.2.4 performances détaillées Cholesky : impact de la taille de la matrice, de la taille de bloc, de la machine. tailles = 8k, 16k, 32k, bs = 128/256/512. (*sans* affinité, juste un topo)
-
+GRAPHE : 5.1.3, courbes motivantes pour l'affinité (ça peut être jacobi, ça peut être l'étude distante/locale des noyaux de Cholesky)

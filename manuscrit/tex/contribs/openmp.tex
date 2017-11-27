@@ -4,7 +4,7 @@
 \qauthor{Test}
 \end{savequote}
 
-\chapter{Extending OpenMP}\label{chap:contrib:openmp}
+\chapter{Utilisation et amélioration d'OpenMP}\label{chap:contrib:openmp}
 \chaptertoc
 
 
@@ -18,57 +18,17 @@
 
 % - Missing to improve things
 %    - What we implemented
+\begin{todo}
+  mettre ça au bon endroit
 \cite{Virouleau2016}, Description, implementation and evaluation of an affinity clause for task directives
 
 \cite{Virouleau2016b}, Using data dependencies to improve task-based scheduling strategies on numa architectures
+\end{todo}
 %    - What remains
 
 
-\section{OpenMP vs NUMA architectures}
-
-\subsection{Current construct and clauses}
-\subsection{Additional tools and techniques}
-\subsection{Numbers, and why we need more}
-GRAPHE : 5.1.3, courbes motivantes pour l'affinité (ça peut être jacobi, ça peut être l'étude distante/locale des noyaux de Cholesky)
-\subsection{Conclusion: what matters?}
-
-\section{Matching what is missing}
-\subsection{Programmers needs}
-\subsection{Expressing task-to-resource affinity}
-
-\section{topo description des trucs précédents + qu'est ce qu'on peut utiliser dans le runtime}
-\subsection{The programmer can give more information}
-\subsection{Can the runtime exploit it?}
-
-\section{Enhancing runtimes techniques}
-\subsection{Common schedulers and their specificities}
-\subsection{Data-based Heuristics}\label{sec:contrib:ws:heuristics}
-GRAPHE : 5.4.2, schéma step-by-step des heuristiques envisagées ?
-\subsection{Concrete implementation}
-
-\section{Eval de perf}
-\subsection{Logiciels}
-\subsection{Résultats}
-
-GRAPHE : 5.5.2, Cholesky : impact stratégies affinité sur idchire (détails tailles de blocs + vs autres runtimes)
-GRAPHE : 5.5.2, Autres noyaux : courbes pour montrer un comportement similaire
-GRAPHE : 5.5.2, Cholesky : (presque non-)impact stratégies affinité sur brunch/idkat
-
-\section{Discussion: Porting this to any runtime}
-\subsection{TODO?}
-
-\section{Discussion: What is missing, can we do more ?}
-More flexibility for initialization
-
-
-%\input{tex/exp}
-% This chapter should include:
-% - Hardware description
-% - Software description
-%   - In-depth analysis of linar algebra kernels?
-% - Experimentation results with all the above
-
-\cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
-
-\cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
-% - Perf/energy
+\input{tex/contribs/openmp/kastors}
+\input{tex/contribs/openmp/affinity_clause}
+\input{tex/contribs/openmp/runtime_extension}
+\input{tex/contribs/openmp/perf_eval}
+\input{tex/contribs/openmp/discussions}

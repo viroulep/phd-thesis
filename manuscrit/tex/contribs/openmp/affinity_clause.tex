@@ -1,0 +1,64 @@
+
+\section{Réponse à un manque pour le programmeur}
+\subsection{Description du besoin}
+
+
+\subsection{Ajout d'une clause affinité}
+
+\begin{todo}
+    le reste de cette section c'est récupérer d'un papier, à mettre en page et améliorer
+\end{todo}
+
+Cette partie détaille l'introduction du mot clé |affinity|, ainsi que l'implémentation côté support
+exécutif pour exploiter cette fonctionnalité.
+
+Les deux principaux composants des architectures NUMA que l'on considère pour
+cette proposition sont les cœurs et les nœuds. Un point clé pour obtenir
+de bonnes performances sur des architectures NUMA est de garantir qu'une tâche
+s'exécute \emph{proche} de ses données.
+On distingue donc trois types d'affinité que le programmeur pourrait avoir besoin
+d'exprimer :
+
+\begin{description}
+    \item [affinité à un thread :]
+      le support exécutif devrait essayer d'ordonnancer la tâche sur le thread donné.
+    \item [affinité à un nœud NUMA :]
+      le support exécutif devrait essayer d'ordonnancer la tâche sur n'importe
+      quel thread du nœud NUMA donné.
+
+    \item [affinité à une donnée :]
+      quand une tâche devient prête pour l'exécution, le support exécutif devrait
+      l'ordonnancer sur n'importe quel thread attaché au nœud NUMA sur lequel
+      la donnée a été physiquement allouée.
+\end{description}
+
+De plus, le programmeur peut indiquer si cette affinité est \emph{stricte},
+indiquant que la tâche \textbf{doit} s'exécuter sur la ressource indiquée.
+Si le programmeur n'indique pas une affinité stricte, l'ordonnanceur peut décider
+d'exécuter la tâche sur une ressource différente, pour assurer l'équilibrage de
+charge par exemple.
+
+Cette extension visant les constructions de type tâche, elle a été implémentée
+comme une nouvelle clause pour la directive |task|. La syntaxe proposée est la
+suivante :
+
+\begin{lstlisting}
+affinity([node | thread | data]: expr[, strict])
+\end{lstlisting}
+
+Si \emph{expr} désigne un id de thread, elle devrait désigner l'id de thread dans
+les |OMP_PLACES| définies pour la \textit{team} courante. Exemple : si les places
+sont |"{2},{5},{8}"|, et que \emph{expr} est évaluée comme valant 0, l'id du thread désigné est |"{2}"|.
+
+Si \emph{expr} désigne un id de nœud NUMA, elle devrait désigner un id de nœud
+dans l'ensemble des nœuds NUMA construit à partir de la liste des |OMP_PLACES|.
+
+Si \emph{expr} désigne une donnée, elle devrait être une adresse mémoire.
+Si le nœud NUMA associé à la donnée ne peut être déterminé, le nœud par défaut
+est le premier dans la \textit{team} OpenMP.
+
+Si \emph{expr} désigne une ressource hors limites, la valeur est prise modulo le
+nombre de ressources.
+
+\subsection{topo/discussion description des trucs précédents + qu'est ce qu'on peut utiliser dans le runtime}
+
