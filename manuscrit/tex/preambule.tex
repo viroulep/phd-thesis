@@ -12,18 +12,12 @@
 \end{center}
 
 L'évolution du calcul haute performance est aujourd'hui dirigée par les besoins des applications de simulation numérique.
-Les secteurs comme l'aéronautique, les applications militaires, la météorologie, ou encore le nucléaire ont besoin de simuler des phénomènes à grande échelle, se traduisant parfois par la résolution de systèmes de systèmes linéaires à plusieurs millions d'inconnues.
+Ces applications sont exécutées sur des supercalculateurs qui peuvent proposer plusieurs milliers de coeurs, et qui sont découpés en un très grand nombre de noeuds de calcul ayant eux un nombre de coeurs beaucoup plus faible.
+Chacun de ces noeuds de calcul repose sur une architecture à mémoire partagée, dont la mémoire est découpée en plusieurs blocs physiques différents : cela implique un temps d'accès dépendant à la fois de la donnée accédée ainsi que du processeur y accédant.
+On appelle ce genre d'architectures NUMA (pour \emph{Non Uniform Memory Access}).
 
-Toutes ces simulations sont au final exécutées sur des supercalculateurs qui peuvent proposer plusieurs milliers de coeurs, et qui sont découpés en un très grand nombre de noeuds de calcul ayant eux un nombre de coeurs beaucoup plus faible.
-
-Si l'évolution des processeurs du siècle dernier était caractérisée par une augmentation de la fréquence, de nos jours l'évolution des processeurs est caractérisée par une multiplication du nombre de coeurs.
-Dans ces architectures à mémoire partagée moderne, la mémoire est découpée en plusieurs blocs physiques différents, avec chacun leur propre contrôleur.
-La conséquence direct de ce découpage est que le temps d'accès à la mémoire est devenu non-uniforme : il dépend directement de quel processeur essaye d'accéder à quelle partie de la mémoire.
-On appelle ce genre d'architectures NUMA (pour \emph{Non Uniform Memory Access}) et elles sont aujourd'hui la brique de base pour créer des supercalculateurs.
-
-L'exploitation efficace des machines NUMA est critique pour l'amélioration globale des performances des supercalculateurs.
-
-Cette thèse est axée sur l'amélioration des standards et techniques pour l'exploitation des machines NUMA, et peut se découper en deux parties : une partie a été dédié à fournir au programmeur les moyens de comprendre et analyser, et mieux spécifier le comportement des parties critiques de son application, et l'autre partie se concentre sur différentes améliorations du programme chargé d'exécuter les applications : le support exécutif.
+L'exploitation efficace des machines NUMA est critique pour l'amélioration globale des performances des supercalculateurs, et cette thèse a été axée sur l'amélioration des standards techniques pour leur exploitation.
+Les contributions de cette thèse peuvent se découper en deux parties : une partie dédiée à fournir au programmeur les moyens de comprendre, analyser, et mieux spécifier le comportement des parties critiques de son application, et une autre partie dédiée à différentes améliorations du programme chargé d'exécuter les applications : le support exécutif.
 
 
 
