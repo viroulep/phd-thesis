@@ -16,8 +16,8 @@
 \ifx\colorbox\undefined\RequirePackage{xcolor}\fi}
 
 \long\def\Universite#1{\gdef\@Universite{#1}}
-\def\@Universite{\includegraphics[width=10cm,clip]{logo_first_ligne}}
-\long\def\EcoleDoctorale#1{\gdef\@EcoleDoctorale{et de {\bfseries#1}}}
+\def\@Universite{\includegraphics[width=11cm,clip]{logo_UGA_greyscale}}
+\long\def\EcoleDoctorale#1{\gdef\@EcoleDoctorale{dans {\bfseries#1}}}
 \def\@EcoleDoctorale{}     
 \long\def\Grade#1{\gdef\@Grade{\uppercase{#1}}}
 \def\@Grade{\uppercase{Docteur de l'Universit\'e de Grenoble}}       
@@ -79,7 +79,7 @@
 \newcommand{\@ThesisDiploma}{{\@Grade}}
 \newcommand\ThesisDiploma[1]{\renewcommand{\@ThesisDiploma}{{#1}}}
 
-\newcommand{\@ThesisPreparedIn}{pr\'epar\'ee au sein }
+\newcommand{\@ThesisPreparedIn}{pr\'epar\'ee au sein du }
 \newcommand\ThesisPreparedIn[1]{\renewcommand{\@ThesisPreparedIn}{{#1}}}
 
 \newcommand{\@ThesisLaboratory}{{\@Laboratoire}}
