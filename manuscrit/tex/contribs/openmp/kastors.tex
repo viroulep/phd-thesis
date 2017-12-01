@@ -1,60 +1,38 @@
-\section{Utilisation des machines NUMA à travers OpenMP}
+\section{Préambule : une suite de benchmarks pour OpenMP~4.0, les KASTORS}
 
-\subsection{Constructions, clauses, et outils utilisés}
+\subsection{Motivation pour une nouvelle suite de benchmarks}
 
-
-\subsection{Une suite de benchmark utilisant les dépendances de données d'OpenMP : KASTORS}
-
-\begin{todo}
-\cite{Virouleau2014}, Evaluation of OpenMP dependent tasks with the KASTORS benchmark suite
-\end{todo}
 Le support pour les applications à base de flots de données dans OpenMP est arrivé avec la version 4.0, qui est sortie au démarrage de cette thèse.
+Nous n'avions donc pas d'applications de référence pour utiliser les fonctionnalités ajoutées dans OpenMP, et nous avons donc décidé d'introduire une suite de benchmarks - les KASTORS~\cite{Virouleau2014} - spécifiquement orientée vers ces fonctionnalités, en étendant et regroupant certaines applications existantes.
 
-Il existait évidemment plusieurs suites de benchmarks : d'une part pour les applications à base de tâches indépendantes et utilisant OpenMP~3.1, et d'autre part pour les applications à base de flots de données, mais écrites dans des languages différents.
+Il existe évidemment plusieurs suites de benchmarks à destination des architectures à mémoire partagée : d'une part pour les applications à base de tâches indépendantes et utilisant OpenMP~3.0, et d'autre part pour les applications à base de flots de données, mais écrites dans des langages différents.
 
-L'objectif derrière les KASTORS était double :
+Parmi les benchmarks populaire ciblant spécifiquement OpenMP, on peut citer la Barcelona OpenMP Task Suite~\cite{Duran2009} (BOTS), proposant des applications à base de tâches OpenMP~3.0 afin d'évaluer le comportement d'OpenMP en fonction de la manière de générer les tâches et de la répartition de la charge de travail.
+Nous avons d'ailleurs adapté certaines de leurs applications - SparseLU et Strassen - dans les KASTORS, dont nous parlons plus en détails dans les sections~\ref{sec:kastors:sparselu} et~\ref{sec:kastors:strassen}
+
+Avant cela d'autres benchmarks tels que PARSEC~\cite{Bienia2011}, ou SPECOMP~\cite{Muller2012}, ou bien encore Rodinia~\cite{Rodinia2010} ciblaient certaines constructions d'OpenMP, mais aucun n'a été adapté pour tirer profit du parallélisme de tâches.
+
+Parmi les benchmarks ciblant des modèles de programmations à base de tâche avec dépendances, on peut principalement nommer les PLASMA~\cite{Kurzak2013}.
+Cette bibliothèque développée à ICL/UTK met à disposition un grand nombre d'algorithmes d'algèbre linéaire dense, optimisés pour les architectures multi-coeurs.
+
+Nous avions donc assez d'éléments de base pour construire un ensemble d'applications, avec en tête les objectifs suivant :
 \begin{itemize}
-    \item Rassembler et proposer une suite d'applications exploitant les dépendances introduites avec OpenMP~4.0
-    \item Comparer la version utilisant des flots de données à la version utilisant des synchronisations explicites. Le but étant de montrer que le support exécutif peut gérer les synchronisations plus finement, et par conséquent améliorer les performances sans changer l'algorithme.
+  \item Rassembler et proposer une suite d'applications exploitant les dépendances introduites avec OpenMP~4.0
+  \item Comparer la version utilisant des flots de données à la version utilisant des synchronisations explicites. Le but étant de montrer que le support exécutif peut gérer les synchronisations plus finement, et par conséquent améliorer les performances sans changer l'algorithme.
+  \item Avoir une base adaptée pour développer les extensions présentées dans les sections~\ref{sec:openmp:langage} et~\ref{sec:openmp:runtime}.
 \end{itemize}
 
-Les sections suivantes décrivent les différents benchmarks de la suite : d'où ils viennent, ainsi que comment nous les avons étendu pour utiliser les dépendances de données.
+Les sections suivantes décrivent les différents applications de la suite : d'où ils viennent, comment nous les avons étendu pour utiliser les dépendances de données, ainsi que comment nous les avons intégrés.
+
 
 \subsection{Description des applications}
 
 Les applications suivantes proviennent de différentes suites de benchmarks, et ont été modifiées afin d'utiliser les dépendances de données plutôt que d'autres moyen de synchronisation.
 
-\subsubsection{Factorisations de Cholesky, QR, et LU (PLASMA)}
+\subsubsection{Factorisations de Cholesky, QR, et LU}
 
-\begin{lstlisting}[caption=Format de l'algorithme dynamique,label=lst:kastors:dyn]
-wrapper_algorithm_dynamic_call(...) {
-  // code sequentiel
-  for (...)
-    QUARK_Insert_Task(wrapper_blas_function, packed_parameters);
-  // code sequentiel
-  for (...)
-    QUARK_Insert_Task(
-        wrapper_another_blas_function,
-        packed_parameters);
-  // code sequentiel
-}
-\end{lstlisting}
-\begin{lstlisting}[caption=Format de l'algorithme OpenMP,label=lst:kastors:dyn-omp]
-algorithm_call(...) {
-    // code sequentiel
-    for (...)
-#pragma omp task depend(inout:array[...])
-        blas_function(...);
-    // code sequentiel
-    for (...)
-#pragma omp task depend(inout:array[...])
-        another_blas_function(...);
-    // code sequentiel
-}
-\end{lstlisting}
-
-La bibliothèque PLASMA~\cite{Kurzak2013} développée à ICL/UTK met à disposition un grand nombre d'algorithmes d'algèbre linéaire, optimisés pour les architectures multi-coeurs.
-Plusieurs implémentations de chaque algoritme sont disponibles, utilisant soit un ordonnancement statique, soit un ordonnancement dynamique.
+Ces trois applications ont été adaptées des PLASMA.
+Dans les PLASMA plusieurs implémentations de chaque algorithme sont disponibles, utilisant soit un ordonnancement statique, soit un ordonnancement dynamique.
 Les algorithmes à ordonnancement dynamique sont construit sur le support exécutif QUARK~\cite{YarKhan2011}, qui utilise un modèle avec dépendances de données pour ordonnancer les tâches.
 
 Les trois algorithmes que nous avons sélectionné sont les factorisations de Cholesky, QR, et LU, respectivement nommés DPOTRF, DGEQRF, et DGETRF dans PLASMA.
@@ -66,17 +44,49 @@ Les listings~\ref{lst:kastors:dyn} et~\ref{lst:kastors:dyn-omp} montrent respect
 Dans la version originale, la function |wrapper_blas_function| effectue l'unpacking des paramètres avant d'appeler la vraie fonction BLAS/LAPACK sur laquelle elle est construite.
 La transformation en OpenMP~4.0 a donné lieu au retrait de plusieurs niveau d'encapsulation, ce qui facilite la lecture du code, la maintenabilité du code, et enlève le besoin de gérer ces paramètres.
 
+\begin{lstlisting}[caption=Format de l'algorithme dynamique,label=lst:kastors:dyn]
+wrapper_algorithm_dynamic_call(...) {
+  // code séquentiel
+  for (...)
+    QUARK_Insert_Task(wrapper_blas_function, packed_parameters);
+  // code séquentiel
+  for (...)
+    QUARK_Insert_Task(
+        wrapper_another_blas_function,
+        packed_parameters);
+  // code sequentiel
+}
+\end{lstlisting}
+\begin{lstlisting}[caption=Format de l'algorithme OpenMP,label=lst:kastors:dyn-omp]
+algorithm_call(...) {
+    // code séquentiel
+    for (...)
+#pragma omp task depend(inout:array[...])
+        blas_function(...);
+    // code séquentiel
+    for (...)
+#pragma omp task depend(inout:array[...])
+        another_blas_function(...);
+    // code séquentiel
+}
+\end{lstlisting}
+
+
 \subsubsection{Jacobi}
 
-Cet algorithme résout l'équation de Poisson sur le carré unitaire [0,1]x[0,1], qui est divisé en une grille de NxN points espacés régulièrement.
+C'est un algorithme de type Stencil : c'est un algorithme itératif, et à chaque itérations les différents éléments d'un tableau sont mis à jour en suivant la même formules dépendant généralement des éléments voisins.
 
-TODO: expliquer à quoi correspond un stencil ?
-
-Cette application repose sur un noyau de calcul qui est en fait un stencil à 5 points en 2 dimensions.
+En pratique cet algorithme résout l'équation de Poisson sur le carré unitaire [0,1]x[0,1], qui est divisé en une grille de NxN points espacés régulièrement.
+Le noyau de calcul principal est un Stencil à 5 points, en 2 dimensions.
 Ce noyau est appliqué successivement jusqu'à ce qu'une convergence soit détectée.
+
 Nous avons implémenté deux versions bloquées de ce noyau, en utilisant d'une part des tâches sans dépendances, et d'autre part des tâches avec dépendances.
 
-\subsubsection{SparseLU}
+\subsubsection{SparseLU}\label{sec:kastors:sparselu}
+
+Cette application calcule la factorisation LU d'une matrice creuse.
+Nous avons modifié l'implémentation originale des BOTS pour ajouter des dépendances de données.
+Ces modifications sont décrites dans les listings~\ref{lst:kastors:sparseLU} et~\ref{lst:kastors:sparseLU-deps}.
 
 \begin{lstlisting}[caption=LU utilisant des tâches indépendantes,label=lst:kastors:sparseLU]
 for (k=0; k<NB; k++) {
@@ -128,21 +138,15 @@ for (k=0; k<NB; k++) {
 }
 \end{lstlisting}
 
-\begin{todo}
-citer correctement \cite{Duran2009}, Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP
-\end{todo}
-
-Cette application calcule la factorisation LU d'une matrice creuse.
-Nous avons modifié l'implémentation originale des BOTS pour ajouter des dépendances de données.
-Ces modificiations sont décrites dans les listings~\ref{lst:kastors:sparseLU} and~\ref{lst:kastors:sparseLU-deps}.
-
-\subsubsection{Strassen}
+\subsubsection{Strassen}\label{sec:kastors:strassen}
 
 L'application Strassen utilise des décompositions de matrices pour calculer le produit de grandes matrices denses.
 De manière similaire à SparseLU, nous avons modifié l'implémentation des BOTS pour ajouter du parallélisme au niveau des additions dans l'algorithme, et nous avons exprimé des dépendances de données plutôt que d'utiliser une synchronisation à base de |taskwait|.
 
 
 \subsection{Un aperçu des performances}
+
+trucs particulier : numactl
 
 TODO : ajouter des courbes, des détails sur les compilos/runtimes utilisés, et faire une première visualisation de ce qu'apporte les dépendances.
 

@@ -21,11 +21,11 @@
 	numberstyle=\tiny,
 	numbersep=5pt,
 % OMP define
-emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
-emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={\#,pragma, taskwait, omp, task, depend, affinity}, emphstyle=\color{RoyalBlue}\bfseries,
+emph={[2]in,inout,out,cw,data,node,thread}, emphstyle={[2]\color{BrickRed}\bfseries},
 emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
-emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
+emph={[5]affinity, omp_get_numa_num, omp_get_num_numas, omp_get_numa_from_data,omp_set_task_affinity}, emphstyle={[5]\color{DarkViolet}\bfseries},
     %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
 literate=
 {á}{{\'a}}1

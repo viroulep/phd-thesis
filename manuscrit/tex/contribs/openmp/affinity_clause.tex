@@ -1,23 +1,16 @@
+\section{Amélioration de l'expressivité du langage}\label{sec:openmp:langage}
 
-\section{Réponse à un manque pour le programmeur}
 \subsection{Description du besoin}
 
+parler du fait qu'il y a rien pour 4.0, de numactl, de l'absence d'init, de comment on utilise les places
 
 \subsection{Ajout d'une clause affinité}
 
-\begin{todo}
-    le reste de cette section c'est récupérer d'un papier, à mettre en page et améliorer
-\end{todo}
+Cette partie détaille la proposition d'introduction du mot clé |affinity| dans le langage OpenMP, et a été présenté lors du Workshop International sur OpenMP (IWOMP) en 2016~\cite{Virouleau2016b}.
 
-Cette partie détaille l'introduction du mot clé |affinity|, ainsi que l'implémentation côté support
-exécutif pour exploiter cette fonctionnalité.
-
-Les deux principaux composants des architectures NUMA que l'on considère pour
-cette proposition sont les cœurs et les nœuds. Un point clé pour obtenir
-de bonnes performances sur des architectures NUMA est de garantir qu'une tâche
-s'exécute \emph{proche} de ses données.
-On distingue donc trois types d'affinité que le programmeur pourrait avoir besoin
-d'exprimer :
+Les deux principaux composants des architectures NUMA que l'on considère pour cette proposition sont les cœurs et les nœuds.
+Comme constaté dans le chapitre~\ref{chap:contrib:characterization} et souvent mentionné dans la littérature, un point clé pour obtenir de bonnes performances sur des architectures NUMA est de garantir la proximité entre une tâche et ses ressources.
+On distingue donc trois types d'affinité que le programmeur pourrait avoir besoin d'exprimer :
 
 \begin{description}
     \item [affinité à un thread :]
@@ -40,11 +33,15 @@ charge par exemple.
 
 Cette extension visant les constructions de type tâche, elle a été implémentée
 comme une nouvelle clause pour la directive |task|. La syntaxe proposée est la
-suivante :
+suivante~:
 
 \begin{lstlisting}
 affinity([node | thread | data]: expr[, strict])
 \end{lstlisting}
+
+\begin{todo}
+    la suite est pas claire, il faudrait détailler un peu vu qu'il y a la place
+\end{todo}
 
 Si \emph{expr} désigne un id de thread, elle devrait désigner l'id de thread dans
 les |OMP_PLACES| définies pour la \textit{team} courante. Exemple : si les places
@@ -59,6 +56,64 @@ est le premier dans la \textit{team} OpenMP.
 
 Si \emph{expr} désigne une ressource hors limites, la valeur est prise modulo le
 nombre de ressources.
+
+\subsection{Extension de l'API}
+\begin{todo}
+    décrire les quelques points de l'API
+\end{todo}
+
+In order to dynamically get information about the current team hierarchy, we also propose
+the following runtime API functions:
+\begin{lstlisting}
+//Get the number of NUMA nodes in the team
+omp_get_num_nodes(void);
+//Get the NUMA node the task is currently executed on
+omp_get_node_num(void);
+//Get the NUMA node the data has been allocated on
+omp_get_node_from_data(void *ptr);
+\end{lstlisting}
+
+These functions allow to query information about the hardware topology, and can only be called from inside a parallel region. On machines without NUMA support, we consider that all the threads are on a single NUMA node.
+In our proposed implementation, \verb/omp_get_node_from_data/ is implemented through Linux \verb/get_mempolicy/ interface.
+
+We also added the following runtime API function that mimics the \textit{affinity} clause:
+\begin{lstlisting}
+//Set the affinity information to the next created tasks
+omp_set_task_affinity( 
+     omp_affinitykind_t k, uintptr_t ptr, int strict);
+\end{lstlisting}
+The scope of the function call is the next created task in the current \textit{task region}.
+This function takes an \texttt{omp\_affinitykind\_t} value (either \texttt{omp\_affinity\_thread}, \texttt{omp\_affinity\_numa} or \texttt{omp\_affinity\_data}) to specify which kind of affinity control is applied. \texttt{value} is either an integer that represents an identifier of the NUMA node, an identifier of a thread or an address in the process address space used to select the affinity NUMA node \textbf{when} the task becomes ready for execution.
+
+We implemented these extensions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
+
+Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following section.
+
+\subsection{Contrôle de la distribution des données}
+
+
+Controlling the way data are allocated on a NUMA system requires a good understanding of the underlying memory architecture.
+Application programmers can achieve this using dedicated tools or libraries, like libNUMA's \verb!numactl!~\cite{DBLP:journals/corr/abs-1101-0093}, which can be used to set a default memory allocation policy for the whole application.
+For example, the \verb!--interleave=all! memory policy spreads out all the memory pages of dynamically allocated variables, over all the NUMA nodes of the machine.
+This policy is widely used on NUMA systems in conjunction with dynamic parallelism, like task-based programs, as it distributes the memory traffic over all the memory controllers, making processors "\emph{all equally bad}" when it comes to memory access.
+To better control data placement, parallel application programmers are used to relying on the \emph{first-touch} allocation policy, which is the default behavior for memory allocation on most Linux systems.
+This allows allocating memory pages when they are accessed for the first time.
+%Using this policy, a memory page is allocated on the same NUMA node than the first thread that accesses it.
+%Many parallel applications perform the initialization of data structures in parallel, to indirectly distribute data thanks to the first-touch policy.
+%However, in order to avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
+
+To better control data distribution on NUMA systems, we propose two different approaches :
+\begin{itemize}
+\item either the application programmer explicitly allocates data on specific NUMA nodes of the machine through a dedicated API we provide~\cite{Durand2013} (\verb!omp_locality_domain_allocate_XXX!) where \verb/XXX/ may be a bloc cyclic data distribution for one or two-dimensional arrays over MAMI~\cite{BroFurGogWacNam10IJPP};
+\item or the application programmer only marks some regions of code that initialize data to give the runtime system the opportunity to map the corresponding tasks to make the first-touch allocation policy indirectly apply the data distribution we target. Indeed, Olivier et al.~\cite{Olivier:2012:CMW:2388996.2389085}
+have shown that specifying affinity for initialization tasks can lead to huge improvement over locality oblivious techniques.
+To avoid remote memory accesses, the threads must access the data during the computation phase the exact same way it was accessed during the initialization phase, which is very difficult to guarantee with dynamic task-based parallelism.
+We extend the OpenMP runtime in two ways. First, by adding functions to provide a dedicated API: \verb!omp_set_affinity! to  make the runtime map the next task to a specific NUMA node. Secondly, by extending scheduling heuristics to take into account task's dependencies to better map ready tasks.
+\end{itemize}
+During the application's execution, the runtime relies on system's \verb/get_mempolicy/ to determine on which physical node data are allocated.
+This information is then used to guide the way we perform task creation and load balancing.
+
+
 
 \subsection{topo/discussion description des trucs précédents + qu'est ce qu'on peut utiliser dans le runtime}
 
