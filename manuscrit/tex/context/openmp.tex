@@ -1,6 +1,13 @@
 \section{Évolution d'un modèle de programmation : OpenMP}\label{sec:context:openmp}
 
-OpenMP~\cite{openmp45} est le standard de-facto pour les machines à mémoire partagée, au fur et à mesure que le matériel a évolué, le standard a évolué avec lui.
+OpenMP~\cite{openmp45} est le standard de-facto pour les machines à mémoire partagée.
+
+Jusqu'à la version 2.0 incluse, OpenMP ne proposait qu'un nombre restreint de fonctionnalités, principalement tournées vers la parallélisation de boucles régulières.
+L'évolution de son utilisation a amené le comité d'architecture d'OpenMP à ajouter le concept de \emph{tâche} à partir de la version 3.0, en s'inspirant de modèle de programmation déjà existant tel que Cilk.
+La version 4.0 d'OpenMP étend les tâches pour ajouter les dépendances de données, et introduit le support pour du matériel de plus en plus utilisé : les accélérateurs.
+On y voit aussi l'apparition de l'affinités de thread, des directives SIMD, ou encore des instructions atomiques.
+La version actuelle d'OpenMP est la version 4.5, qui ajoute certaines fonctionnalités aux constructions existantes, et introduit le concept de \emph{taskloop} : des boucles dont les groupes d'itérations forment des tâches indépendantes.
+La version en cours de préparation est OpenMP~5.0 ; parmi diverses améliorations, elle devrait notamment ajouter le support d'une interface utilisable par des outils souhaitant se greffer au plus proche d'OpenMP.
 
 Les sections suivantes décrivent les différentes fonctionnalités d'OpenMP, dans l'ordre chronologique où elles sont apparues.
 
@@ -13,26 +20,25 @@ GRAPHE: \label{fig:context:fork-join}fork join
 Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (cela peut être par exemple une boucle).
 À partir de là, plusieurs threads sont créés (ou réutilisés) pour exécuter la construction en parallèle. Cet ensemble de threads forme une \emph{team} de thread pour la région parallèle.
 À la fin de la région parallèle, tous les threads se synchronisent et l'exécution séquentielle est reprise.
+Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{team} créée lors de l'entrée dans la région parallèle.
 
-Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{team}, ainsi que la manière dont sont attribuées les itérations de la boucle, via la clause |schedule|.
+Lorsque les threads rencontre une construction de partage de travail - ou \emph{worksharing construct} - telle qu'une boucle par exemple, l'ensemble des itérations va être réparti parmi les différents threads de la team.
+Le programmeur peut contrôler cette répartition à l'aide de la clause |schedule|.
 
-Pendant l'exécution de l'application c'est un autre programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différent threads.
-Le langage OpenMP est standard et bien défini, mais plusieurs support exécutifs existent et les performances dépendent directement de celui ci.
+Pendant l'exécution de l'application c'est un programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différent threads.
+Le langage OpenMP est standard et bien défini, mais les performances dépendent directement du support exécutif.
 
 Pour complémenter le langage, OpenMP propose également plusieurs fonctionnalités à travers une API. Il est possible par exemple de récupérer dynamiquement le nombre total de threads, l'indice du thread courant, ou encore d'ajuster l'ordonnanceur de boucles.
 Tout cela existe depuis les toutes premières versions d'OpenMP.
 
-Avec l'évolution du matériel et des besoins des utilisateurs, le comité d'architecture d'OpenMP a ajouté le concept de \emph{tâche} à partir de la version 3.0.
-
-
 
 \subsection{Tâches}
 
-Les modèles de programmation à base de tâches permettent d'exprimer du parallélisme à grain fin. L'avantage majeur de ce modèle est qu'il permet au support exécutif d'assigner dynamiquement les différentes tâches, s'adaptant ainsi très bien aux divers temps d'exécution des tâches.
+Les modèles de programmation à base de tâches permettent d'exprimer du parallélisme à grain fin. L'un des avantages majeurs de ce modèle est qu'il permet au support exécutif d'assigner dynamiquement les différentes tâches, s'adaptant ainsi très bien aux déséquilibrages de charge. Il permet également de composer très facilement des parties de code avec des caractéristiques différentes.
 
 Une \emph{tâche} OpenMP peut être vue comme la plus petite \emph{quantité de travail} qu'un thread OpenMP peut exécuter.
 Les tâches peuvent être créées par un thread OpenMP et exécutées par n'importe quel thread de la région parallèle.
-Comme la gestion des tâches à l'exécution du programme est beaucoup plus économique que de créer et synchroniser des threads, le développeur peut pousser la parallélisation de son application encore plus loin : il peut considérer la parallélisation de portions de code qui avaient un grain trop fin pour être parallélisées avec des threads.
+Comme la création de tâches à l'exécution du programme est beaucoup plus économique que la création et la synchronisation de threads, le développeur peut pousser la parallélisation de son application encore plus loin : il peut considérer la parallélisation de portions de code qui avaient un grain trop fin pour être parallélisées avec des threads.
 
 Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point, avant de reprendre l'exécution.
 Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
@@ -66,11 +72,9 @@ Dans le cas d'utilisation d'appels de fonctions, le programmeur doit indiquer qu
 
 Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adoptée telle quelle par les programmeurs d'architectures hétérogènes.
 
-TODO parler du fait que c'est pas un succès fou, sans vraiment de référence ça le fait ?
-
 \subsection{Affinité}
 
-La notion d'affinité de thread a été également ajoutée à la version 4.0 d'OpenMP.
+Une notion d'affinité de thread a été également ajoutée à la version 4.0 d'OpenMP.
 Il s'agit d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
 
 Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer.
@@ -79,10 +83,14 @@ Elle peut être une liste précise d'indice de coeurs physiques, ou prendre la v
 
 Il n'y a pas de dépendances entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.
 
-Le contrôle de l'affectation des threads OpenMP aux \emph{places} se fait grâce à la variable d'environnement |OMP_PROC_BIND|.
+Le second ajout est la possibilité de spécifier la manière dont sont affectés les threads aux \emph{places}, à l'aide de la variable d'environnement |OMP_PROC_BIND|.
 Elle peut prendre les valeurs suivantes : \emph{close}, \emph{spread}, \emph{master}.
+
+\begin{todo}
+\end{todo}
 
 Avec la valeur \emph{close}, les threads seront successivement affectés aux places les plus proches les unes des autres. Par exemple si les places sont \emph{"cores"} - l'ensemble des coeurs de la machine, et que la machine a deux sockets de 8 coeurs, les threads OpenMP seront affectés successivement aux coeurs 0 (sur le socket 0) jusqu'à 7 (toujours sur le socket 0), puis 8 (sur le socket 1) jusqu'à 15 (sur le socket 1).
 Avec la valeur \emph{spread}, l'ordre d'affectation sera alors le coeur 0 (sur le socket 0), puis 8 (socket 1), puis 1 (socket 0), puis 9 (socket 1), etc...
 Avec la valeur \emph{master}, les threads sont placés sur la même place que le thread master.
 L'exemple typique pour cette valeur est la gestion de régions parallèles imbriquées : en affectant la valeur "sockets" à |OMP_PLACES|, on peut avoir deux régions parallèles imbriquées dont les threads sont correctement affectés aux deux sockets (les deux threads master est affectés à deux sockets distincts, mais pour chaque région tous les threads sont associées au même socket).
+

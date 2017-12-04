@@ -7,6 +7,8 @@ Il existe de nombreux modèles de programmation à base de tâches, certaines fo
 Une tâche peut être vue comme la plus petite quantité de travail séquentiel exécutable sur un processeur.
 En pratique c'est une section de code bien définie du programme, et cela peut être une simple instruction, comme une fonction très complexe.
 
+Dans certains supports exécutifs, tel que StarPU, certaines extensions permettent d'adapter cette notion d'unité de base en agglomérant, ou découpant, des tâches séquentielles.
+
 \subsection{Moyens de synchronisation}
 
 Lorsqu'on parle de programmation parallèle, il faut bien évidemment parler de synchronisation.
@@ -15,7 +17,7 @@ Les différentes tâches définies par l'utilisateur vont être exécutées en p
 Il y a deux grand types de synchronisations pour la programmation à base de tâche~:
 
 \begin{itemize}
-  \item la synchronisation dans le thread courant : le thread se bloque sur un point de synchronisation, et attend que l'ensemble des tâches qu'il a créé ait été exécutées avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
+  \item la synchronisation dans le thread courant : le thread se bloque sur un point de synchronisation, et attend que l'ensemble des tâches qu'il a créé ait été exécuté avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
   \item ajouter des dépendances de données, induisant un ordre sur l'exécution des tâches. Dans le listing~\ref{lst:context:task-dep}, la tâche C sera également garantie d'être exécutée \textbf{après} les tâches A et B, car elle consomme des données que A et B produisent.
 \end{itemize}
 
@@ -49,19 +51,19 @@ GRAPHE : 2.2.2 mini schéma dataflow du graphe correspondant au programme écrit
 Les deux ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
 
-En dehors de ces mécanismes de base, certains autres moyen de synchronisations peuvent être également utilisés pour garantir un ordre ou la correction du programme.
-On peut mentionner les sections critiques : elles marquent une zone du programme parallèle que seul un thread peut exécuter à la fois.
+En dehors de ces mécanismes de base, d'autres moyen de synchronisations peuvent être également utilisés pour garantir un ordre ou la correction du programme.
+On peut mentionner les sections critiques, les mutex, les moniteurs, ou encore les sémaphores : l'ensemble de ces mécanismes à pour but de délimiter une zone du programme parallèle que seul un thread peut exécuter à la fois.
 
 
 \subsection{Quantité de travail et granularité}
 
-Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources et réduire l'overhead du support exécutif est de trouver le bon \emph{grain} de tâche.
+Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources est de réduire l'overhead du support exécutif par rapport au calcul en trouvant le bon \emph{grain} de tâche.
 
-Les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif.
+Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif.
 
-Le listing~\ref{lst:context:tbb} illustre ce concept en TBB.
+Le listing~\ref{lst:context:cilk} illustre ce concept en Cilk.
 Le code exposé calcule le nième nombre de la suite de Fibonacci, en utilisant une implémentation à base de fonction récursive.
-Sans introduire de cutoff, le nombre de tâches créée serait exponentiel, et introduirait un surcout de gestion des tâches à l'exécution qui détruirait le gain de performance apporté par le parallélisme exposé.
+La création de tâche ne porte que sur l'une des deux branches récursives, limitant ainsi le nombre de tâches créées et donc le surcoût de gestion des tâches à l'exécution.
 
 Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.
 
@@ -75,11 +77,13 @@ Les listings~\ref{lst:context:cilk},~\ref{lst:context:tbb}, et ~\ref{lst:context
 
 \subsubsection{Cilk}
 
-Cilk~\cite{cilk5} est un modèle de programmation basé sur C/C++, et proposant des fonctionnalités communes aux modèles de programmation : parallélisme de tâches, de boucles, et vectorisation.
+Cilk~\cite{cilk5} est un modèle de programmation basé sur C.
+Il introduit principalement deux nouveaux mots clés : |cilk_spawn| et |cilk_sync|, pour, respectivement, exposer du parallélisme et introduire un point de synchronisation.
+Le mot clé |cilk_spawn| vient précéder un appel de fonction pour indiquer que la fonction peut s'exécuter en parallèle. Cela en fait donc un modèle de programmation à base de tâches.
 Cilk propose également une extension de la notation de tableau, ayant pour but de faciliter la vectorisation automatique par le compilateur.
 
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en Cilk,label=lst:context:cilk,basicstyle=\scriptsize]
+\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en Cilk,label=lst:context:cilk,basicstyle=\small]
 int fib(int n) {
   if (n < 2)
     return n;
@@ -93,66 +97,45 @@ int fib(int n) {
 
 \subsubsection{Threading Building Block}
 
-Threading Building Block (TBB)~\cite{Reinders2007} est un modèle de programmation développé par Intel comme une librairie C++.
+Threading Building Block (TBB)~\cite{Reinders2007} est un modèle de programmation développé par Intel comme une bibliothèque C++.
 
-C'est un modèle de programmation à base de tâches, mais permettant d'exprimer les constructions de parallélismes standard comme les boucles. Il propose également des constructions plus spécifiques, telles que les opérations atomiques et les sections critiques.
+Elle propose différentes fonction pour que le programmeur puisse exprimer du parallélisme, dont notamment :
+\begin{itemize}
+  \item La fonction template |parallel_for|, s'appliquant sur une boucle et prenant en paramètre une fonction utilisateur.
+    La bibliothèque découpe automatiquement l'espace d'itération en groupes d'itérations et envoie un itérateur C++ à la fonction utilisateur pour son traitement.
+  \item Un ensemble de fonction pour accéder à l'ordonnanceur de tâches de la bibliothèque.
+\end{itemize}
 
 La bibliothèque propose également un ensemble de structures de données à accès concurrent (listes, tables de hachage), ainsi que des allocateurs mémoires.
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en TBB,label=lst:context:tbb,basicstyle=\scriptsize]
-// Code séquentiel
-long SerialFib(long n) {
-  if (n<2)
+\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en TBB,label=lst:context:tbb,basicstyle=\small]
+#include "tbb/task_group.h"
+using namespace tbb;
+
+int Fib(int n) {
+  if( n<2 ) {
     return n;
-  else
-    return SerialFib(n-1) + SerialFib(n-2);
-}
-
-// Tâche parallèle
-class FibTask: public task {
-public:
-  const long n;
-  long* const sum;
-  FibTask(long n_,long* sum_) : n(n_), sum(sum_) {}
-  // Surcharge de la fonction virtuelle task::execute
-  task* execute() {
-    if (n < CutOff) {
-      *sum = SerialFib(n);
-    } else {
-      long x, y;
-      FibTask& a = *new(allocate_child()) FibTask(n-1,&x);
-      FibTask& b = *new(allocate_child()) FibTask(n-2,&y);
-      // Set ref_count to 'two children plus one for the wait".
-      set_ref_count(3);
-      // Start b running.
-      spawn(b);
-      // Start a running and wait for all children (a and b).
-      spawn_and_wait_for_all(a);
-      // Do the sum
-      *sum = x+y;
-    }
-    return nullptr;
+  } else {
+    int x, y;
+    task_group g;
+    g.run([&]{x=Fib(n-1);}); // création d'une tâche
+    g.run([&]{y=Fib(n-2);}); // création d'une autre tâche
+    g.wait();                // synchronisation
+    return x+y;
   }
-};
-
-// Code générant la première tâche parallèle
-long ParallelFib( long n ) {
-  long sum;
-  FibTask& a = *new(task::allocate_root()) FibTask(n, &sum);
-  task::spawn_root_and_wait(a);
-  return sum;
 }
 \end{lstlisting}
 
 \subsubsection{OpenMP}
 
 OpenMP~\cite{openmp45} est un modèle de programmation supportant le C/C++ et Fortran.
-
 Il s'utilise à travers des directives de compilation ainsi qu'une API, et propose lui aussi les constructions classiques : boucles, tâche, et autres éléments facilitant la programmation parallèle.
+
+Originellement OpenMP ne proposait que du parallélisme de boucle, le concept de tâches n'a été introduit que plus tard avec OpenMP~3.0, et le concept de dépendances de données entre tâches a été introduit encore plus tard avec la version~4.0.
 
 Le standard d'application de nos idées pour cette thèse étant OpenMP, une description détaillée des fonctionnalités et de ses spécificités est faite dans la section~\ref{sec:context:openmp}.
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en OpenMP,label=lst:context:openmp,basicstyle=\scriptsize]
+\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en OpenMP,label=lst:context:openmp,basicstyle=\small]
 int fib(int n) {
   if (n < 2)
     return n;
