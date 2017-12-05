@@ -35,7 +35,6 @@ Lorsqu'une instruction demande le chargement d'une valeur située en mémoire, l
 \end{itemize}
 
 Si le cache a plusieurs niveaux, la requête est transférée au niveau supérieur, et seul le dernier niveau effectue la requête à la mémoire centrale.
-
 Une fois qu'une ligne est chargée dans le cache, elle n'y reste pas de manière permanente, plusieurs raisons décrit ci après peuvent entraîner son \emph{eviction} du cache :
 
 \begin{itemize}
@@ -87,11 +86,14 @@ De même, beaucoup d'optimisations au sein des compilateurs visent également ce
 
 Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les coeurs d'un même noeud.
 
+\begin{todo}
 GRAPHE : 2.1.1 schéma de l'architecture des caches
 
 TODO : tableau latences accès caches vs processeurs (sandy, broadwell, knl, bulldozer, ryzen).
 
-TODO : ref + paragraph sur les caches configurables du ryzen
+TODO : ref + paragraph sur les caches configurables du ryzen.
+Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé Jenga : http://people.csail.mit.edu/sanchez/papers/2017.jenga.isca.pdf
+\end{todo}
 
 \paragraph{Politiques d'éviction}
 
@@ -136,7 +138,7 @@ De plus la vectorisation permet au processeur d'optimiser la décomposition de l
 Au final on divise le nombre d'itérations, mais aussi le nombre d'accès mémoire et d'opérations par 2.
 
 \begin{todo}
-  j'ai pas trouvé la ref des procs vectoriels sur ACM, demander à Thierry
+  j'ai pas trouvé la ref des procs vectoriels sur ACM, (re)demander à Thierry
 \end{todo}
 
 Des extensions au jeu d'instruction x86 ont été créée afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus large que le type le plus large en C (|long long|, 64 bits).

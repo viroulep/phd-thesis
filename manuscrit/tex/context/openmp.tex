@@ -87,6 +87,7 @@ Le second ajout est la possibilité de spécifier la manière dont sont affecté
 Elle peut prendre les valeurs suivantes : \emph{close}, \emph{spread}, \emph{master}.
 
 \begin{todo}
+réécrire cette partie pour faire moins manuel et plus intéressant vis à vis de nos travaux
 \end{todo}
 
 Avec la valeur \emph{close}, les threads seront successivement affectés aux places les plus proches les unes des autres. Par exemple si les places sont \emph{"cores"} - l'ensemble des coeurs de la machine, et que la machine a deux sockets de 8 coeurs, les threads OpenMP seront affectés successivement aux coeurs 0 (sur le socket 0) jusqu'à 7 (toujours sur le socket 0), puis 8 (sur le socket 1) jusqu'à 15 (sur le socket 1).
