@@ -131,11 +131,15 @@ Les paramètres de la fonction correspondent aux paramètres de la clause :
 
 \subsection{topo/discussion description des trucs précédents + qu'est ce qu'on peut utiliser dans le runtime}
 
-L'implémentation proposée pour |omp_get_node_from_data| repose sur les informations disponibles à travers l'appel système de Linux |get_mempolicy|.
+\begin{todo}
+  il faut que je résume ce que le programmeur donne, là où on l'a implémenté, et que j'ouvre sur le fait qu'on l'utilise au runtime pour enchainer sur la section suivante.
+\end{todo}
 
-We implemented these extensions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
+%L'implémentation proposée pour |omp_get_node_from_data| repose sur les informations disponibles à travers l'appel système de Linux |get_mempolicy|.
 
-Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following section.
+%We implemented these extensions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
+
+%Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following section.
 
 
-ouvrir sur support exécutif
+%ouvrir sur support exécutif
