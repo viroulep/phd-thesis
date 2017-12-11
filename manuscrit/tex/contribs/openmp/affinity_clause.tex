@@ -10,7 +10,7 @@ Ces approches peuvent être soit inefficaces (comme dans le cas de \emph{numactl
 
 OpenMP pourrait donc bénéficier de deux type de constructions dont les utilisateurs auraient besoin : d'une part un moyen de contrôler la distribution initiale des données manipulées par les tâches, et d'autres part un moyen d'associer les tâches à ces données (ou mieux, à n'importe quel partie de la machine).
 
-\subsection{Contrôle de la distribution des données}
+\subsection{Contrôle de la distribution des données}\label{sec:openmp:langage:init}
 
 De la même manière que le programmeur exprime son applications à base de tâches, on va supposer ici aussi qu'il initialise les données de son application à l'aide de tâches, qu'il est raisonnable de supposer indépendantes, dans une région parallèle séparée.
 
@@ -43,7 +43,7 @@ Elle indique à l'ordonnanceur de tâche que pour la région parallèle courante
 Bien qu'ayant certaines restriction, cet ajout permet au programmeur de spécifier une distribution de données avec une modification minimale du code.
 Comme les restrictions initiales peuvent être trop fortes pour certaines applications, il est aussi possible pour les cas particuliers de spécifier une clause affinité stricte (définie dans la section suivante) sur les tâches d'initialisation.
 
-\subsection{Ajout d'une clause affinité}
+\subsection{Ajout d'une clause affinité}\label{sec:openmp:langage:affinity}
 
 Cette partie détaille la proposition d'introduction du mot clé |affinity| dans le langage OpenMP, et a été présenté lors du Workshop International sur OpenMP (IWOMP) en 2016~\cite{Virouleau2016b}.
 Comme constaté dans le chapitre~\ref{chap:contrib:characterization} et souvent mentionné dans la littérature, un point clé pour obtenir de bonnes performances sur des architectures NUMA est de garantir la proximité entre une tâche et ses ressources.
@@ -129,7 +129,9 @@ Les paramètres de la fonction correspondent aux paramètres de la clause :
 \end{description}
 
 
-\subsection{topo/discussion description des trucs précédents + qu'est ce qu'on peut utiliser dans le runtime}
+\subsection*{Conclusion}
+
+Le programmeur peut, à travers les extensions proposées, exprimer à la fois la distribution de données qu'il désire, ainsi que la manière dont la localité des données devrait être maintenu au cours de l'exécution de l'application.
 
 \begin{todo}
   il faut que je résume ce que le programmeur donne, là où on l'a implémenté, et que j'ouvre sur le fait qu'on l'utilise au runtime pour enchainer sur la section suivante.
