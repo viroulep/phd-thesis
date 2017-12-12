@@ -10,17 +10,16 @@ La topologie de l'interconnexion ne permet généralement pas d'avoir des nœuds
 
 Malgré le fait que les différentes parties de l'architecture soient physiquement séparées, le système d'exploitation voit l'ensemble comme une unique machine.
 
-Nous décrivons dans un premier temps les caractéristiques techniques communes d'un nœud dans la section~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
-Enfin la section~\ref{sec:context:numa:os} revient sur quelques particularités de traitement au sein du système d'exploitation.
+Nous décrivons dans un premier temps les caractéristiques techniques communes d'un processeur multicœur d'un nœud dans la section~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
 
-\subsection{Descriptions d'un nœud NUMA}\label{sec:context:numa:node}
+\subsection{Description d'un processeur multicœurs}\label{sec:context:numa:node}
 
 Le nœud NUMA est le composant de base pour une architecture NUMA.
-Il n'y a pas de nombre standard de cœurs pour un nœud NUMA, ni même de quantité standard de RAM associée.  
-En revanche certaines propriétés, énoncées dans la suite, se retrouvent sur toutes les machines NUMA.
+Il n'y a pas de nombre standard de cœurs pour un nœud NUMA, ni même de quantité standard de RAM associée, mais il est certain qu'un des composants principaux d'un nœud est le processeur multicœurs.
+Certaines propriétés des processeurs, énoncées dans la suite, se retrouvent sur toutes les machines NUMA et ont une influence directe sur le comportement du nœud au sein de la machine.
 
 \subsubsection{Les caches}
-Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que pour la mémoire centrale, mais dont la capacité est beaucoup plus restreinte.
+Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que pour la mémoire centrale, mais dont la capacité est beaucoup plus restreinte. Il peut être spécifique à un cœur du processeur, ou partagé par plusieurs d'entre eux.
 
 \paragraph{Fonctionnement}
 
@@ -180,50 +179,12 @@ GRAPHE : 2.1.2 les chiffres de base !
 GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 socket/2 nœuds, idchire, knl)
 
 
-\subsection{Exploitation de ces architectures par le système}\label{sec:context:numa:os}
-\begin{todo}
-  passer ça en tant que section !
-  détailler beaucoup plus :
-   - système général
-   - gestion numa côté système (donner des exemples montrant que c'est relou)
-   - bibliothèque existante (hwloc, numactl)
-\end{todo}
-
-Le support des machines NUMA dans Linux est arrivé dès 2003~\cite{Dobson2003}.
-Il est donc possible, d'une part d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
-Et d'autre part de contrôler le placement d'un thread sur un ensemble de cœur physique à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un nœud.
-
-D'autres outils existent pour avoir encore plus d'informations et de contrôle, et particulièrement hwloc~\cite{Broquedis2010}.
-Il permet d'avoir des informations précises sur la topologie de l'architecture, incluant les distances théoriques (fournies par le matériel) entre nœud, mais également de garantir des allocations de mémoire sur les nœuds fournis par l'utilisateur.
-
-La compréhension de la gestion de l'allocation de la mémoire par le système d'exploitation est d'ailleurs un point critique lorsque l'on traite des machines NUMA.
-Le système d'exploitation gère la mémoire par petit fragments, appelés \emph{pages}.
-Lors de l'allocation d'un tableau par exemple, si sa taille dépasse celle d'une \emph{page}, l'espace mémoire alloué consistera donc de plusieurs pages.
-
-Il faut savoir que, par défaut, le système ne donne pas une \emph{page} physique directement lors d'une allocation mémoire (comme par exemple lors d'un appel à |malloc|).
-L'allocation physique de la mémoire est faite selon une politique du système d'exploitation, et dans les versions récentes de Linux la politique standard est d'allouer la page physique lors du premier accès à la donnée (\emph{first-touch}).
-Certains outils, tels que \emph{numactl}~\cite{numactl} permettent de modifier la politique d'allocation physique des pages (par exemple en faisant en sorte de répartir les pages successives sur l'ensemble des nœud NUMA automatiquement).
-
-L'allocateur par défaut de la libc fait de la réutilisation de pages. Cela veut dire qu'après plusieurs allocations/libération successives de mémoire, vous n'obtenez pas forcément des nouvelles pages.
-L'objectif derrière cela est de réduire le coût général d'une allocation, puisque l'allocation et la libération physique de nouvelles pages est couteux, et que réutiliser des pages supprime ce coût.
-En revanche le corollaire de ce constat est que le contrôle de l'allocation physique par \emph{first-touch} n'est possible que lors de la première allocation des pages.
-Pour palier à ce problème, hwloc proposent des fonctions d'allocations qui garantissent l'attribution de nouvelles pages, permettant dans ce cas de faire confiance au \emph{first-touch}.
-
-Enfin, un dernier détail mérite de l'attention, il s'agit de la taille des pages manipulées par le système.
-En effet celle ci est configurable, et deux options sont généralement possibles : soit des pages de 4 Kilo octets, soit des - \emph{huge} - pages de 2 Mega octets.
-L'impact de cette taille peut être importante dans le cas d'un bloc de données s'étendant sur plusieurs pages : plusieurs requêtes de page de petites tailles seront plus sensible à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
-De plus lors de l'utilisation d'un outil tel que \emph{numactl} pour répartir les pages sur la machine, l'effet de la répartition sera plus visible avec des pages de petites tailles.
 
 
 \subsection*{Conclusion}
-\begin{todo}
-  Reprendre après avoir bouger la section précédente
-\end{todo}
 
 Cette partie s'est concentrée sur les connaissances de base nécessaires pour comprendre l'interaction entre les différents composant des architectures NUMA.
-Nous avons notamment indiqué que le système d'exploitation avec une connaissance basique de la hiérarchie de la machine, néanmoins il ne propose pas au programmeur un support direct pour programmer efficacement sur ces architectures.
+Le développeur d'application ne va généralement pas influer directement sur ces composants, en revanche il est capital d'avoir conscience des caractéristiques de chacun d'entre eux pour pouvoir expliquer facilement tel ou tel comportement de l'application.
 
-Traditionnellement le programmeur va bien connaitre son application ainsi que les détails sur les différentes parties qui la composent, mais il ne va pas utiliser directement les mécanismes du système d'exploitation pour l'implémentation.
-L'exécution concrète du programme est généralement laissée à un programme dédié, le support exécutif, que le programmeur va utiliser à travers un \emph{modèle de programmation}.
-
-La section suivante se concentre sur les modèles de programmation à base de tâche, très souvent utilisés pour cibler les architectures à mémoire partagée.
+Le premier composant logiciel qui va s'intéresser à la gestion directe du matériel est le système d'exploitation.
+La section suivante revient sur les points relatifs à la gestion des architectures NUMA dans le système d'exploitation.

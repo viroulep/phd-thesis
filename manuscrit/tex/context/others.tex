@@ -137,21 +137,25 @@ void foo() {
 \subsubsection{Dépendances de données}
 
 Le programmeur spécifier des dépendances de données, avec des modes, pour chacune des tâches.
-Dans l'exemple du listing~\ref{lst:context:task-dep}, la tâche |read_A| possède une dépendance en \emph{lecture} sur la variable |a|, et la tâche |write_A| possède une dépendance en \emph{écriture}
+Dans l'exemple du listing~\ref{lst:context:task-dep}, la tâche |write_A| possède une dépendance en \emph{écriture} sur la variable |a|, et la tâche |read_A| possède une dépendance en \emph{lecture}.
 
-\begin{todo}
-  finir
-\end{todo}
-ajouter des dépendances de données, induisant un ordre sur l'exécution des tâches. On  Dans le listing~\ref{lst:context:task-dep}, la tâche C sera également garantie d'être exécutée \textbf{après} les tâches A et B, car elle consomme des données que A et B produisent.
+Étant donné qu'il y a une lecture et une écriture, le principe de cohérence séquentielle impose que les opérations soit ordonnées dans l'ordre où elles ont été créées (ici la tâche en lecture devrait avoir lieu \textbf{après} la tâche en écriture).
+
+Il y a également la tâche |B| qui dispose d'une dépendance en écriture sur |b|, et |C| qui a une dépendance de donnée en lecture sur |a| et |b|.
+
+Étant donné que du point de vue des dépendances les tâches |write_A| et |B| sont indépendantes, elles pourraient très bien être exécutées en même temps, et |B| pourrait terminer son exécution avant même que |read_A| commence la sienne.
+
+En revanche |C| devra forcément être exécutée après |read_A| et |B| puisqu'elle a une dépendance en lecture sur des données écrites par ces deux tâches, et qu'elle a été créée après dans l'ordre séquentiel.
+
 
 \begin{lstlisting}[caption=Synchronisation via des dépendances (OpenMP),label=lst:context:task-dep]
 void foo() {
-  int a = 1;
+  int a;
   int b;
-  #pragma omp task depend(in: a)
-  read_A(&a);
   #pragma omp task depend(out: a)
   write_A(&a);
+  #pragma omp task depend(in: a)
+  read_A(&a);
   #pragma omp task depend(out: b)
   B(&b);
   #pragma omp task depend(in: a, b)
@@ -163,9 +167,6 @@ GRAPHE : 2.2.2 mini schéma dataflow du graphe correspondant au programme écrit
 
 Les deux ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
-
-En dehors de ces mécanismes de base, d'autres moyen de synchronisations peuvent être également utilisés pour garantir un ordre ou la correction du programme.
-On peut mentionner les sections critiques, les mutex, les moniteurs, ou encore les sémaphores : l'ensemble de ces mécanismes à pour but de délimiter une zone du programme parallèle que seul un thread peut exécuter à la fois.
 
 
 \subsection{Quantité de travail et granularité}

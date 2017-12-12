@@ -1,0 +1,52 @@
+\section{Exploitation de ces architectures par le système}\label{sec:context:os}
+
+\subsection{Gestion de la mémoire}
+
+\subsection{Gestion spécifique NUMA}
+TODO : trouver un meilleur titre
+
+\subsection{Bibliothèque externes}
+
+hwloc (toujours bas niveau, bibliothèque pour bibliothèque)
+numactl
+
+\begin{todo}
+  Répartir le texte dans les sections ci dessus et compléter
+\end{todo}
+
+Le support des machines NUMA dans Linux est arrivé dès 2003~\cite{Dobson2003}.
+Il est donc possible, d'une part d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
+Et d'autre part de contrôler le placement d'un thread sur un ensemble de cœur physique à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un nœud.
+
+D'autres outils existent pour avoir encore plus d'informations et de contrôle, et particulièrement hwloc~\cite{Broquedis2010}.
+Il permet d'avoir des informations précises sur la topologie de l'architecture, incluant les distances théoriques (fournies par le matériel) entre nœud, mais également de garantir des allocations de mémoire sur les nœuds fournis par l'utilisateur.
+
+La compréhension de la gestion de l'allocation de la mémoire par le système d'exploitation est d'ailleurs un point critique lorsque l'on traite des machines NUMA.
+Le système d'exploitation gère la mémoire par petit fragments, appelés \emph{pages}.
+Lors de l'allocation d'un tableau par exemple, si sa taille dépasse celle d'une \emph{page}, l'espace mémoire alloué consistera donc de plusieurs pages.
+
+Il faut savoir que, par défaut, le système ne donne pas une \emph{page} physique directement lors d'une allocation mémoire (comme par exemple lors d'un appel à |malloc|).
+L'allocation physique de la mémoire est faite selon une politique du système d'exploitation, et dans les versions récentes de Linux la politique standard est d'allouer la page physique lors du premier accès à la donnée (\emph{first-touch}).
+Certains outils, tels que \emph{numactl}~\cite{numactl} permettent de modifier la politique d'allocation physique des pages (par exemple en faisant en sorte de répartir les pages successives sur l'ensemble des nœud NUMA automatiquement).
+
+L'allocateur par défaut de la libc fait de la réutilisation de pages. Cela veut dire qu'après plusieurs allocations/libération successives de mémoire, vous n'obtenez pas forcément des nouvelles pages.
+L'objectif derrière cela est de réduire le coût général d'une allocation, puisque l'allocation et la libération physique de nouvelles pages est couteux, et que réutiliser des pages supprime ce coût.
+En revanche le corollaire de ce constat est que le contrôle de l'allocation physique par \emph{first-touch} n'est possible que lors de la première allocation des pages.
+Pour palier à ce problème, hwloc proposent des fonctions d'allocations qui garantissent l'attribution de nouvelles pages, permettant dans ce cas de faire confiance au \emph{first-touch}.
+
+Enfin, un dernier détail mérite de l'attention, il s'agit de la taille des pages manipulées par le système.
+En effet celle ci est configurable, et deux options sont généralement possibles : soit des pages de 4 Kilo octets, soit des - \emph{huge} - pages de 2 Mega octets.
+L'impact de cette taille peut être importante dans le cas d'un bloc de données s'étendant sur plusieurs pages : plusieurs requêtes de page de petites tailles seront plus sensible à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
+De plus lors de l'utilisation d'un outil tel que \emph{numactl} pour répartir les pages sur la machine, l'effet de la répartition sera plus visible avec des pages de petites tailles.
+
+
+\subsection*{Conclusion}
+\begin{todo}
+  todo
+
+Nous avons notamment indiqué que le système d'exploitation avec une connaissance basique de la hiérarchie de la machine, néanmoins il ne propose pas au programmeur un support direct pour programmer efficacement sur ces architectures.
+
+Traditionnellement le programmeur va bien connaitre son application ainsi que les détails sur les différentes parties qui la composent, mais il ne va pas utiliser directement les mécanismes du système d'exploitation pour l'implémentation.
+
+La section suivante se concentre sur les modèles de programmation à base de tâche, très souvent utilisés pour cibler les architectures à mémoire partagée.
+\end{todo}
