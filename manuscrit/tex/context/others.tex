@@ -5,21 +5,121 @@ Il existe de nombreux modèles de programmation à base de tâches, certaines fo
 \subsection{L'unité de base : la tâche}
 
 Une tâche peut être vue comme la plus petite quantité de travail séquentiel exécutable sur un processeur.
-En pratique c'est une section de code bien définie du programme, et cela peut être une simple instruction, comme une fonction très complexe.
-
+En pratique c'est une section de code bien définie du programme, et cela peut être une simple instruction, un bloc de code délimité, ou encore une fonction très complexe.
 Dans certains supports exécutifs, tel que StarPU, certaines extensions permettent d'adapter cette notion d'unité de base en agglomérant, ou découpant, des tâches séquentielles.
+
+Une tâche est nécessairement accompagnée de données qu'elle manipule. De la même manière qu'une fonction utilise des paramètres, le bloc de code composant une tâche utilise des variables qui peuvent être soit locales (on parlera alors de données privées), soit partagées par d'autres parties du code (on parlera de données partagées).
+
+
+\subsection{Traitement d'une tâche : de la création à l'exécution}\label{sec:context:others:costs}
+
+Si la notion de tâche peut paraître simple, elle s'accompagne d'un certain nombre de traitement plus ou moins automatique (en fonction du modèle de programmation), mais qui dans tous les cas a un coût.
+Les trois paragraphes suivants décrivent quelques points clés accompagnant l'utilisation des tâches, qui sont parfois cachés au programmeur.
+
+\subsubsection{Création}
+
+En fonction du modèle de programmation, la création d'une tâche peut être plus ou moins pénible pour le programmeur.
+
+Prenons deux exemples représentatifs pour illustrer.
+
+En StarPU natif, voici par exemple comment on pourrait définir et créer une tâche :
+
+\begin{lstlisting}[language=c++,caption=Exemple simple en StarPU,label=lst:context:simple-starpu,basicstyle=\small]
+void work() {
+  // ...
+}
+
+int main() {
+  // ...
+  struct starpu_codelet dummy_big_cl =
+  {
+    // ...
+    .cpu_funcs = { work },
+  };
+
+  task = starpu_task_create();
+  task->cl = &dummy_big_cl;
+  starpu_task_submit(task);
+}
+\end{lstlisting}
+
+On voit ici que l'utilisateur doit avoir d'une part isolé la partie calcul de son code, et doit d'autre part interagir avec le support exécutif de manière significative pour créer une tâche.
+
+Si on regarde maintenant un exemple simple en OpenMP :
+
+\begin{lstlisting}
+void foo()
+{
+  // ...
+  #pragma omp task
+  {
+    // calcul
+  }
+  // ...
+}
+\end{lstlisting}
+
+Cela parait certes moins intrusif et pénible pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a pas moins de d'actions effectuées en pratique !
+Que se passe-t-il vraiment ?
+
+Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire générer : il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élémentaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
+
+Un exemple de ce type en OpenMP va donc entrainer deux transformations importantes par le compilateur :
+\begin{itemize}
+  \item l'\emph{outlining} de la fonction, qui consiste à externaliser le code de la tâche et son contexte dans une fonction séparée.
+  \item la substitution du pragma par un appel au support exécutif.
+\end{itemize}
+
+Cela donnera au final un code binaire généré correspondant à un programme de ce type :
+
+\begin{lstlisting}
+void outlined(struct Context c)
+{
+  // unpacking du contexte, recréation des variables locales
+  // calcul
+}
+
+void foo()
+{
+  // ...
+  struct Context c;
+  // capture des variables partagées
+  runtime_specific_create_task(outlined, c);
+  // ...
+}
+\end{lstlisting}
+
+Au final les actions effectuées pour la création d'une tâche sont équivalentes, bien que parfois cachées.
+
+
+\subsubsection{Gestion}
+
+Une fois que le programmeur a définie sa tâche et l'a soumise au support exécutif, celui ci doit la gérer.
+Encore une fois cela a un coût : il doit créer une structure de données permettant d'identifier et gérer la tâche, puis insérer cette tâche dans une structure de données (telle qu'une liste) qui elle aussi introduit un coût.
+
+\subsubsection{Exécution}
+
+Cette étape est l'un des points où la gestion par tâche dispose d'un gros avantage par rapport à la création individuelle de thread par le programmeur.
+Au début de l'exécution de l'application, un certain nombre de cœurs physiques sont utilisables par le support exécutif (cela peut être déduit implicitement par le support exécutif, ou spécifier explicitement par le programmeur).
+Lors de son initialisation, le support exécutif va \textbf{créer et attacher} un thread logique par cœur physique, virtualisant ainsi la gestion des cœurs physiques.
+
+Ces threads vont se voir attribuer différents attributs, comme par exemple une structure de données contenant des tâches.
+Ils seront des <<travailleurs>> permanent pour le support exécutif, qui leur donnera des tâches à exécuter au fur et à mesure.
+
+Les threads sont donc les même tout au long de l'exécution de l'application, ce qui éviter les coûts liés à la création ou à la destruction de threads. 
+
 
 \subsection{Moyens de synchronisation}
 
 Lorsqu'on parle de programmation parallèle, il faut bien évidemment parler de synchronisation.
 Les différentes tâches définies par l'utilisateur vont être exécutées en parallèle sur la machine, mais dans beaucoup de cas certaines tâches doivent attendre la complétion d'une ou plusieurs tâches avant de pouvoir commencer à être exécutée.
 
-Il y a deux grand types de synchronisations pour la programmation à base de tâche~:
+Il y a deux grand types de synchronisations pour la programmation à base de tâche~: la synchronisation explicite, et les dépendances de données.
 
-\begin{itemize}
-  \item la synchronisation dans le thread courant : le thread se bloque sur un point de synchronisation, et attend que l'ensemble des tâches qu'il a créé ait été exécuté avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
-  \item ajouter des dépendances de données, induisant un ordre sur l'exécution des tâches. Dans le listing~\ref{lst:context:task-dep}, la tâche C sera également garantie d'être exécutée \textbf{après} les tâches A et B, car elle consomme des données que A et B produisent.
-\end{itemize}
+\subsubsection{Synchronisation explicite}
+
+Le programmeur peut ajouter un point de synchronisation explicite dans le code.
+Lorsque le thread exécutant la tâche atteint ce point de synchronisation, il se bloque et attend que l'ensemble des tâches qu'il a créé ait été exécuté avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
 
 \begin{lstlisting}[caption=Synchronisation dans le thread courant (OpenMP),label=lst:context:task-wait]
 void foo() {
@@ -33,12 +133,25 @@ void foo() {
 }
 \end{lstlisting}
 
+
+\subsubsection{Dépendances de données}
+
+Le programmeur spécifier des dépendances de données, avec des modes, pour chacune des tâches.
+Dans l'exemple du listing~\ref{lst:context:task-dep}, la tâche |read_A| possède une dépendance en \emph{lecture} sur la variable |a|, et la tâche |write_A| possède une dépendance en \emph{écriture}
+
+\begin{todo}
+  finir
+\end{todo}
+ajouter des dépendances de données, induisant un ordre sur l'exécution des tâches. On  Dans le listing~\ref{lst:context:task-dep}, la tâche C sera également garantie d'être exécutée \textbf{après} les tâches A et B, car elle consomme des données que A et B produisent.
+
 \begin{lstlisting}[caption=Synchronisation via des dépendances (OpenMP),label=lst:context:task-dep]
 void foo() {
-  int a;
+  int a = 1;
   int b;
+  #pragma omp task depend(in: a)
+  read_A(&a);
   #pragma omp task depend(out: a)
-  A(&a);
+  write_A(&a);
   #pragma omp task depend(out: b)
   B(&b);
   #pragma omp task depend(in: a, b)
@@ -57,26 +170,24 @@ On peut mentionner les sections critiques, les mutex, les moniteurs, ou encore l
 
 \subsection{Quantité de travail et granularité}
 
-\begin{todo}
-  Parler du coût naturel d'une tâche, de la vie de la création à la fin de l'exécution.
-  (+ parler outlining, création manuelle)
-
-  Piège ?
-  - intrusif (exemples !)
-  - granularité (cf courbe starpu)
-
-  Exemple 
-\end{todo}
-
 Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources est de réduire l'overhead du support exécutif par rapport au calcul en trouvant le bon \emph{grain} de tâche.
 
-Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif.
+Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif, vis à vis des coûts décrits dans la section~\ref{sec:context:others:costs}.
 
 Le listing~\ref{lst:context:cilk} illustre ce concept en Cilk.
 Le code exposé calcule le nième nombre de la suite de Fibonacci, en utilisant une implémentation à base de fonction récursive.
 La création de tâche ne porte que sur l'une des deux branches récursives, limitant ainsi le nombre de tâches créées et donc le surcoût de gestion des tâches à l'exécution.
 
 Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.
+
+\begin{todo}
+  retoucher l'image pour faire sexy, et expliquer que c'est le temps de la tâche en microsec vs le speedup (et donc l'invisibilité de l'overhead).
+\end{todo}
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\textwidth]{tasks_size_overhead}
+	\caption{TODO}\label{fig:context:tasks:granularity}
+\end{figure}
 
 
 \subsection{Quelques exemples de modèles de programmation}

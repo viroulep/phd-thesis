@@ -4,48 +4,9 @@
 Avant de rentrer dans le vif du sujet, il nous paraît important d'insister sur la distinction entre compilateur et support exécutif.
 
 Tous les modèles de programmation ne sont pas implémenté par tous les compilateurs, mais par contre le fonctionnement général reste le même.
-Le code source va contenir des directives (|#pragma|) ou des appels de fonctions décrits par le modèle de programmation.
+Le code source va contenir des directives (|#pragma|) ou des appels de fonctions décrits par le modèle de programmation. Le code source va ensuite être plus ou moins transformé par le compilateur.
 
-Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire générer : il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élementaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
-
-Pour donner un exemple concret, un code de ce type en OpenMP :
-\begin{lstlisting}
-void foo()
-{
-  // ...
-  #pragma omp task
-  {
-    // calcul
-  }
-  // ...
-}
-\end{lstlisting}
-
-Entrainera deux transformations importantes :
-\begin{itemize}
-  \item l'\emph{outlining} de la fonction, qui consiste à externaliser le code de la tâche et son contexte dans une fonction séparée.
-  \item la substitution du pragma par un appel au support exécutif.
-\end{itemize}
-
-Cela donnera au final un code binaire généré correspondant à un programme de ce type :
-
-\begin{lstlisting}
-void outlined(struct Context c)
-{
-  // unpacking du contexte
-  // calcul
-}
-
-void foo()
-{
-  // ...
-  struct Context c;
-  // capture des variables locales et partagées
-  runtime_specific_create_task(outlined, c);
-  // ...
-}
-\end{lstlisting}
-
+La section~\ref{sec:context:others:costs} décrit en détail la transformation de code s'opérant dans le cas d'OpenMP.
 La conséquence directe de cette transformation est qu'il existe un \textbf{couplage fort} entre le compilateur et le support exécutif.
 
 Dans le cas spécifique d'OpenMP il y a principalement 3 compilateurs qui implémentent complètement (et suivent rapidement) le standard : GCC, ICC, et Clang.
