@@ -54,6 +54,7 @@ Dans le cas spécifique d'OpenMP il y a principalement 3 compilateurs qui implé
 \subsubsection{GCC}
 
 Le compilateur GCC est livré avec son support exécutif par défaut : libGOMP.
+Les développeurs du compilateur sont généralement très réactifs aux évolutions du standard, et GCC supporte OpenMP~4.0 depuis la version 4.9.
 
 libGOMP ne dispose pas de stratégie d'ordonnancement particulièrement dédiée aux architectures NUMA.
 L'ordonnancement des tâches est gérée par la technique du vol de travail, avec une queue de tâche unique pour l'ensemble des threads.
@@ -62,12 +63,20 @@ L'ordonnancement des tâches est gérée par la technique du vol de travail, ave
 
 \subsubsection{ICC}
 
-ICC est livré avec son runtime, open source, libIOMP.
+
+ICC est livré avec son support exécutif - open source~\footnote{https://www.openmprtl.org/} - libIOMP.
+Il supporte la version~4.0 d'OpenMP depuis la version 15.0.
+
+ICC dispose d'un support privilégié pour accélérateur (construction |target|) ciblant les Xeon Phi.
 
 
 \subsubsection{Clang/LLVM}
 
-Pour le support d'OpenMP, l'infrastructure Clang/LLVM embarque une version du support exécutif d'Intel, renommée libOMP.
+Le support d'OpenMP dans Clang a été ajouté d'un coup, contrairement à GCC où il a été progressivement enrichi.
+Intel a tout d'abord ajouté le support dans un clone de Clang : \emph{clang-omp}~\footnote{https://clang-omp.github.io/}.
+Il y a ensuite eu un effort d'ingénierie pour l'inclure dans Clang, et la license du support exécutif d'Intel a été changé pour être compatible avec l'infrastructure LLVM, ce qui a permis de l'embarquer directement dans le code source, en le renommant libOMP.
+
+OpenMP~4.0 est supporté depuis la version 3.8 de Clang (sauf pour la partie |target|).
 
 \subsubsection{Compatibilité}
 
@@ -92,13 +101,12 @@ Il dispose d'une couche - libKOMP~\cite{Broquedis2012} - implémentant à la foi
 L'ordonnancement des tâches est fait par vol de travail, et le support exécutif propose une vision hiérarchique de la machine, ce qui offre une base pour implémenter des stratégies d'ordonnancement plus complexe (TODO: reformuler).
 
 
-\subsection{OMPSs}\label{subsec:rw:ompss}
+\subsection{OmpSs}\label{subsec:rw:ompss}
 
-Modèle de programmation - StarSS - inspiré par OpenMP, à base de directives.
+OmpSs~\cite{OMPSs} est un modèle de programmation visant à étendre OpenMP, visant à étendre le support du parallélisme asynchrone (à base de tâches avec dépendances par exemple), et de l'hétérogénéité.
+La syntaxe est les détails dans l'utilisation peuvent être légèrement différents, mais les constructions et concepts restent les même.
 
-Un compilo (mercurium) + un runtime nanos++
-
-\cite{OMPSs}, Ompss: a proposal for programming heterogeneous multi-core architectures
+OmpSs est composé d'un compilateur, \emph{Mercurium}, et d'un support exécutif \emph{Nanos++}.
 
 \subsection{StarPU}
 
