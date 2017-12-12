@@ -6,17 +6,17 @@
 \chaptertoc
 
 L'évolution du calcul haute performance est aujourd'hui dirigée par les besoins des applications de simulation numérique.
-Ces applications sont omniprésentes dans l'industrie, et concerne parfois même directement le grand public.
+Ces applications sont omniprésentes dans l'industrie, et concernent parfois même directement le grand public.
 
-Par exemple des secteurs comme l'aéronautique, les applications militaires, ou encore le nucléaire ont besoin de simuler des phénomènes à grande échelle, se traduisant parfois par la résolution de systèmes de systèmes linéaires à plusieurs millions d'inconnues.
+Par exemple des secteurs comme l'aéronautique, les applications militaires, ou encore le nucléaire ont besoin de simuler des phénomènes à grande échelle, se traduisant parfois par la résolution de systèmes linéaires à plusieurs millions d'inconnues.
 Les prévisions météorologiques à destination du grand public sont faites à l'aide d'applications simulant les intéractions entre les différents éléments de l'atmosphère.
 Il en va de même pour tout ce qui se rapporte à l'étude de la propagation des ondes sismiques dans le sol, ou de la prévision de l'impact d'un séisme sur un bassin de population.
 
-Toutes ces simulations sont au final exécutées sur des supercalculateurs, et il n'y a pas de limite aux nombres de ressources qu'elles peuvent utiliser : que ce soit pour améliorer la précision de la simulation, ou augmenter la taille de l'ensemble simulé, elles pourront toujours bénéficier d'un plus grand nombres de ressources.
-De plus un grand nombre de ressources peut également permettre d'exécuter un plus grand nombre de simulations simultanément, voire de les coupler entre elles.
+Toutes ces simulations sont au final exécutées sur des supercalculateurs, et il n'y a pas de limite au nombre de ressources qu'elles peuvent utiliser : que ce soit pour améliorer la précision de la simulation, ou augmenter la taille de l'ensemble simulé, elles pourront toujours bénéficier d'un plus grand nombres de ressources.
+Plus de ressources peut également permettre d'exécuter un plus grand nombre de simulations simultanément, voire de les coupler entre elles.
 
 Si les supercalculateurs peuvent proposer plusieurs milliers de coeurs, ils sont en fait composés d'un grand nombre de noeuds de calcul avec un nombre de coeurs beaucoup plus faible.
-Ces machines peuvent proposer, en plus de processeurs traditionnels, accélérateurs plus ou moins spécifiques comme des GPUs ou des FPGA, formant une architecture dite \emph{hétérogène}.
+Ces machines peuvent proposer, en plus de processeurs traditionnels, des accélérateurs plus ou moins spécifiques comme des GPUs ou des FPGA, formant une architecture dite \emph{hétérogène}.
 La très grande majorité des noeuds de calcul intègrent plusieurs processeurs qui accèdent à une mémoire commune.
 
 Contrairement aux processeurs du siècle dernier pour lesquels un changement de génération s'accompagnait d'une augmentation de leur fréquence de fonctionnement, l'évolution des processeurs contemporains se traduit aujourd'hui par la multiplication du nombres de coeurs de calcul qu'ils embarquent.
@@ -27,12 +27,12 @@ La conséquence directe de ce changement est que le temps d'accès à la mémoir
 On appelle ce genre d'architectures NUMA (pour \emph{Non Uniform Memory Access}) et elles sont aujourd'hui la brique de base pour créer des supercalculateurs.
 
 L'amélioration des performances générales d'un supercalculateur passe donc directement par l'optimisation de l'exploitation des machines NUMA.
-Plusieurs techniques de programmation permette de cibler ce genre d'architectures.
+Plusieurs techniques de programmation permettent de cibler ce genre d'architectures.
 On peut notamment citer des techniques statiques à base de boucles parallèles.
 En pratique cela marche particulièrement bien pour les applications où toutes les itérations des boucles sont régulières et où leur temps d'exécution est prévisible.
-Néanmoins il existe beaucoup de cas où ce n'est pas le cas.
-L'exemple typique est celui des applications de parcours de graphes, qui sont généralement irrégulières.
-Mais même dans le cas d'une application où le travail peut sembler régulier, comme par exemple une multiplication de matrices, l'ajout d'une variabilité dans le temps des accès mémoires rend le temps d'exécution difficile à prévoir, et peut entrainer un déséquilibrage de charge.
+Néanmoins il existe beaucoup de situations où ce n'est pas le cas.
+Un exemple typique est celui des applications de parcours de graphes, qui sont généralement irrégulières.
+Mais même dans le cas d'une application où le travail peut sembler régulier, comme par exemple une multiplication de matrices, l'ajout d'une variabilité dans le temps des accès mémoires rend le temps d'exécution difficile à prévoir, et peut entrainer un déséquilibre de charge.
 
 
 Les techniques d'ordonnancement dynamiques peuvent garantir une utilisation plus efficace des ressources.
@@ -40,15 +40,14 @@ L'une des plus communes est l'ordonnancement par vol de travail : l'application 
 Un programme dédié - le support exécutif - a la charge d'exécuter ce graphe : à chaque fois qu'un processeur devient inactif, il va récupérer une tâche disponible pour l'exécuter.
 Pour que cela soit efficace, il faut pouvoir exprimer un maximum de parallélisme : plus il y a de parallélisme, mieux on est capable d'équilibrer la charge au cours de l'exécution.
 
-Les modèles de programmation standard on su s'adapter : par exemple OpenMP, qui est le standard \emph{de-facto} pour ce genre d'architectures, ne proposait au départ que du parallélisme de boucles. Les dernières versions proposent de la programmation par tâche avec dépendances de données.
+Les modèles de programmation standards on su s'adapter : par exemple OpenMP, qui est le standard \emph{de-facto} pour ce genre d'architectures, ne proposait au départ que du parallélisme de boucles. Les dernières versions proposent de la programmation par tâche avec dépendances de données.
 En revanche ces modèles de programmation présentent toujours un manque lorsqu'il s'agit d'exploiter efficacement les machines NUMA.
 Le programmeur doit donc faire de gros efforts pour effectuer des optimisations spécifiques peu portables, par exemple via des bibliothèques externes pour contrôler précisément le placement des données.
-Les outils standard et non intrusifs permettent simplement de distribuer les pages de la mémoire sur les différentes parties physiques : cela a pour avantage d'améliorer l'uniformité des temps d'accès à la mémoire, mais pas d'améliorer le temps d'accès moyen.
-Rendant donc les processeurs uniformément mauvais vis à vis de l'accès à la mémoire.
+Les outils standards et non intrusifs permettent simplement de distribuer les pages de la mémoire sur les différentes parties physiques : cela a pour avantage d'améliorer l'uniformité des temps d'accès à la mémoire, mais pas d'améliorer le temps d'accès moyen, rendant donc les processeurs uniformément mauvais vis à vis de l'accès à la mémoire.
 
 Cette thèse est axée sur l'amélioration des standards et techniques pour l'exploitation des machines NUMA, et cela passe par plusieurs étapes : tout d'abord fournir au programmeur les moyens de comprendre et analyser le comportement des parties critiques de son application.
 Ensuite lui permettre de fournir plus d'information au support exécutif, principalement en lui permettant d'exprimer une \emph{affinité} entre ses tâches et les ressources de la machine.
-En enfin en proposant des techniques d'ordonnancement prenant en compte ces informations, dans le but d'améliorer efficacement les performances globales de l'application.
+Et enfin proposer des techniques d'ordonnancement prenant en compte ces informations, dans le but d'améliorer efficacement les performances globales de l'application.
 
 
 
