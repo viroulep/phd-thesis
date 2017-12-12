@@ -177,7 +177,14 @@ GRAPHE : 2.1.2 les chiffres de base !
 GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 socket/2 noeuds, idchire, knl)
 
 
-\subsection{Particularité au niveau du système d'exploitation}\label{sec:context:numa:os}
+\subsection{Exploitation de ces architectures par le système}\label{sec:context:numa:os}
+\begin{todo}
+  passer ça en tant que section !
+  détailler beaucoup plus :
+   - système général
+   - gestion numa côté système (donner des exemples montrant que c'est relou)
+   - bibliothèque existante (hwloc, numactl)
+\end{todo}
 
 Le support des machines NUMA dans Linux est arrivé dès 2003~\cite{Dobson2003}.
 Il est donc possible, d'une part d'obtenir des informations à propos de la machine, telles que le numéro de noeud d'un coeur donné, ou le numéro de noeud d'une adresse mémoire donnée.

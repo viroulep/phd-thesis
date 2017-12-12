@@ -57,6 +57,17 @@ On peut mentionner les sections critiques, les mutex, les moniteurs, ou encore l
 
 \subsection{Quantité de travail et granularité}
 
+\begin{todo}
+  Parler du coût naturel d'une tâche, de la vie de la création à la fin de l'exécution.
+  (+ parler outlining, création manuelle)
+
+  Piège ?
+  - intrusif (exemples !)
+  - granularité (cf courbe starpu)
+
+  Exemple 
+\end{todo}
+
 Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources est de réduire l'overhead du support exécutif par rapport au calcul en trouvant le bon \emph{grain} de tâche.
 
 Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif.

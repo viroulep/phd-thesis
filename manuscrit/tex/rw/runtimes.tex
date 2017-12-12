@@ -90,15 +90,17 @@ Heureusement les développeurs de libOMP ont implémentés une couche d'intercon
 \section{Autres supports exécutifs}\label{sec:rw:other-runtimes}
 
 Il existe un certain nombres d'autres supports exécutifs, pour OpenMP comme d'autres modèle de programmation.
-Les sections ci après décrivent ceux ayant des thématiques très proches de cette thèse.
+Les sections ci après introduisent ceux ayant des thématiques très proches de cette thèse.
 
-\subsection{Kaapi - libKOMP}
+\subsection{xKaapi}
 
 Kaapi~\cite{Gautier2007} est un support exécutif à base de tâche avec dépendances.
-
 Il dispose d'une couche - libKOMP~\cite{Broquedis2012} - implémentant à la fois les ABIs de libGOMP et libOMP, ce qui permet de l'utiliser directement en compilant via GCC ou Clang, et en changeant le support exécutif chargé à l'exécution.
 
-L'ordonnancement des tâches est fait par vol de travail, et le support exécutif propose une vision hiérarchique de la machine, ce qui offre une base pour implémenter des stratégies d'ordonnancement plus complexe (TODO: reformuler).
+Son moteur d'ordonnancement fonctionne par vol de travail.
+Le support exécutif dispose d'une vision hiérarchique de la machine, ce qui a pu offrir une base propice pour l'ajout d'heuristiques d'ordonnancement plus complexes que celles initialement présentes (décrites en section~\ref{sec:contrib:ws:heuristics}).
+
+L'outil de génération de traces disponible permet également une analyse pointue du comportement des applications, à travers les compteurs de performances matériels et une analyse par type de tâche.
 
 
 \subsection{OmpSs}\label{subsec:rw:ompss}
@@ -110,13 +112,11 @@ OmpSs est composé d'un compilateur, \emph{Mercurium}, et d'un support exécutif
 
 \subsection{StarPU}
 
-Support exécutif à base de tâches, permettant de cibler les architectures à mémoire partagée ainsi que des accélérateurs : support exécutif hétérogène.
+StarPU~\cite{StarPU} est une librairie de programmation parallèle à base de tâche avec dépendances.
+Son support exécutif hétérogène permet de cibler aussi bien des processeurs standards que des accélérateurs, à partir du moment où le programmeur a fourni différentes versions des tâches pour les différentes architectures cibles.
 
-\cite{StarPU}, StarPU: A Unified Platform for Task Scheduling on Heterogeneous Multicore Architectures
-
-Accessible pour OpenMP via le compilateur Kstar.
-
-Others
+StarPU utilise des techniques avancées d'ordonnancement sur ressources hétérogènes, et propose différentes techniques d'ordonnancement en fonction du but recherché.
+Point de vue performances, les ordonnancements de tâches disponibles peuvent être soit purement \emph{online} (tel que le vol de travail - \emph{ws}), ou dériver de techniques initialement \emph{offline} comme leurs ordonnanceurs \emph{dm}, où un ordonnancement initial similaire à HEFT est effectué.
 
 \subsection{Quark}
 
@@ -125,6 +125,7 @@ TODO : se documenter
 
 \subsection{OpenStream}
 
+OpenStream~\cite{Pop2013}.
 Cite Andi
 
 Modèle de programmation par flôt de données.
