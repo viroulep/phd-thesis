@@ -9,7 +9,7 @@ Le code source va contenir des directives (|#pragma|) ou des appels de fonctions
 La section~\ref{sec:context:others:costs} décrit en détail la transformation de code s'opérant dans le cas d'OpenMP.
 La conséquence directe de cette transformation est qu'il existe un \textbf{couplage fort} entre le compilateur et le support exécutif.
 
-Dans le cas spécifique d'OpenMP il y a principalement 3 compilateurs qui implémentent complètement (et suivent rapidement) le standard : GCC, ICC, et Clang.
+Dans le cas spécifique d'OpenMP il y a principalement 3 compilateurs qui implémentent (et suivent rapidement) le standard : GCC, ICC, et Clang.
 
 
 \subsubsection{GCC}
@@ -53,7 +53,7 @@ Heureusement les développeurs de libOMP ont implémentés une couche d'intercon
 Il existe un certain nombres d'autres supports exécutifs, pour OpenMP comme d'autres modèle de programmation.
 Les sections ci après introduisent ceux ayant des thématiques très proches de cette thèse.
 
-\subsection{xKaapi}
+\subsection{Kaapi}
 
 Kaapi~\cite{Gautier2007} est un support exécutif à base de tâche avec dépendances.
 Il dispose d'une couche - libKOMP~\cite{Broquedis2012} - implémentant à la fois les ABIs de libGOMP et libOMP, ce qui permet de l'utiliser directement en compilant via GCC ou Clang, et en changeant le support exécutif chargé à l'exécution.
@@ -71,6 +71,16 @@ La syntaxe est les détails dans l'utilisation peuvent être légèrement diffé
 
 OmpSs est composé d'un compilateur, \emph{Mercurium}, et d'un support exécutif \emph{Nanos++}.
 
+\subsection{OpenStream}
+
+OpenStream~\cite{Pop2013} est un modèle de programmation par flots de données dérivant directement d'OpenMP~3.0.
+Le programmeur défini des flots de données ainsi que des tâches opérant en lecture et/ou écriture sur une certaine quantité de données d'un flot (appelée \emph{window}).
+Concrètement les flots de données peuvent être vus comme des tableaux, et les tâches opèrent sur un certain nombres d'éléments contiguës de celui ci.
+Le support exécutif étudie ensuite l'ordre d'écriture dans les différentes parties d'un flot pour construire un graphe de dépendances des tâches, qui sera ensuite ordonnancé sur la machine.
+
+Ce modèle se rapproche donc très fortement des tâches avec dépendances qui sont apparues dans la version suivante d'OpenMP.
+OpenStream utilise un support exécutif avec des extensions pour les architectures NUMA, nous revenons dessus en détail dans la section~\ref{sec:rw:numa:thread-data}.
+
 \subsection{StarPU}
 
 StarPU~\cite{StarPU} est une librairie de programmation parallèle à base de tâche avec dépendances.
@@ -79,18 +89,12 @@ Son support exécutif hétérogène permet de cibler aussi bien des processeurs 
 StarPU utilise des techniques avancées d'ordonnancement sur ressources hétérogènes, et propose différentes techniques d'ordonnancement en fonction du but recherché.
 Point de vue performances, les ordonnancements de tâches disponibles peuvent être soit purement \emph{online} (tel que le vol de travail - \emph{ws}), ou dériver de techniques initialement \emph{offline} comme leurs ordonnanceurs \emph{dm}, où un ordonnancement initial similaire à HEFT est effectué.
 
-\subsection{Quark}
+\subsection{QUARK}
 
-\cite{Kurzak2013}, Multithreading in the PLASMA Library
-TODO : se documenter
+QUARK~\cite{Kurzak2013} (QUeing And Runtime for Kernels) est le support exécutif privilégié pour la bibliothèque d'algèbre linéaire PLASMA, dont certaines de nos applications sont adaptées.
 
-\subsection{OpenStream}
+Il fonctionne lui aussi à base de tâches, qui sont exclusivement des fonctions de l'utilisateur.
+La création de tâches se fait à l'aide d'appels au support exécutif, et en plus d'un pointeur sur la fonction tâche le programmeur indique les variables manipulées et le type d'accès effectué.
 
-OpenStream~\cite{Pop2013}.
-Cite Andi
-
-Modèle de programmation par flôt de données.
-Fonctionnalités NUMA.
-
-
-Blabla
+Cela permet donc à QUARK de déterminer un ordre d'exécution sur les tâches pour son ordonnancement.
+L'avantage principal de QUARK par rapport aux autres modèle de programmation similaires est qu'il propose des extensions spécifiques à certains algorithmes d'algèbre linéaire présent dans PLASMA.
