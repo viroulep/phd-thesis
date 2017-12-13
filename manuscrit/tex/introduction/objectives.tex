@@ -10,11 +10,11 @@ Avant de pouvoir penser aux améliorations, il faut commencer par analyser les d
 Si l'on souhaitait cibler les modèles de programmation à base de tâches, il fallait néanmoins choisir l'un des modèles existants pour l'étude concrète, et ce choix s'est porté sur OpenMP.
 
 Face à l'absence de suite de benchmarks ciblant certaines fonctionnalités d'OpenMP que nous souhaitions utiliser, nous avons commencé par publier une suite de benchmarks, les KASTORS~\cite{Virouleau2014}.
-Les applications présentes dans cette suite ont été adaptées depuis des applications existantes, afin d'utiliser les constructions dont nous avions besoin, et qui sont aujourd'hui utilisés par la communauté.
+Les applications présentes dans cette suite ont été adaptées depuis des applications existantes, afin d'utiliser les constructions dont nous avions besoin, et qui sont aujourd'hui utilisées par la communauté.
 
 Nous avons également écrit un outil plus générique, NOMDEL4OUTIL, afin de pouvoir évaluer plus précisément certaines parties ciblées des applications.
 L'objectif derrière cet outil est de se libérer de certaines contraintes se présentant lors de l'observation de ces parties de code au cours de l'exécution complète du programme.
-En extrayant les parties critiques on peut faire varier à loisir, et précisément, des paramètres tels que le placement des données ou le jeu de donnée en entrée, afin d'analyser finement quels impacts ils ont et comment l'architecture sous-jacente réagit.
+En extrayant les parties critiques on peut faire varier à loisir, et précisément, des paramètres tels que le placement des données ou le jeu de données en entrée, afin d'analyser finement quels impacts ils ont et comment l'architecture sous-jacente réagit.
 
 
 \subsection*{Quelles améliorations pour l'utilisateur et le support exécutif ?}
