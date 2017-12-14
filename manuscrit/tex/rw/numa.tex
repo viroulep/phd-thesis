@@ -10,9 +10,9 @@ Rien qu'en prenant les travaux se restreignant aux architectures NUMA, on obtien
 
 L'auteur distingue principalement deux types de tâches : compute-bound et memory-bound.
 Si certaines des 8 recommandations sont très spécifiques aux types de tâches, d'autres décrivent bien les points qu'il faut avoir en tête lorsque l'on cible les architectures NUMA.
-Il indique notamment l'importance de la distribution des données de l'application sur l'ensemble des noeuds NUMA, l'importance de la localité des données, ainsi que l'importance de garder les tâches et leur données ensemble lors du vol de travail.
+Il indique notamment l'importance de la distribution des données de l'application sur l'ensemble des nœuds NUMA, l'importance de la localité des données, ainsi que l'importance de garder les tâches et leur données ensemble lors du vol de travail.
 
-
+Dans le cadre spécifique des tâches OpenMP, Terboven et al.~\cite{Terboven2012} ont fait une étude du comportement général des tâches sur les architectures NUMA, et donne des indications assez générales sur les bases pour aborder le problème, comme par exemple assurer le placement fixe d'un thread sur sur cœur de calcul, ou encore les types d'ordonnancement prévus dans le standard qui sont le plus efficace dans ce cas.
 
 Décrire l'ensemble des travaux qui ont été effectués dans ce domaine n'est pas possible, voir dans certains cas n'est pas pertinent, puisque les architectures et langages évoluent.
 
@@ -20,45 +20,77 @@ Les sections suivantes décrivent quelques approches standards et des travaux re
 
 
 
-\subsection{Grouper les threads de calculs ensemble}
+\subsection{Grouper les calculs ensemble}
 
-Les techniques utilisées par les travaux suivant ont tous en commun le groupement des threads sur des éléments topologiquement proches dans la hiérarchie.
-
-L'objectif derrière cette idée est de "cloisonner" la charge de travail (eg: les itérations de boucles) afin de limiter les accès distant.
-
-%Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
-\paragraph{Clet-Ortega et al.~\cite{Clet2014}} ont étudié et évalué plusieurs façons de décorer la topologie de l'architecture, en privilégiant des listes de tâches privées par thread, parcourues de manière hiérarchique.
+Les techniques utilisées par les travaux suivant ont tous en commun le groupement des calculs sur des éléments topologiquement proches dans la hiérarchie.
+L'objectif derrière cette idée est de "cloisonner" la charge de travail (par exemple les itérations de boucles) afin de limiter les accès distant et encourager la réutilisation du cache.
 
 %OpenMP task scheduling strategies for multicore NUMA systems
-\paragraph{Olivier et al.~\cite{Olivier2012}} ont évalué des stratégies hiérarchiques d'ordonnancement de tâches, en utilisant des structures centralisées ou distribuées.
-Ils introduisent un ensemble de threads par noeud NUMA, appelé \emph{shepherd}, permettant à l'ordonnanceur hiérarchique d'avoir de meilleures performances qu'avec les autres approches.
+\paragraph{Olivier et al.~\cite{Olivier2012, Olivier2013}} font l'état des problèmes se posant lors de l'équilibrage de charge sur les architectures NUMA.
+Ils notent en particulier que s'il permet de limiter l'inactivité de certains cœurs, il entraine aussi une augmentation des cache miss ainsi qu'une augmentation des accès distants, plus coûteux.
+
+Leur principale contribution s'oriente autour d'une stratégie d'ordonnancement prenant en compte la hiérarchie de la mémoire au sein de l'architecture.
+Ils définissent un domaine de voisinage, qu'ils appellent \emph{shepherd}, qui regroupe un ensemble de cœur voisins dans la hiérarchie.
+Cet ensemble peut être défini à plusieurs niveaux : il peut être défini pour un seul cœur, pour un ensemble de cœur partageant le même cache L3, ou pour un socket comprenant plusieurs processeurs multicœurs.
+
+Ils proposent ensuite une extensions au vol de travail : ils définissent un \emph{shepherd} (et donc une queue de tâches) par nœud NUMA, et ils proposent que chaque \emph{shepherd} aille voler un ensemble de tâches lorsque leur propre queue de tâche est vide.
+Au sein d'un \emph{shepherd}, le travail est réparti aux threads associés aux cœurs d'une manière LIFO, qui permet un ordonnancement en profondeur dans le but de rester au plus proche de l'exécution et de favoriser la réutilisation des caches.
+
+
+%Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
+\paragraph{Clet-Ortega et al.~\cite{Clet2014}} présentent des techniques de vols de travail favorisant les vols locaux plutôt que distant.
+Ils constatent qu'une queue centralisée introduit un fort coût de gestion compte tenu du fait que le nombre de tâches créées peut être élevé, et proposent l'utilisation d'une queue de tâche par thread du support exécutif pour pallier ce problème.
+Cela introduit du même coup une vision décentralisée de la gestion des tâches, et en couplant ça avec une analyse de la topologie via hwloc, ils introduisent la notion de voisins pour un thread.
+
+La deuxième partie de leur contribution consiste à étendre le vol de travail pour privilégier les vols dans les queues voisines, restreignant ainsi les calculs sur des groupes de cœurs physiques proche.
+%Towards Efficient OpenMP Strategies for Non-Uniform Architectures
+Cette approche est reprise par Tahan et al.~\cite{Tahan2014}. Chaque thread dispose d'une liste privée des autres queues de threads, triée par la distance au cœur sur lequel s'exécute le thread.
+
+
+
+\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des améliorations aux algorithmes de liste ciblant spécifiquement les architectures NUMA.
+À chaque point d'ordonnancement, leur ordonnanceur va tenter de corriger un déséquilibre de charge en déplaçant des tâches d'un cœur à un autre.
+Pour évaluer si une tâche devrait être déplacer sur un autre cœur, ils prennent en compte plusieurs facteurs : la charge du cœur, la quantité de communication que la tâche effectue avec d'autres tâche du cœur, le facteur NUMA entre les deux cœurs, et la quantité de communication locale que la tâche effectuerait sur son cœur actuel.
+Pour résumé ils vont favoriser le rééquilibrage de charge sur des cœurs voisins, et considérer un équilibrage sur un cœur distant si les caractéristiques de la tâche le permettent.
+
+\begin{todo}
+@François : vu que tu es dans les co auteurs je veux bien que tu me confirmes que j'ai bien saisi les travaux de Laércio et que je ne raconte pas des bêtises
+\end{todo}
+
+
+\subsection{Distribution des données et déplacement des calculs}
+
+Nous avons ici regroupé les techniques consistant à contrôler le placement de ses données, et à essayer d'ajuster au mieux l'ordonnancement pour que le calcul s'effectue proche des données.
+Cette approche assez naturelle vise d'une part à réduire la contention au sein d'un même contrôleur mémoire, mais également à minimiser les accès distants coûteux.
+
+\paragraph{HPF~\cite{HPF} (High Performance Fortran)} illustre très bien ces idées.
+Cette extension de Fortran 90 ne concerne pas du tout les architectures NUMA, mais les concepts qui y sont développés ont servi d'inspiration pour nos travaux décrit dans le chapitre~\ref{chap:contrib:openmp}.
+
+Le principe de cette extension est de distribuer la \emph{possession} de chaque élément des tableaux manipulés sur les différents cœurs, et de répartir la charge de travail (les instructions ou groupe d'instructions) sur les cœurs qui possèdent les éléments que ces instructions manipulent.
 
 
 %An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
-\paragraph{Durand et al.~\cite{Durand2013}} ont développé un ordonnanceur de boucles irrégulières, permettant de générer du travail à la voler, et de garder les tâches "à proximité".
+\paragraph{Durand et al.~\cite{Durand2013}} abordent le thème de l'ordonnancement de boucles irrégulières sur machine NUMA.
+D'une part ils utilisent le concept de \emph{domaine de voisinage} définie dans la section précédente pour avoir une vue hiérarchique de la machine, et assurent la distribution des données de l'application sur l'ensemble des \emph{domaines de voisinage}.
+D'autre part ils étendent le support exécutif pour rendre les boucles \emph{adaptatives}~: lorsqu'un thread n'a plus d'itérations à exécuter, il peut aller voler un autre thread qui lui donnera une partie des itérations qui lui ont été attribué.
 
+Cette approche est intéressante dans notre contexte, car au delà de montrer qu'ils compensent l'irrégularité des itérations, ils montrent surtout l'importance de la distribution des données manipulées.
 
-
-
-\subsection{Déplacer les threads vers les données}\label{sec:rw:numa:thread-data}
-
-
-
-
-
-
-
-%Towards Efficient OpenMP Strategies for Non-Uniform Architectures
-\paragraph{Tahan et al.~\cite{Tahan2014}} ont étudié le comportement des programmes à base de tâches OpenMP sur les systèmes NUMA, dans le support exécutif Nanos d'OMPSS (voir section~\ref{subsec:rw:ompss}).
-Ils ont ajouté deux ordonnanceurs de tâches, DFWSPT et DFWSRPT, prennant en compte la priorité des tâches, et essayant de également de diminuer la distance à la mémoire lors de l'équilibrage de charge (en considérant le nombre de "hops" entre noeuds).
-
-% TODO : ces deux là vont peut être dans la section d'avant
-%Task-Parallel Programming on NUMA Architectures
 %Optimizing ccNUMA locality for task-parallel execution under OpenMP and TBB on multicore-based systems
-Des travaux similaires ont été réalisés par Terboven et al.~\cite{Terboven2012}, ainsi que par Wittman et Hager~\cite{Wittmann2011}.
+\paragraph{Wittman et Hager~\cite{Wittmann2011}} proposent une approche très intéressante compte tenu des constructions disponibles en 2011 (tâches indépendantes).
+La supposition de départ est une application dans laquelle chaque tâche lit et écrit un unique bloc de données.
+Ils proposent l'introduction d'une structure similaire au \emph{domaine de voisinage} par nœud NUMA.
+Dans cette structure ils stockent une queue de blocs de données.
 
-Ces travaux se sont concentrés sur les tâches indépendantes.
-L'ajout des dépendances avec OpenMP~4.0 amène un nouvel ensemble d'informations concernant l'utilisation des données par les tâches, qui n'a pas été traités par les travaux mentionnés.
+Dans un premier temps le programmeur distribue équitablement l'ensemble des blocs de données dans l'ensemble des queues des \emph{domaine de voisinage}.
+Ensuite il va créer autant de tâches que de blocs de données existant.
+Lors de l'exécution, la tâche va déterminer dans quelle \emph{domaine de voisinage} elle se trouve, et manuellement retirer un bloc de données de la queue correspondante pour effectuer le calcul.
+
+Si cette approche a le mérite d'améliorer significativement la localité des données, certains aspects sont assez contraignant.
+D'une part le programmeur se retrouve à effectuer lui même des actions qui appartiennent typiquement au support exécutif, et pourrait être faites de manière transparentes.
+Et d'autre part, aucun contrôle n'est fait pour s'assurer que le nombre de tâches sur chaque \emph{domaine de voisinage} est le bon (seul le nombre global de tâches est assurés).
+Ils résolvent ce problème en permettant à une tâche d'aller voler un bloc de données dans un autre voisinage, si le sien est vide.
+
 
 %Dense Matrix Computations on NUMA Architectures with Distance-Aware Work Stealing
 %4.2. Data distribution and locality detection The runtime is able to track the location of the data and schedule tasks in the node with
@@ -73,18 +105,24 @@ Le second est de tracer la localité des données : ils utilisent des tâches d'
 
 
 
-\paragraph{HPF~\cite{HPF} (High Performance Fortran)} est une extension de Fortran 90.
-Le principe est de distribuer la \emph{propriété} de chaque élément des tableaux manipulés, et de répartir la charge de travail (les instructions ou groupe d'instructions) sur les processeurs en fonction des éléments manipulés.
+
+%Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
+%Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
+\paragraph{Dans un contexte hétérogène} plusieurs travaux s'attaquent à l'ordonnancement de tâches en ciblant plusieurs GPU.
+Le problème de localité des données que l'on rencontre sur les architectures NUMA est encore plus critique lorsque l'on cible ce type d'accélérateur.
+Bleuse et al.~\cite{Bleuse2014}, ainsi que Lima et al.~\cite{Lima2015} étendent le vol de travail avec des stratégies ciblant les architectures multi-GPU.
+Pour décider du placement d'une tâche prête, ils considèrent les données déjà présentes sur les différents GPUs, et place la tâche dans la queue du GPU sur lequel le plus de données sont présentes.
+
+Ils montrent une réduction significative de la quantité de données transférée au cours de l'exécution, ce qui se traduit sur certaines classes d'application par un gain important de performance comparé aux stratégies basées sur HEFT ou du vol de travail standard.
+
+\begin{todo}
+  Ici la conclusion est un peu générale et je n'ai pas vraiment fini la description : je n'ai pas vraiment insisté sur les différences entre les travaux.
+  @Thierry : une discussion avec toi permettrait sûrement de mieux rédiger ça.
+\end{todo}
 
 
-\cite{Pilla2014}, Topology-Aware Load Balancing for Performance Portability over Parallel High Performance Systems
+\subsection{Migrations de données et des threads}\label{sec:rw:numa:thread-data}
 
-
-\cite{Bleuse2014}, Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
-
-\cite{Lima2015}, Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
-
-\subsection{Migrations de données et des threads}
 
 %ForestGOMP: an efficient OpenMP environment for NUMA architectures
 \paragraph{ForestGOMP~\cite{Broquedis2010a}} est un support exécutif ciblant spécifiquement les architectures NUMA.
@@ -106,47 +144,28 @@ Librairie utilisateur d'allocation+ distribution de données selon une variété
 (vieux?)\cite{Nikolopoulos2001}, Exploiting Memory Affinity in OpenMP Through Schedule Reuse
 
 
+\subsection*{Conclusion}
 
-\subsection{Energie et OpenMP (TODO, ou pas)}
+TODO
 
-
-\cite{Hackenberg2015}, An Energy Efficiency Feature Survey of the Intel Haswell Processor
-
-\cite{Davidovic2015}, Energy efficiency of parallel multicore programs
-
-\cite{Bao2016}, Static and Dynamic Frequency Scaling on Multicore CPUs
-
-\cite{Shafik2015}, Adaptive Energy Minimization of OpenMP Parallel Applications on Many-Core Systems
-
-\cite{Porterfield2013}, Power measurement and concurrency throttling for energy reduction in OpenMP programs
-
-\cite{Porterfield2013a}, OpenMP and MPI application energy measurement variation
-
-\cite{Nandamuri2015}, Power and energy footprint of OpenMP programs using OpenMP runtime API
-
-\cite{Alessi2015}, Application-level energy awareness for OpenMP
+Beaucoup de tâche indépendantes
+L'ajout des dépendances avec OpenMP~4.0 amène un nouvel ensemble d'informations concernant l'utilisation des données par les tâches, qui n'a pas été traités par les travaux mentionnés.
 
 
-\subsection{TODO : inclassés}
+%\subsection{TODO : inclassés}
 
-\cite{Selva2015}, (thèse) Performance Monitoring of Throughput Constrained Dataflow Programs Executed On Shared-Memory Multi-core Architectures
+%\cite{Selva2015}, (thèse) Performance Monitoring of Throughput Constrained Dataflow Programs Executed On Shared-Memory Multi-core Architectures
 
-\cite{Zhuravlev2012}, Survey of Scheduling Techniques for Addressing Shared Resources in Multicore Processors
-Travaux point de vue OS, pour un processeur multicoeurs (UMA !).
-Contention-aware scheduler.
-Cool, mais seulement à l'intérieur d'un noeud.
-
-\cite{Olivier2013}, Characterizing and mitigating work time inflation in task parallel programs
+%\cite{Zhuravlev2012}, Survey of Scheduling Techniques for Addressing Shared Resources in Multicore Processors
+%Travaux point de vue OS, pour un processeur multicoeurs (UMA !).
+%Contention-aware scheduler.
+%Cool, mais seulement à l'intérieur d'un noeud.
 
 
-\cite{Sbirlea2015}, Polyhedral Optimizations for a Data-Flow Graph Language
-Orienté transformation de boucles, pas vraiment en rapport direct avec la thèse
+%\cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
+  %%\item NUMA (with ref to the "main" chapter)
+  %%\item task + Workstealing (with ref to the "main" chapter)
 
 
-\cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
-  %\item NUMA (with ref to the "main" chapter)
-  %\item task + Workstealing (with ref to the "main" chapter)
-
-
-\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
+%\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
 

@@ -2,11 +2,19 @@
 
 Il existe de nombreux modèles de programmation à base de tâches, certaines fonctionnalités diffèrent, mais les concepts de base restent les même, et seront détaillés ci dessous.
 
+\begin{todo}
+
+  -> parler protocole de cohérence de cache (dans interconnexion peut être)
+  -> remonter les sections archi, le cache mérite son propre truc
+  -> Parler briévement des modèles de programmation exotiques, en disant qu'ils seront abordé en détail en 3
+  -> motiver pourquoi cilk, tbb, et openmp (anotation sur fonction, code utilisateur, simple pragma)
+\end{todo}
+
 \subsection{L'unité de base : la tâche}
 
 Une tâche peut être vue comme la plus petite quantité de travail séquentiel exécutable sur un processeur.
 En pratique c'est une section de code bien définie du programme, et cela peut être une simple instruction, un bloc de code délimité, ou encore une fonction très complexe.
-Dans certains supports exécutifs, tel que StarPU, certaines extensions permettent d'adapter cette notion d'unité de base en agglomérant, ou découpant, des tâches séquentielles.
+La quantité de calcul idéale dans une tâche - la \emph{granularité} - peut varier fortement en fonction de l'application et du support exécutif, ce point est abordé en détail dans la section~\ref{sec:context:others:granularity}
 
 Une tâche est nécessairement accompagnée de données qu'elle manipule. De la même manière qu'une fonction utilise des paramètres, le bloc de code composant une tâche utilise des variables qui peuvent être soit locales (on parlera alors de données privées), soit partagées par d'autres parties du code (on parlera de données partagées).
 
@@ -169,28 +177,6 @@ Les deux ont des avantages et des inconvénients : la synchronisation dans le th
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
 
 
-\subsection{Quantité de travail et granularité}
-
-Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources est de réduire l'overhead du support exécutif par rapport au calcul en trouvant le bon \emph{grain} de tâche.
-
-Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif, vis à vis des coûts décrits dans la section~\ref{sec:context:others:costs}.
-
-Le listing~\ref{lst:context:cilk} illustre ce concept en Cilk.
-Le code exposé calcule le nième nombre de la suite de Fibonacci, en utilisant une implémentation à base de fonction récursive.
-La création de tâche ne porte que sur l'une des deux branches récursives, limitant ainsi le nombre de tâches créées et donc le surcoût de gestion des tâches à l'exécution.
-
-Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.
-
-\begin{todo}
-  retoucher l'image pour faire sexy, et expliquer que c'est le temps de la tâche en microsec vs le speedup (et donc l'invisibilité de l'overhead).
-\end{todo}
-\begin{figure}[ht]
-	\centering
-	\includegraphics[width=\textwidth]{tasks_size_overhead}
-	\caption{TODO}\label{fig:context:tasks:granularity}
-\end{figure}
-
-
 \subsection{Quelques exemples de modèles de programmation}
 
 Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches.
@@ -269,6 +255,27 @@ int fib(int n) {
   return x + y;
 }
 \end{lstlisting}
+
+\subsection{Quantité de travail et granularité}\label{sec:context:others:granularity}
+
+\begin{todo}
+  agrandir cette partie, illustrer avec des chiffres.
+  La granularité peut s'illustrer via un cholesky dont on fait varier la taille de bloc sur nombre de cpu fixé.
+  3 facteurs : structures de données (queue unique vs queue distribuée), coût de création de tâches, affinité (probablement dans une moindre mesure en choisissant pas trop de threads).
+\end{todo}
+
+
+Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources est de réduire l'overhead du support exécutif par rapport au calcul en trouvant le bon \emph{grain} de tâche.
+
+Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif, vis à vis des coûts décrits dans la section~\ref{sec:context:others:costs}.
+
+Le listing~\ref{lst:context:cilk} illustre ce concept en Cilk.
+Le code exposé calcule le nième nombre de la suite de Fibonacci, en utilisant une implémentation à base de fonction récursive.
+La création de tâche ne porte que sur l'une des deux branches récursives, limitant ainsi le nombre de tâches créées et donc le surcoût de gestion des tâches à l'exécution.
+
+Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.
+
+TODO ouvrir sur techniques d'ordonnancement.
 
 \subsection*{Conclusion}
 
