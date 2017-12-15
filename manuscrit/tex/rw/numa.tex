@@ -15,12 +15,11 @@ Il indique notamment l'importance de la distribution des données de l'applicati
 Dans le cadre spécifique des tâches OpenMP, Terboven et al.~\cite{Terboven2012} ont fait une étude du comportement général des tâches sur les architectures NUMA, et donne des indications assez générales sur les bases pour aborder le problème, comme par exemple assurer le placement fixe d'un thread sur sur cœur de calcul, ou encore les types d'ordonnancement prévus dans le standard qui sont le plus efficace dans ce cas.
 
 Décrire l'ensemble des travaux qui ont été effectués dans ce domaine n'est pas possible, voir dans certains cas n'est pas pertinent, puisque les architectures et langages évoluent.
-
 Les sections suivantes décrivent quelques approches standards et des travaux représentatifs de ces techniques, qui ont eu un impact sur le développement de nos travaux décrits dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
 
 
 
-\subsection{Grouper les calculs ensemble}
+\subsection{Groupement des calculs ensemble}
 
 Les techniques utilisées par les travaux suivant ont tous en commun le groupement des calculs sur des éléments topologiquement proches dans la hiérarchie.
 L'objectif derrière cette idée est de "cloisonner" la charge de travail (par exemple les itérations de boucles) afin de limiter les accès distant et encourager la réutilisation du cache.
@@ -48,14 +47,11 @@ Cette approche est reprise par Tahan et al.~\cite{Tahan2014}. Chaque thread disp
 
 
 
-\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des améliorations aux algorithmes de liste ciblant spécifiquement les architectures NUMA.
-À chaque point d'ordonnancement, leur ordonnanceur va tenter de corriger un déséquilibre de charge en déplaçant des tâches d'un cœur à un autre.
+\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des extensions au support exécutif ciblant spécifiquement les architectures NUMA et les applications itératives.
+À chaque pas de temps, leur ordonnanceur va tenter de corriger un déséquilibre de charge en déplaçant des tâches d'un cœur à un autre.
 Pour évaluer si une tâche devrait être déplacer sur un autre cœur, ils prennent en compte plusieurs facteurs : la charge du cœur, la quantité de communication que la tâche effectue avec d'autres tâche du cœur, le facteur NUMA entre les deux cœurs, et la quantité de communication locale que la tâche effectuerait sur son cœur actuel.
+Ils ont effectué ces extensions dans Charm++~\cite{Kale1993} qui à l'avantage de leur fournir directement des informations sur les performances des tâches aux précédents pas de temps.
 Pour résumé ils vont favoriser le rééquilibrage de charge sur des cœurs voisins, et considérer un équilibrage sur un cœur distant si les caractéristiques de la tâche le permettent.
-
-\begin{todo}
-@François : vu que tu es dans les co auteurs je veux bien que tu me confirmes que j'ai bien saisi les travaux de Laércio et que je ne raconte pas des bêtises
-\end{todo}
 
 
 \subsection{Distribution des données et déplacement des calculs}
@@ -67,6 +63,18 @@ Cette approche assez naturelle vise d'une part à réduire la contention au sein
 Cette extension de Fortran 90 ne concerne pas du tout les architectures NUMA, mais les concepts qui y sont développés ont servi d'inspiration pour nos travaux décrit dans le chapitre~\ref{chap:contrib:openmp}.
 
 Le principe de cette extension est de distribuer la \emph{possession} de chaque élément des tableaux manipulés sur les différents cœurs, et de répartir la charge de travail (les instructions ou groupe d'instructions) sur les cœurs qui possèdent les éléments que ces instructions manipulent.
+
+
+%Memory Affinity for Hierarchical Shared Memory Multiprocessors
+\paragraph{Pousa Ribeiro et al.~\cite{Pousa2009}} propose une bibliothèque externe pour contrôler l'allocation de données sur les différents nœuds NUMA.
+Ils proposent plusieurs types de mécanismes :
+\begin{itemize}
+  \item bind : un contrôle précis du nœud sur lequel doit être allouer la donnée
+  \item cyclic : pour distribuer de manière cyclique les pages (ou groupes de pages) de la mémoire allouée sur un ensemble de nœuds.
+  \item random : pour distribuer aléatoirement les pages (ou groupes de pages) de la mémoire allouée sur un ensemble de nœuds.
+\end{itemize}
+Cela nécessite une modification du code mais permet, contrairement à \emph{numactl}, d'avoir une distribution basée sur les données effectivement manipulées par l'application.
+
 
 
 %An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
@@ -121,38 +129,76 @@ Ils montrent une réduction significative de la quantité de données transfér�
 \end{todo}
 
 
-\subsection{Migrations de données et des threads}\label{sec:rw:numa:thread-data}
+\subsection{Migrations des données et des calculs}\label{sec:rw:numa:thread-data}
 
+Dans cette dernière catégorie, les travaux effectués vont chercher à garantir la localité des données en regroupant les calculs, mais aussi en déplaçant les données manipulées par les calculs pendant l'exécution, pour réduire les accès distants.
+Cela peut être fait à deux niveaux : soit au niveau du support exécutif, soit au plus bas niveau, directement dans le noyau du système.
+Dans le premier cas on a potentiellement une meilleure connaissance des données pour faire de meilleur choix, mais cela restreint le type d'application ou impose une action de la part du programmeur.
+Si l'on se place au niveau du noyau les informations ne sont disponibles qu'à l'exécution, et nécessite une analyse. Cela a l'avantage de cibler n'importe quelle application sans la modifier, mais le potentiel de gain est un peu plus faible.
 
 %ForestGOMP: an efficient OpenMP environment for NUMA architectures
 \paragraph{ForestGOMP~\cite{Broquedis2010a}} est un support exécutif ciblant spécifiquement les architectures NUMA.
-Ses fonctionnalités incluent un ordonnanceur de threads hiérarchiques, groupés selon les équipes de threads OpenMP afin de maximiser la localité des données.
-
-\cite{Yu2017}, Design and Implementation of Bandwidth-aware Memory Placement and Migration Policies for Heterogeneous Memory Systems
-
-
-\cite{Drebes2014}, Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
-
-\cite{Pousa2009}, Memory Affinity for Hierarchical Shared Memory Multiprocessors
-Librairie utilisateur d'allocation+ distribution de données selon une variété de stratégies pour s'adapter à l'application :
- - bind (restriction à certains noeuds), cyclic (avec possibilité de bloc, ou de skew (répartition non linéaire, i + i/M +1 mod M)), random (par bloc aussi)
+Ils constatent que le parallélisme que permet d'exprimer OpenMP~2.5 est plat, et que cela pose problème lors de l'exploitation des machines NUMA.
+Étant donné que le parallélisme imbriqué peut être vu comme une forme de hiérarchie, ils proposent de superposer ce type de parallélisme sur la topologie des machines NUMA.
+Pour cela ils regroupent les threads imbriqués en \emph{bulles}, qui pourront ensuite être ordonnancé sur différents niveaux de la hiérarchie mémoire.
 
 
+ForestGOMP repose sur deux composants :
+\begin{itemize}
+  \item MARCEL : ce composant est en charge de l'ordonnancement des \emph{bulles} sur la hiérarchie de la machine. Son objectif est de les placer au mieux, c'est-à-dire faire en sorte qu'elles soient exécutées par des cœurs d'un même nœud, et de les déplacer si l'équilibrage de charge le nécessite.
+  \item MaMI : ce composant gère le placement et la migration des données manipulées par les \emph{bulles}.
+Il prend en charge une distribution initiale des données des différentes \emph{bulles}, qui sera pris en compte par MARCEL lors du placement initial des \emph{bulles}.
+Lors de l'équilibrage de charge, MaMI permet la migration des données associées à la \emph{bulle} en marquant les pages manipulées, et en forçant le déplacement physique des pages proches du prochain thread qui touchera une page marquée (\emph{next-touch}).
+\end{itemize}
 
-(vieux?)\cite{Weng2002}, Implementing OpenMP Using Dataflow Execution Model for Data Locality and Efficient Parallel Execution
+Ils montrent des gains significatifs de performances et une réduction de la contention sur des benchmarks populaires tels que STREAM~\cite{mccalpin1995}.
 
-(vieux?)\cite{Nikolopoulos2001}, Exploiting Memory Affinity in OpenMP Through Schedule Reuse
+%Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
+\paragraph{Drebes et al.~\cite{Drebes2014}} ont implémenté des stratégies d'ordonnancement ciblant les architectures NUMA dans OpenStream.
+Le support exécutif fonctionne par vol de travail (avec une queue de tâches par cœur), et récupère des informations sur la hiérarchie mémoire via hwloc lors de son initialisation.
+Les tâches expriment leurs dépendances de données sur des \emph{buffer}, dans lesquels plusieurs peuvent écrire ou lire des données.
+Ces dépendances permettent non seulement de déterminer l'ordre d'exécution des différentes tâches, mais également de connaître précisément l'ensemble des données manipulées par plusieurs tâches, ainsi que leur taille.
+
+Leurs stratégies visent à améliorer la localité et la distribution des données au cours de l'exécution en jouant sur plusieurs facteurs.
+\begin{itemize}
+  \item Lors de la sélection d'une queue de tâches à voler, il va favoriser le vol sur les cœurs voisins.
+  \item Lors du placement des tâches prêtes, il va déterminer le nœud sur lequel sont alloués ses \emph{buffer} de données en entrée, et placer la tâche sur un cœur de ce nœud.
+  \item Ils vont gérer l'allocation des \emph{buffers} des tâches de manière à garder le maximum de données locales.
+Lorsque l'allocation d'un \emph{buffer} est nécessaire (par exemple avant l'exécution d'une tâche qui écrit dedans), le support exécutif va regarder les différentes tâches qui contribuent à ce \emph{buffer} ainsi que la taille de leur contribution. À partir de là ils définissent la notion de \emph{dépendance forte} sur la tâche qui contribue le plus, et alloue le \emph{buffer} sur le nœud où va s'exécuter cette tâche.
+Si la tâche à l'origine de l'allocation a été volée, l'allocation est fait localement et ignore la \emph{dépendance forte} : cela permet de corriger des problèmes constatés sur des schémas de dépendances en forme d'arbre.
+\end{itemize}
+
+Ils montrent que la combinaison de ces facteurs permet d'augmenter significativement le rapport du nombre d'accès locaux sur le nombre d'accès distant, et ce sur des classes d'applications variées.
+
+
+
+
+%kMAF: Automatic Kernel-level Management of Thread and Data Affinity
+\paragraph{Diener et al.~\cite{Diener2014}} proposent d'attaquer le problème de la localité des données au sein même du système d'exploitation.
+Ils implémentent, au sein du noyau Linux, un mécanisme d'observation et d'analyse des accès effectués aux pages mémoires par les différents threads.
+À partir de ces observations, ils peuvent effectuer deux opérations : d'une part décider de migrer certaines pages mémoire sur un nœud différent, en modifiant directement la table des pages.
+D'autre part ils peuvent décider de migrer certains threads sur un nœud NUMA plus adapté.
+Ils montrent que la combinaison de ces deux opérations permet d'améliorer significativement les performances de certains benchmarks courants, sans avoir à effectuer de modifications au niveau du code source.
+
+%Design and Implementation of Bandwidth-aware Memory Placement and Migration Policies for Heterogeneous Memory Systems
+Des travaux similaires ont été effectués par Yu et al.~\cite{Yu2017} sur des architectures disposant de mémoires hétérogènes.
+
 
 
 \subsection*{Conclusion}
 
-TODO
+Tous ces travaux ont eu un impact sur les idées que nous avons développé au cours de la thèse, mais ceux prenant en compte à la fois la hiérarchie mémoire, le placement des calculs par rapport aux données, et le contrôle du placement des données nous semblent les plus intéressant dans notre contexte.
+Tous les travaux décrits dans cette section ont été effectués avant l'introduction des tâches avec dépendances dans OpenMP, nous avons donc pu exploiter des informations additionnelles par rapport à eux.
 
-Beaucoup de tâche indépendantes
-L'ajout des dépendances avec OpenMP~4.0 amène un nouvel ensemble d'informations concernant l'utilisation des données par les tâches, qui n'a pas été traités par les travaux mentionnés.
+\begin{todo}
+est-ce qu'il faut se positionner dès maintenant par rapport à l'état de l'art (et donc spoiler ce qu'on présente en chap 5) ?
+\end{todo}
+
+%Le chapitre~\ref{chap:contrib:openmp} introduit nos contributions 
 
 
-%\subsection{TODO : inclassés}
+
+%\subsection{inclassés}
 
 %\cite{Selva2015}, (thèse) Performance Monitoring of Throughput Constrained Dataflow Programs Executed On Shared-Memory Multi-core Architectures
 
