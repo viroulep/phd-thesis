@@ -34,7 +34,7 @@ En StarPU natif, voici par exemple comment on pourrait définir et créer une t�
 
 \begin{lstlisting}[language=c++,caption=Exemple simple en StarPU,label=lst:context:simple-starpu,basicstyle=\small]
 void work() {
-  // ...
+  // calcul
 }
 
 int main() {
@@ -51,7 +51,7 @@ int main() {
 }
 \end{lstlisting}
 
-On voit ici que l'utilisateur doit avoir d'une part isolé la partie calcul de son code, et doit d'autre part interagir avec le support exécutif de manière significative pour créer une tâche.
+On voit ici que l'utilisateur doit d'une part avoir isolé la partie calcul de son code, et d'autre part interagir avec le support exécutif de manière significative pour créer une tâche.
 
 Si on regarde maintenant un exemple simple en OpenMP :
 
@@ -67,10 +67,10 @@ void foo()
 }
 \end{lstlisting}
 
-Cela parait certes moins intrusif et pénible pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a pas moins de d'actions effectuées en pratique !
+Cela parait certes moins intrusif et pénible pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a pas moins d'actions effectuées en pratique !
 Que se passe-t-il vraiment ?
 
-Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire générer : il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élémentaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
+Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire généré~: il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élémentaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
 
 Un exemple de ce type en OpenMP va donc entrainer deux transformations importantes par le compilateur :
 \begin{itemize}
@@ -97,24 +97,34 @@ void foo()
 }
 \end{lstlisting}
 
+\begin{todo}
+  Montrer le packing/unpacking ainsi que les appels au runtime (eg: libomp)
+\end{todo}
+
 Au final les actions effectuées pour la création d'une tâche sont équivalentes, bien que parfois cachées.
 
 
 \subsubsection{Gestion}
 
-Une fois que le programmeur a définie sa tâche et l'a soumise au support exécutif, celui ci doit la gérer.
-Encore une fois cela a un coût : il doit créer une structure de données permettant d'identifier et gérer la tâche, puis insérer cette tâche dans une structure de données (telle qu'une liste) qui elle aussi introduit un coût.
+Une fois que le programmeur a définie sa tâche et l'a soumise au support exécutif, celui ci doit créer et maintenir une structure de données représentant cette tâche.
+Celle ci peut être plus ou moins grande en fonction des informations associées à la tâche.
+
+Le support exécutif va utiliser ces informations au cours de l'exécution du programme pour déterminer quelles tâches sont prêtes pour l'exécution.
+En pratique cela signifie que ces structures de données vont être placées dans des conteneurs tels que des files ou des piles, et qu'un certain nombre d'opérations seront effectuées dessus (ajout, suppression, parcours).
+
+En conséquence le coût du maintien des informations à propos d'une tâche entre sa création et son exécution dépend du support exécutif et des structures de données qu'il utilise.
+
 
 \subsubsection{Exécution}
 
 Cette étape est l'un des points où la gestion par tâche dispose d'un gros avantage par rapport à la création individuelle de thread par le programmeur.
-Au début de l'exécution de l'application, un certain nombre de cœurs physiques sont utilisables par le support exécutif (cela peut être déduit implicitement par le support exécutif, ou spécifier explicitement par le programmeur).
+Au début de l'exécution de l'application, un certain nombre de cœurs physiques sont utilisables par le support exécutif (cela peut être déduit implicitement par le support exécutif, ou spécifié explicitement par le programmeur).
 Lors de son initialisation, le support exécutif va \textbf{créer et attacher} un thread logique par cœur physique, virtualisant ainsi la gestion des cœurs physiques.
 
 Ces threads vont se voir attribuer différents attributs, comme par exemple une structure de données contenant des tâches.
-Ils seront des <<travailleurs>> permanent pour le support exécutif, qui leur donnera des tâches à exécuter au fur et à mesure.
+Ils seront des <<travailleurs>> permanents pour le support exécutif, qui leur donnera des tâches à exécuter au fur et à mesure.
 
-Les threads sont donc les même tout au long de l'exécution de l'application, ce qui éviter les coûts liés à la création ou à la destruction de threads. 
+Les threads sont donc les même tout au long de l'exécution de l'application, ce qui évite les coûts liés à la création ou à la destruction de threads. 
 
 
 \subsection{Moyens de synchronisation}
@@ -144,12 +154,12 @@ void foo() {
 
 \subsubsection{Dépendances de données}
 
-Le programmeur spécifier des dépendances de données, avec des modes, pour chacune des tâches.
+Le programmeur spécifie des dépendances de données, avec des modes, pour chacune des tâches.
 Dans l'exemple du listing~\ref{lst:context:task-dep}, la tâche |write_A| possède une dépendance en \emph{écriture} sur la variable |a|, et la tâche |read_A| possède une dépendance en \emph{lecture}.
 
 Étant donné qu'il y a une lecture et une écriture, le principe de cohérence séquentielle impose que les opérations soit ordonnées dans l'ordre où elles ont été créées (ici la tâche en lecture devrait avoir lieu \textbf{après} la tâche en écriture).
 
-Il y a également la tâche |B| qui dispose d'une dépendance en écriture sur |b|, et |C| qui a une dépendance de donnée en lecture sur |a| et |b|.
+Si on regarde le reste du programme, la tâche |B| dispose d'une dépendance en écriture sur |b| et la tâche |C| souhaite lire |a| et |b|.
 
 Étant donné que du point de vue des dépendances les tâches |write_A| et |B| sont indépendantes, elles pourraient très bien être exécutées en même temps, et |B| pourrait terminer son exécution avant même que |read_A| commence la sienne.
 
@@ -171,7 +181,9 @@ void foo() {
 }
 \end{lstlisting}
 
+\begin{todo}
 GRAPHE : 2.2.2 mini schéma dataflow du graphe correspondant au programme écrit.
+\end{todo}
 
 Les deux ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
@@ -179,8 +191,7 @@ Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exé
 
 \subsection{Quelques exemples de modèles de programmation}
 
-Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches.
-Les trois les plus populaires sont sûrement Cilk, TBB, et OpenMP.
+Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, TBB, et OpenMP.
 
 Les listings~\ref{lst:context:cilk},~\ref{lst:context:tbb}, et ~\ref{lst:context:openmp} donnent une comparaison de l'expression du même exemple simple, le calcul du nième nombre de la suite de Fibonacci.
 
@@ -208,11 +219,11 @@ int fib(int n) {
 
 Threading Building Block (TBB)~\cite{Reinders2007} est un modèle de programmation développé par Intel comme une bibliothèque C++.
 
-Elle propose différentes fonction pour que le programmeur puisse exprimer du parallélisme, dont notamment :
+Elle propose différentes fonctions pour que le programmeur puisse exprimer du parallélisme, dont notamment :
 \begin{itemize}
   \item La fonction template |parallel_for|, s'appliquant sur une boucle et prenant en paramètre une fonction utilisateur.
     La bibliothèque découpe automatiquement l'espace d'itération en groupes d'itérations et envoie un itérateur C++ à la fonction utilisateur pour son traitement.
-  \item Un ensemble de fonction pour accéder à l'ordonnanceur de tâches de la bibliothèque.
+  \item Un ensemble de fonctions pour accéder à l'ordonnanceur de tâches de la bibliothèque.
 \end{itemize}
 
 La bibliothèque propose également un ensemble de structures de données à accès concurrent (listes, tables de hachage), ainsi que des allocateurs mémoires.
@@ -258,28 +269,39 @@ int fib(int n) {
 
 \subsection{Quantité de travail et granularité}\label{sec:context:others:granularity}
 
-\begin{todo}
-  agrandir cette partie, illustrer avec des chiffres.
-  La granularité peut s'illustrer via un cholesky dont on fait varier la taille de bloc sur nombre de cpu fixé.
-  3 facteurs : structures de données (queue unique vs queue distribuée), coût de création de tâches, affinité (probablement dans une moindre mesure en choisissant pas trop de threads).
-\end{todo}
-
 
 Dans ce type de modèles de programmation, la clé pour maximiser l'utilisation des ressources est de réduire l'overhead du support exécutif par rapport au calcul en trouvant le bon \emph{grain} de tâche.
 
-Il y a donc un compromis à trouver entre le degré de parallélisme et les performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif, vis à vis des coûts décrits dans la section~\ref{sec:context:others:costs}.
+Il faut donc jouer sur le degré de parallélisme pour atteindre les meilleures performances : les tâches doivent être suffisamment petites pour proposer le maximum de parallélisme, mais pas trop pour ne pas surcharger le support exécutif, vis à vis des coûts décrits dans la section~\ref{sec:context:others:costs}.
 
-Le listing~\ref{lst:context:cilk} illustre ce concept en Cilk.
-Le code exposé calcule le nième nombre de la suite de Fibonacci, en utilisant une implémentation à base de fonction récursive.
-La création de tâche ne porte que sur l'une des deux branches récursives, limitant ainsi le nombre de tâches créées et donc le surcoût de gestion des tâches à l'exécution.
+Ce grain optimal dépend de plusieurs facteurs : les structures de données utilisées par le support exécutif, le coût de création des tâches, et la quantité de travail mis à disposition par cœur via ce grain.
+
+Cela peut être illustré via une application telle que la factorisation de Cholesky par bloc : à taille de matrice fixée le nombre de tâches créées dépend directement de la taille de bloc choisie.
+Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le nombre de tâches, et le parallélisme potentiel) est important.
+
+\begin{todo}
+%\begin{figure}[ht]
+	%\centering
+	%\includegraphics[width=0.66\textwidth]{todo}
+	%\caption{todo}\label{fig:context:granularity}
+%\end{figure}
+  courbe grain
+\end{todo}
+
+La figure~\ref{fib:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
+Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quelque soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
+
+Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important (TODO : mettre les vrais chiffres d'ompss et de libkomp/gcc).
+
+La courbe tracée avec libkomp inclue nos travaux sur l'affinité, et cela permet d'illustrer que même si cela permet d'influer sur les performances maximales, cela a un impact minimal sur le grain.
+
+
 
 Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.
 
-TODO ouvrir sur techniques d'ordonnancement.
-
 \subsection*{Conclusion}
 
-Peu importe le modèle de programmation, car au final dans tous ces modèles l'application est décrite par un graphe de tâches direct et acyclique (DAG).
+Bien que tout ces modèles de programmation aient leur spécificités, ils permettent tous de décrire l'application sous forme de graphe de tâches direct et acyclique (DAG).
 
 L'étape suivante consiste à exécuter ce graphe sur la machine, et pour cela le support exécutif peut se reposer sur un ensemble important de techniques d'ordonnancement. 
 

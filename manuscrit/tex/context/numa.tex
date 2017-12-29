@@ -1,7 +1,7 @@
 \section{Architectures à mémoire partagée}\label{sec:context:numa}
 
-Les architectures à mémoire partagée ont subit des changements majeurs liés à évolution des processeurs.
-L'augmentation du nombre de cœurs par processeur a introduit des problèmes d'accès à la mémoire centrale : dans une architecture composée d'une unique mémoire, plusieurs cœurs cherchant à accéder à la mémoire vont rentrer en concurrence et introduire de la contention et donc des délais dans l'accès à la mémoire, ce qui est incompatible avec les performances.
+Les architectures à mémoire partagée ont subit des changements majeurs liés à l'évolution des processeurs.
+L'augmentation du nombre de cœurs par processeur a introduit des problèmes d'accès à la mémoire centrale : dans une architecture composée d'une unique mémoire, plusieurs cœurs cherchant à accéder à la mémoire vont rentrer en concurrence et introduire de la contention et donc des délais dans l'accès à la mémoire, ce qui pénalise formtement les performances.
 
 Pour pallier ce problème, les constructeurs ont divisé la mémoire centrale en plusieurs parties physiquement distinctes, appelées \emph{nœuds}.
 Chaque nœud est constitué d'une partie de la mémoire centrale, d'un contrôleur local d'accès à ce bloc mémoire, ainsi que d'un certain nombre de cœurs de calcul.
@@ -29,19 +29,19 @@ On appelle cette quantité une \emph{ligne de cache}, et un exemple de taille st
 Lorsqu'une instruction demande le chargement d'une valeur située en mémoire, le contrôleur du cache reçoit la requête du processeur, détermine la ligne de cache correspondante à partir de l'adresse demandée, et effectue l'une des deux opérations suivantes :
 \begin{description}
   \item [Cache hit :] si la ligne correspondante est déjà présente dans le cache la donnée est directement retournée au cœur.
-  \item [Cache miss :] si la ligne n'est pas présente il va charger la valeur depuis la mémoire centrale vers le cache, et retourner la valeur au cœur.
+  \item [Cache miss :] si la ligne n'est pas présente le contrôleur de cache va charger la valeur depuis la mémoire centrale vers le cache, et retourner la valeur au cœur.
 \end{description}
 
-Si le cœur a accès à plusieurs niveaux de cache, la requête est transférée au niveau supérieur, et seul le dernier niveau effectue la requête à la mémoire centrale.
+%(je vire ça vu qu'on ne parle de niveaux de cache que plus tard) Si le cœur a accès à plusieurs niveaux de cache, la requête est transférée au niveau supérieur, et seul le dernier niveau effectue la requête à la mémoire centrale.
 Une fois qu'une ligne est chargée dans le cache, elle n'y reste pas de manière permanente, plusieurs raisons décrites ci-après peuvent entraîner son \emph{éviction} du cache :
 
 \begin{itemize}
-  \item Le maintient de la cohérence : lorsqu'un cœur modifie une ligne de cache dans son propre cache, cette même ligne est \emph{invalidée} dans les caches des autres processeurs qui en disposent d'une version.
+  \item Le maintien de la cohérence : lorsqu'un cœur modifie une ligne de cache dans son propre cache, cette même ligne est \emph{invalidée} dans les caches des autres processeurs qui en disposent d'une version.
 Si un processeur essaie de faire un accès sur une ligne invalidée, elle sera rechargée depuis la mémoire centrale, générant un \emph{cache miss}.
-  \item Le dépassement de la capacité du cache. Il est assez commun que l'ensemble des données manipulées par le programme ne tienne pas dans le cache.
+  \item Le dépassement de la capacité du cache : il est assez commun que l'ensemble des données manipulées par le programme ne tienne pas dans le cache.
 Lorsqu'une requête est effectuée sur une ligne, qu'elle n'est pas présente dans le cache, et que le cache est plein, le contrôleur choisira une ligne à évincer du cache pour faire de la place à la nouvelle ligne.
 Le choix de la ligne à évincer est un sujet très étudié, et le prochain paragraphe revient sur les politiques d'éviction communément utilisées.
-  \item Le conflit d'adresse. Dans certains modèle de caches, certaines lignes correspondant à des adresses mémoires doivent être stockées dans le même emplacement du cache.
+  \item Le conflit d'adresse : dans certains modèle de caches, certaines lignes correspondant à des adresses mémoires doivent être stockées dans le même emplacement du cache.
     Si elles sont requises alternativement pendant l'exécution du programme, elles se sortiront mutuellement du cache.
     Ce problème dépend directement de l'\emph{associativité} du cache, qui est traitée dans le paragraphe suivant.
 \end{itemize}
@@ -54,7 +54,7 @@ Le cache ne pouvant être suffisamment grand pour contenir toute la mémoire, il
 Il y a trois grandes catégories d'associativité utilisées par les caches :
 \begin{itemize}
   \item Les caches à association directe (\emph{direct-mapped cache}) : dans ce système, chaque ligne de la mémoire est associée à exactement un emplacement dans le cache.
-    Ce système est simple, propose le meilleur temps de réponse, mais est peu prévisible et à taille identique il est moins efficace que les deux autres catégories.
+    Ce système est simple, propose le meilleur temps de réponse, mais est peu prévisible et à taille identique est moins efficace que les deux autres catégories.
   \item Les caches complètement associatifs (\emph{fully associative cache}) : dans ce système, chaque ligne de la mémoire peut être associée à n'importe quel emplacement dans le cache.
     Cela permet de maximiser l'utilisation de l'espace disponible, mais cela induit un coût supplémentaire pour déterminer l'association entre une ligne et son emplacement.
   \item Les caches N-associatifs (\emph{N-way associative cache}) : ce système est un compromis entre les deux précédents.
@@ -62,9 +62,9 @@ Il y a trois grandes catégories d'associativité utilisées par les caches :
     Cela implique un certain nombre d'opérations sur les adresses des lignes, et l'espace pris par le composant ainsi que le temps d'accès moyen dépend directement de la valeur de N.
 \end{itemize}
 
-Hill et al.~\cite{Hill1989} (Table III) illustre l'impact de l'associativité sur les cache miss et catégorise son origine (conflit d'adresse, défaut de capacité du cache, inévitable).
+Hill et al.~\cite{Hill1989} (Table III) illustre l'impact de l'associativité sur la proportion de cache miss et catégorise son origine (conflit d'adresse, défaut de capacité du cache, chargement normal de la donnée).
 Cela permet de dégager deux observations : d'une part qu'augmenter l'associativité permet de diminuer les cache miss.
-D'autre part que les défauts de cache ayant une forte associativité sont quasi exclusivement dus à la capacité du cache, alors que pour les cache à association directe les conflits d'adresse sont une part non négligeable des cache miss.
+D'autre part que les défauts de cache ayant une forte associativité sont quasi exclusivement dus à la capacité du cache, alors que pour les caches à association directe les conflits d'adresse sont une part non négligeable des cache miss.
 
 \paragraph{Niveaux de caches}
 
@@ -95,7 +95,7 @@ Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé
 
 \paragraph{Politiques d'éviction}
 
-Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impact direct sur les performances, et les politique de remplacement ont été très étudiées par les différents acteurs de la communauté académique et industrielle.
+Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impact direct sur les performances, et les politiques de remplacement ont été très étudiées par les différents acteurs de la communauté académique et industrielle.
 
 La politique optimale serait de remplacer la ligne qui sera réutilisée le plus tard, mais ce genre de clairvoyance est impossible à implémenter en pratique.
 Un certain nombre d'alternatives ont donc été imaginées, et sont décrites ci-après :
@@ -106,7 +106,7 @@ Un certain nombre d'alternatives ont donc été imaginées, et sont décrites ci
   \item Pseudo-LRU : cette politique offre une version dégradée permettant de gérer des caches de grandes tailles.
 Lorsque l'associativité du cache dépasse un certain seuil, le coût d'implémentation de LRU devient trop important~\cite{Kedzierski2010}, l'alternative proposée par les politiques pseudo-LRU est donc de remplacer une ligne parmi celles utilisées il y a le plus longtemps.
 Cela permet de limiter le nombre de bits nécessaire pour tracer les lignes à remplacer potentielles.
-  \item Autre politiques adaptatives : dans le cas spécifique du cache de dernier niveau (LLC), certains fabriquants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
+  \item Autres politiques adaptatives : dans le cas spécifique du cache de dernier niveau (LLC), certains fabriquants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
     \emph{Dynamic Re-Referency Interval Prediction} en est un exemple, qui a été présenté parmi d'autres par Jaleel et al.~\cite{Jaleel2010}.
 \end{itemize}
 
@@ -135,12 +135,17 @@ En supposant que la largeur des registres (et des instructions) du processeur es
 De plus la vectorisation permet au processeur d'optimiser la décomposition de l'instruction en micro opérations et donc l'utilisation du pipeline.
 Au final on divise le nombre d'itérations, mais aussi le nombre d'accès mémoire et d'opérations par 2.
 
+
+\begin{todo}
+  pipo pieline ?
+\end{todo}
+
 \begin{todo}
   j'ai pas trouvé la ref des procs vectoriels sur ACM, (re)demander à Thierry
 \end{todo}
 
-Des extensions au jeu d'instruction x86 ont été créées afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus large que le type le plus large en C (|long long|, 64 bits).
-La première d'entre elle, SSE (\emph{Streaming SIMD Extensions}), a été introduite par Intel dès 1999 et a évolué régulièrement, agrandissant progressivement la taille des registres jusqu'à l'extension AVX-512, permettant d'effectuer des instructions sur des registres de 512 bits.
+Des extensions au jeu d'instructions x86 ont été créées afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus larges que le type le plus large en C (|long long|, 64 bits).
+La première d'entre elles, SSE (\emph{Streaming SIMD Extensions}), a été introduite par Intel dès 1999 et a évolué régulièrement, agrandissant progressivement la taille des registres jusqu'à l'extension AVX-512, permettant d'effectuer des instructions sur des registres de 512 bits.
 
 La plupart des processeurs actuels (depuis les Sandy Bridge d'Intel, et les Bulldozer d'AMD, en 2011) supportent au moins l'extension AVX avec des registres de 128 bits.
 
@@ -152,30 +157,37 @@ Afin de maximiser l'utilisation de ces ressources, certains processeurs Intel so
 Le concept est assez simple : avoir deux cœurs logiques (\emph{hyperthreads}) associés à un seul cœur physique.
 De cette manière lorsqu'un thread est en attente sur une donnée (par exemple lors d'un chargement d'une donnée depuis la mémoire), le second peut profiter des UALs disponibles.
 
-Pour des tâches peu gourmandes en ressources ou utilisant beaucoup de données, cela peut effectivement se traduire par un gain de performances, mais pour le cas des applications HPC il faut regarder le type d'application utilisées pour savoir si on peut espérer un gain ou non.
+Pour des tâches peu gourmandes en ressources ou utilisant beaucoup de données, cela peut effectivement se traduire par un gain de performances, mais pour le cas des applications HPC il faut regarder le type d'applications utilisées pour savoir si on peut espérer un gain ou non.
 En particulier les caches L1 et L2 sont partagés par les deux hyperthreads, donc si le code séquentiel généré est optimisé pour les tailles de caches correspondant, exécuter le même type de code séquentiel sur deux hyperthreads peut entrainer du \emph{cache trashing}.
-Au meilleur des cas l'hyperthreading améliorera les performances mais ne sera pas pas forcément très efficace, atteignant par exemple entre 2.3 et 3.3 de speed-up pour 4 hyperthreads par cœur~\cite{Jeffers2016} sur les derniers processeurs d'Intel, les Xeon Phi.
-Si l'application est très intensive en calcul et utilise au maximum les UALs, l'hyperthreading n'apportera pas grand chose, voir rien.
+Au meilleur des cas l'hyperthreading améliorera les performances mais ne sera pas forcément très efficace, atteignant par exemple entre 2.3 et 3.3 de speed-up pour 4 hyperthreads par cœur~\cite{Jeffers2016} sur les derniers processeurs d'Intel, les Xeon Phi.
+Si l'application est très intensive en calcul et utilise au maximum les UALs, l'hyperthreading n'apportera pas grand chose, voire rien.
 
-L'hyperthreading est généralement une option que l'on peut désactiver dans le BIOS de la machine, où éviter en plaçant correctement les threads de son application.
+L'hyperthreading est généralement une option que l'on peut désactiver dans le BIOS de la machine, ou éviter en plaçant correctement les threads de son application.
 
 
 \subsection{Interconnexion des nœuds}\label{sec:context:numa:interconnect}
 
-La partie la plus importante d'une machine NUMA est le système d'interconnexion entre les différents nœuds.
+L'une des parties majeures d'une machine NUMA est le système d'interconnexion entre les différents nœuds.
 C'est cette partie qui va déterminer à quel point cela va être couteux d'accéder à la mémoire située sur un nœud distant, et donc à quel point l'aspect NUMA de la machine va impacter les performances d'une application.
 
 \begin{todo}
   décrire le facteur NUMA et inclure des chiffre (reprendre graphe 2.1.2 plus bas)
 \end{todo}
 
-Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents nœuds par le matériel, est n'est pas la responsabilité du programmeur ou du support exécutif.
-La topologie du système d'interconnexion peut être très différentes d'une machine à une autre, et de multiples exemples existent dans les machines commercialisées.
-Il existe des topologies plates, où chaque nœud est directement connecté aux autres (TODO: ref graph 2.1.2), des topologies où des couples de nœuds sont groupés entre eux et peuvent passent par un ou deux niveaux d'interconnexion (TODO: ref graph idchire).
+Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents nœuds par le matériel, et n'est pas la responsabilité du programmeur ou du support exécutif.
+La topologie du système d'interconnexion peut être très différente d'une machine à une autre, et de multiples exemples existent dans les machines commercialisées.
+Il existe des topologies plates, où chaque nœud est directement connecté aux autres (TODO: ref graph 2.1.2), des topologies où des couples de nœuds sont groupés entre eux et peuvent passer par un ou deux niveaux d'interconnexion (TODO: ref graph idchire).
 
 Le nombre de rebonds - \emph{hops} - à effectuer avant d'accéder à la mémoire demandée impacte directement la latence et la bande passante, comme le montre le tableau comparatif de la figure~(TODO).
 
+Chiffres :
+même noeud: 2.11 GB/s
+noeud meme group: 1.50 GB/s
+groupe proche: 1.28 GB/s
+groupe loin: 1.06 GB/s
+
 GRAPHE : 2.1.2 les chiffres de base !
+GRAPHE : 2.1.2 heatmap
 GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 socket/2 nœuds, idchire, knl)
 
 
@@ -183,7 +195,7 @@ GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 
 
 \subsection*{Conclusion}
 
-Cette partie s'est concentrée sur les connaissances de base nécessaires pour comprendre l'interaction entre les différents composant des architectures NUMA.
+Cette partie s'est concentrée sur les connaissances de base nécessaires pour comprendre l'interaction entre les différents composants des architectures NUMA.
 Le développeur d'application ne va généralement pas influer directement sur ces composants, en revanche il est capital d'avoir conscience des caractéristiques de chacun d'entre eux pour pouvoir expliquer facilement tel ou tel comportement de l'application.
 
 Le premier composant logiciel qui va s'intéresser à la gestion directe du matériel est le système d'exploitation.

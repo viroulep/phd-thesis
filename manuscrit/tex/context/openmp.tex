@@ -1,38 +1,69 @@
 \section{Évolution d'un modèle de programmation : OpenMP}\label{sec:context:openmp}
 
-OpenMP~\cite{openmp45} est le standard de-facto pour les machines à mémoire partagée.
+OpenMP~\cite{openmp45} est le standard de-facto pour exploiter les machines parallèles à mémoire partagée.
 
 Jusqu'à la version 2.0 incluse, OpenMP ne proposait qu'un nombre restreint de fonctionnalités, principalement tournées vers la parallélisation de boucles régulières.
-L'évolution de son utilisation a amené le comité d'architecture d'OpenMP à ajouter le concept de \emph{tâche} à partir de la version 3.0, en s'inspirant de modèle de programmation déjà existant tel que Cilk.
+L'évolution de son utilisation a amené le comité de standardisation d'OpenMP à ajouter le concept de \emph{tâche} à partir de la version 3.0, en s'inspirant de modèle de programmation déjà existant tel que Cilk.
 La version 4.0 d'OpenMP étend les tâches pour ajouter les dépendances de données, et introduit le support pour du matériel de plus en plus utilisé : les accélérateurs.
-On y voit aussi l'apparition de l'affinités de thread, des directives SIMD, ou encore des instructions atomiques.
+On y voit aussi l'apparition de mécanismes permettant de contrôler le placement des threads, des directives SIMD, ou encore des instructions atomiques.
 La version actuelle d'OpenMP est la version 4.5, qui ajoute certaines fonctionnalités aux constructions existantes, et introduit le concept de \emph{taskloop} : des boucles dont les groupes d'itérations forment des tâches indépendantes.
-La version en cours de préparation est OpenMP~5.0 ; parmi diverses améliorations, elle devrait notamment ajouter le support d'une interface utilisable par des outils souhaitant se greffer au plus proche d'OpenMP.
+La version en cours de préparation est OpenMP~5.0 ; parmi diverses améliorations, elle devrait notamment ajouter le support d'une interface utilisable par des outils de visualisation de traces d'exécution et de debugging interactif souhaitant se greffer au plus proche d'OpenMP.
 
 Les sections suivantes décrivent les différentes fonctionnalités d'OpenMP, dans l'ordre chronologique où elles sont apparues.
 
-\subsection{Boucles}
+\subsection{Fonctionnement de base}
 
-OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (illustré sur la figure~\ref{fig:context:fork-join}), et l'utilisation de base ciblait la parallélisation de boucles régulières.
 
+
+L'utilisation d'OpenMP repose sur deux ensembles de fonctionnalités : le premier est accessible à travers l'utilisation de |pragma| (des directives de compilation) dans le code, et le second est accessible à travers une API dédiée.
+OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (illustré sur la figure~\ref{fig:context:fork-join})
+
+\begin{todo}
 GRAPHE: \label{fig:context:fork-join}fork join
+\end{todo}
 
-Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (cela peut être par exemple une boucle).
-À partir de là, plusieurs threads sont créés (ou réutilisés) pour exécuter la construction en parallèle. Cet ensemble de threads forme une \emph{team} de thread pour la région parallèle.
+Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (|pragma omp parallel|).
+À partir de là, plusieurs threads sont créés (ou réutilisés) pour exécuter le bloc de code suivant en parallèle.
+Cet ensemble de threads forme une \emph{team} de thread pour la région parallèle.
 À la fin de la région parallèle, tous les threads se synchronisent et l'exécution séquentielle est reprise.
 Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{team} créée lors de l'entrée dans la région parallèle.
 
-Lorsque les threads rencontre une construction de partage de travail - ou \emph{worksharing construct} - telle qu'une boucle par exemple, l'ensemble des itérations va être réparti parmi les différents threads de la team.
-Le programmeur peut contrôler cette répartition à l'aide de la clause |schedule|.
+Pour complémenter les fonctionnalités au niveau du langage, OpenMP propose également plusieurs fonctionnalités à travers une API.
+Il est possible par exemple de récupérer dynamiquement le nombre total de threads, l'indice du thread courant, ou encore d'ajuster l'ordonnanceur de boucles.
+\begin{todo}
+  code de base utilisant l'api
+\end{todo}
 
-Pendant l'exécution de l'application c'est un programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différent threads.
-Le langage OpenMP est standard et bien défini, mais les performances dépendent directement du support exécutif.
+Lors de l'exécution de l'application c'est un programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différents threads.
+Si le langage OpenMP est standard et bien défini, les performances dépendent directement du support exécutif.
 
-Pour complémenter le langage, OpenMP propose également plusieurs fonctionnalités à travers une API. Il est possible par exemple de récupérer dynamiquement le nombre total de threads, l'indice du thread courant, ou encore d'ajuster l'ordonnanceur de boucles.
-Tout cela existe depuis les toutes premières versions d'OpenMP.
+
+
+\subsection{Boucles}
+
+\begin{todo}
+  code de base
+\end{todo}
+
+L'une des constructions de partage de travail - ou \emph{worksharing construct} - est la boucle.
+Exprimée au moyen d'un |pragma omp for|, elle permet d'indiquer que la boucle à laquelle est attaché le pragma doit être exécuter en parallèle.
+
+Les itérations de la boucle peuvent être réparties sur les différents cœurs de calcul de différentes manières :
+\begin{description}
+  \item [statiquement :] chaque cœur se voit attribué un nombre prédéfini d'itérations, typiquement $N/P$ avec $N$ le nombre d'itérations et $P$ le nombre de processeurs. Dans ce genre de cas le compilateur peut directement prendre en charge le découpage.
+  \item [dynamiquement :] l'attribution d'une itération, ou d'un groupe d'itérations (\emph{chunk}) se fait lors de l'exécution du programme par le support exécutif. Cela permet notamment de pouvoir faire de l'équilibrage de charge si toutes les itérations ne sont pas parfaitement régulières.
+\end{description}
+Il existe d'autres options pour contrôler la taille des groupes d'itérations, voir faire varier la taille de ces groupes au fur et à mesure de l'exécution.
+Le programmeur a bien sur un contrôle total sur ces options, soit directement dans le code à l'aide de clauses (|schedule|), soit lors de l'exécution via des fonctions de l'API.
+
+Cette construction existe depuis les toutes premières versions d'OpenMP.
 
 
 \subsection{Tâches}
+
+\begin{todo}
+  code de base
+\end{todo}
 
 Les modèles de programmation à base de tâches permettent d'exprimer du parallélisme à grain fin. L'un des avantages majeurs de ce modèle est qu'il permet au support exécutif d'assigner dynamiquement les différentes tâches, s'adaptant ainsi très bien aux déséquilibrages de charge. Il permet également de composer très facilement des parties de code avec des caractéristiques différentes.
 
@@ -40,14 +71,18 @@ Une \emph{tâche} OpenMP peut être vue comme la plus petite \emph{quantité de 
 Les tâches peuvent être créées par un thread OpenMP et exécutées par n'importe quel thread de la région parallèle.
 Comme la création de tâches à l'exécution du programme est beaucoup plus économique que la création et la synchronisation de threads, le développeur peut pousser la parallélisation de son application encore plus loin : il peut considérer la parallélisation de portions de code qui avaient un grain trop fin pour être parallélisées avec des threads.
 
-Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point, avant de reprendre l'exécution.
+Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point dans la région parallèle, avant de reprendre l'exécution.
 Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
+
+\begin{todo}
+  code de base
+\end{todo}
 
 La version 4.0 d'OpenMP~\cite{openmp40} pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
 Le mode d'accès peut être soit |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
-Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou si il faut d'abord attendre la complétion d'une ou plusieurs autres tâches.
+Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou si il faut d'abord attendre la complétion d'une ou plusieurs autres tâches, ce qui permet de s'affranchir d'une synchronisation par |taskwait| dans énormément de cas.
 
-La dernière extension aux tâches a vu le jour dans OpenMP~4.5, qui introduit la notion de \emph{priorité} sur les tâches.
+La dernière extension aux tâches a vu le jour dans OpenMP~4.5, qui introduit la notion de \emph{priorité} sur les tâches, permettant d'aider le support exécutif à choisir quelle tâches prête exécuter en priorité.
 
 \subsection{Vectorisation}
 
@@ -56,27 +91,37 @@ Avec la multiplications des architectures et de la taille des registres, beaucou
 
 Si la vectorisation automatique n'est pas possible, il est coûteux pour le programmeur de modifier son code en fonction des architectures.
 OpenMP~4.0 tente de résoudre se problème par l'introduction d'une construction |simd|, qui permet au programmeur d'indiquer quelles parties de son code peuvent être vectorisées et avec quelles contraintes (longeur maximale, alignement, quelles sont les variables d'itérations, ...).
+On peut voir ça comme une façon portable d'indiquer au compilateur comment vectoriser un code applicatif complexe.
+
+\begin{todo}
+  code de base
+\end{todo}
+
 
 
 \subsection{Accélérateurs}
 
 La majorité des supercalculateurs intègrent des accélérateurs (comme des GPUs).
-L'exploitation de ces accélérateurs imposent parfois l'usage d'un language spécifique au constructeur (tel que Cuda).
+L'exploitation de ces accélérateurs impose parfois l'usage d'un langage spécifique au constructeur (tel que Cuda).
 
 Bien que des standards, comme OpenCL~\cite{Stone2010}, existent pour cibler différents types d'accélérateurs, cibler ce type d'architecture via OpenMP était impossible.
 
 OpenMP~4.0 introduit la construction |target|, qui permet de demander au compilateur de créer une tâche à partir de la région de code sélectionnée, qui peut ensuite être exporté sur accélérateur.
 Plusieurs clauses permettent de spécifier des dépendances, ainsi que l'ensemble des données à transférer vers l'accélérateur, et l'ensemble des données à rapatrier depuis l'accélérateur à l'issue des calculs.
 
+\begin{todo}
+  code de base
+\end{todo}
+
+
 Si la norme indique le support de plusieurs accélérateurs, ils doivent cependant être tous du même type, et la transformation du code C/C++/Fortran du bloc est laissé au compilateur implémentant la norme.
 Dans le cas d'utilisation d'appels de fonctions, le programmeur doit indiquer qu'elles disposeront d'une définition pour l'\emph{hôte} et l'\emph{accélérateur} via une construction |declare target|.
 
 Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adoptée telle quelle par les programmeurs d'architectures hétérogènes.
 
-\subsection{Affinité}
+\subsection{Placement des threads}
 
-Une notion d'affinité de thread a été également ajoutée à la version 4.0 d'OpenMP.
-Il s'agit d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
+La version~4.0 d'OpenMP voit aussi l'ajout d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
 
 Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer.
 Le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|.
