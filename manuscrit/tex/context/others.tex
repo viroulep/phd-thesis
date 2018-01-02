@@ -2,14 +2,6 @@
 
 Il existe de nombreux modèles de programmation à base de tâches, certaines fonctionnalités diffèrent, mais les concepts de base restent les même, et seront détaillés ci dessous.
 
-\begin{todo}
-
-  -> parler protocole de cohérence de cache (dans interconnexion peut être)
-  -> remonter les sections archi, le cache mérite son propre truc
-  -> Parler briévement des modèles de programmation exotiques, en disant qu'ils seront abordé en détail en 3
-  -> motiver pourquoi cilk, tbb, et openmp (anotation sur fonction, code utilisateur, simple pragma)
-\end{todo}
-
 \subsection{L'unité de base : la tâche}
 
 Une tâche peut être vue comme la plus petite quantité de travail séquentiel exécutable sur un processeur.
@@ -59,15 +51,16 @@ Si on regarde maintenant un exemple simple en OpenMP :
 void foo()
 {
   // ...
-  #pragma omp task
+  int a = 1;
+  #pragma omp task shared(a)
   {
-    // calcul
+    // calcul sur a
   }
   // ...
 }
 \end{lstlisting}
 
-Cela parait certes moins intrusif et pénible pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a pas moins d'actions effectuées en pratique !
+Cela parait certes moins intrusif et pénible pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a moins d'actions effectuées en pratique !
 Que se passe-t-il vraiment ?
 
 Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire généré~: il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élémentaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
@@ -78,28 +71,36 @@ Un exemple de ce type en OpenMP va donc entrainer deux transformations important
   \item la substitution du pragma par un appel au support exécutif.
 \end{itemize}
 
-Cela donnera au final un code binaire généré correspondant à un programme de ce type :
+Cela donnera au final un code binaire généré correspondant à un programme de ce type, dans l'ABI de Clang :
 
 \begin{lstlisting}
-void outlined(struct Context c)
+struct unamed_struct_1 {
+  int *a;
+}
+
+// Outlining du bloc de code correspondant à la tâche
+void omp_task_entry(void *args)
 {
-  // unpacking du contexte, recréation des variables locales
-  // calcul
+  struct unamed_struct_1 *shared_variables =
+                (struct unamed_struct_1 *) args;
+  int a = *(shared_variables->a);
+  // calcul sur a
 }
 
 void foo()
 {
   // ...
-  struct Context c;
-  // capture des variables partagées
-  runtime_specific_create_task(outlined, c);
+  int a = 1;
+  // Substitution du pragma par une allocation
+  // puis une création de la tâche
+  struct unamed_struct_1 tmp;
+  tmp.a = &a;
+  kmp_task_t task_1 = __kmpc_omp_task_alloc(omp_task_entry, &tmp, /* ... */);
+
+  __kmpc_omp_task(&task_1);
   // ...
 }
 \end{lstlisting}
-
-\begin{todo}
-  Montrer le packing/unpacking ainsi que les appels au runtime (eg: libomp)
-\end{todo}
 
 Au final les actions effectuées pour la création d'une tâche sont équivalentes, bien que parfois cachées.
 
@@ -181,9 +182,13 @@ void foo() {
 }
 \end{lstlisting}
 
-\begin{todo}
-GRAPHE : 2.2.2 mini schéma dataflow du graphe correspondant au programme écrit.
-\end{todo}
+Cet exemple de code se traduit en un DAG équivalent à la figure~\ref{fig:context:dag-dataflow}, sur lequel apparaissent également les différentes versions des variables.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.5\textwidth]{dataflow-example}
+  \caption{DAG équivalent au listing~\ref{lst:context:task-dep}}\label{fig:context:dag-dataflow}
+\end{figure}
 
 Les deux ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
@@ -191,9 +196,11 @@ Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exé
 
 \subsection{Quelques exemples de modèles de programmation}
 
-Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, TBB, et OpenMP.
+Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, TBB, et OpenMP, qui fonctionnent chacun avec des méthodes différentes : respectivement via des annotations sur des fonction, des appels dans le code utilisateur, et des directives pour le compilateur.
 
 Les listings~\ref{lst:context:cilk},~\ref{lst:context:tbb}, et ~\ref{lst:context:openmp} donnent une comparaison de l'expression du même exemple simple, le calcul du nième nombre de la suite de Fibonacci.
+
+Les modèles de programmation plus spécifiques à certaines constructions ou architectures seront abordés dans la section~\ref{sec:rw:other-runtimes}
 
 \subsubsection{Cilk}
 
@@ -279,22 +286,25 @@ Ce grain optimal dépend de plusieurs facteurs : les structures de données util
 Cela peut être illustré via une application telle que la factorisation de Cholesky par bloc : à taille de matrice fixée le nombre de tâches créées dépend directement de la taille de bloc choisie.
 Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le nombre de tâches, et le parallélisme potentiel) est important.
 
-\begin{todo}
-%\begin{figure}[ht]
-	%\centering
-	%\includegraphics[width=0.66\textwidth]{todo}
-	%\caption{todo}\label{fig:context:granularity}
-%\end{figure}
-  courbe grain
-\end{todo}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.92\textwidth]{graph_granularity_8k_64.pdf}
+  \caption{Performances de Cholesky pour une matrice de taille 8192 et 64 threads, en fonction de la taille de bloc}\label{fig:context:granularity}
+\end{figure}
 
-La figure~\ref{fib:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
+La figure~\ref{fig:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
 Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quelque soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
 
-Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important (TODO : mettre les vrais chiffres d'ompss et de libkomp/gcc).
+Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important. Cela est illustré sur la figure~\ref{fig:context:granularity} : avec OmpSs le grain optimal se situe dans un intervalle de tailles de blocs assez restreint (entre environ 250 et 350), alors qu'avec clang ou libkomp une taille de bloc entre 150 et 350 permet d'obtenir des performances sensiblement équivalente.
 
-La courbe tracée avec libkomp inclue nos travaux sur l'affinité, et cela permet d'illustrer que même si cela permet d'influer sur les performances maximales, cela a un impact minimal sur le grain.
+La courbe tracée avec libkomp inclue nos travaux sur l'affinité, et cela permet d'illustrer que même si cela permet d'influer sur les performances maximales, cela n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k}, ou le maximum de performance est obtenu pour tout les supports exécutif aux environs de 300.
 
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.92\textwidth]{graph_granularity_16k_64.pdf}
+  \caption{Performances de Cholesky pour une matrice de taille 163384 et 64 threads, en fonction de la taille de bloc}\label{fig:context:granularity-16k}
+\end{figure}
 
 
 Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.

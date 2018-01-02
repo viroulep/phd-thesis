@@ -1,5 +1,13 @@
 \section{Architectures à mémoire partagée}\label{sec:context:numa}
 
+\begin{todo}
+
+  -> parler protocole de cohérence de cache (dans interconnexion peut être)
+  -> remonter les sections archi, le cache mérite son propre truc
+
+\end{todo}
+
+
 Les architectures à mémoire partagée ont subit des changements majeurs liés à l'évolution des processeurs.
 L'augmentation du nombre de cœurs par processeur a introduit des problèmes d'accès à la mémoire centrale : dans une architecture composée d'une unique mémoire, plusieurs cœurs cherchant à accéder à la mémoire vont rentrer en concurrence et introduire de la contention et donc des délais dans l'accès à la mémoire, ce qui pénalise formtement les performances.
 
