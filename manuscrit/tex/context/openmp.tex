@@ -18,11 +18,13 @@ Les sections suivantes décrivent les différentes fonctionnalités d'OpenMP, da
 L'utilisation d'OpenMP repose sur deux ensembles de fonctionnalités : le premier est accessible à travers l'utilisation de |pragma| (des directives de compilation) dans le code, et le second est accessible à travers une API dédiée.
 OpenMP a été pensé dès le départ comme un modèle \emph{fork-join} (illustré sur la figure~\ref{fig:context:fork-join})
 
-\begin{todo}
-GRAPHE: \label{fig:context:fork-join}fork join
-\end{todo}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{fork-join}
+  \caption{Ligne de vie d'un programme dans un modèle fork-join}\label{fig:context:fork-join}
+\end{figure}
 
-Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (|pragma omp parallel|).
+Le modèle fonctionne de la manière suivante : le programme est exécuté séquentiellement jusqu'à la rencontre d'une région parallèle (|pragma omp parallel|, comme illustré dans le listing~\ref{lst:context:openmp:parallel}).
 À partir de là, plusieurs threads sont créés (ou réutilisés) pour exécuter le bloc de code suivant en parallèle.
 Cet ensemble de threads forme une \emph{team} de thread pour la région parallèle.
 À la fin de la région parallèle, tous les threads se synchronisent et l'exécution séquentielle est reprise.
@@ -30,9 +32,24 @@ Le programmeur peut contrôler combien de threads sont utilisés dans la \emph{t
 
 Pour complémenter les fonctionnalités au niveau du langage, OpenMP propose également plusieurs fonctionnalités à travers une API.
 Il est possible par exemple de récupérer dynamiquement le nombre total de threads, l'indice du thread courant, ou encore d'ajuster l'ordonnanceur de boucles.
-\begin{todo}
-  code de base utilisant l'api
-\end{todo}
+
+%\noindent
+%\begin{minipage}{0.40\textwidth}
+\begin{lstlisting}[language=c++,caption=Région parallèle minimale,label=lst:context:openmp:parallel,basicstyle=\small]
+int main()
+{
+  #pragma omp parallel
+  {
+    // Code à exécuter en parallèle
+  }
+  return 0;
+}
+\end{lstlisting}
+%\end{minipage}
+%\hfill
+%\begin{minipage}{0.55\textwidth}
+%\end{minipage}
+
 
 Lors de l'exécution de l'application c'est un programme spécifique - le \emph{support exécutif} qui est en charge de l'équilibrage de charge, et de l'affectation du "travail" aux différents threads.
 Si le langage OpenMP est standard et bien défini, les performances dépendent directement du support exécutif.
@@ -40,10 +57,6 @@ Si le langage OpenMP est standard et bien défini, les performances dépendent d
 
 
 \subsection{Boucles}
-
-\begin{todo}
-  code de base
-\end{todo}
 
 L'une des constructions de partage de travail - ou \emph{worksharing construct} - est la boucle.
 Exprimée au moyen d'un |pragma omp for|, elle permet d'indiquer que la boucle à laquelle est attaché le pragma doit être exécuter en parallèle.
@@ -56,14 +69,28 @@ Les itérations de la boucle peuvent être réparties sur les différents cœurs
 Il existe d'autres options pour contrôler la taille des groupes d'itérations, voir faire varier la taille de ces groupes au fur et à mesure de l'exécution.
 Le programmeur a bien sur un contrôle total sur ces options, soit directement dans le code à l'aide de clauses (|schedule|), soit lors de l'exécution via des fonctions de l'API.
 
+Le listing~\ref{lst:context:openmp:parallel-for} illustre la parallélisation d'une boucle simple effectuant l'initialisation d'un tableau. Avec 40 itérations, 4 threads demandés, et un |schedule| statique, chaque thread se verra donc attribué 10 itérations.
+
+\begin{lstlisting}[language=c++,caption=Exemple d'utilisation d'un for,label=lst:context:openmp:parallel-for,basicstyle=\small]
+#define SIZE 40
+int main()
+{
+  double tableau[SIZE];
+  #pragma omp parallel num_threads(4)
+  {
+    #pragma omp for schedule(static)
+    for (int i = 0; i < SIZE; i++) {
+      tableau[i] = i;
+    }
+  }
+  return 0;
+}
+\end{lstlisting}
+
 Cette construction existe depuis les toutes premières versions d'OpenMP.
 
 
 \subsection{Tâches}
-
-\begin{todo}
-  code de base
-\end{todo}
 
 Les modèles de programmation à base de tâches permettent d'exprimer du parallélisme à grain fin. L'un des avantages majeurs de ce modèle est qu'il permet au support exécutif d'assigner dynamiquement les différentes tâches, s'adaptant ainsi très bien aux déséquilibrages de charge. Il permet également de composer très facilement des parties de code avec des caractéristiques différentes.
 
@@ -74,13 +101,59 @@ Comme la création de tâches à l'exécution du programme est beaucoup plus éc
 Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point dans la région parallèle, avant de reprendre l'exécution.
 Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
 
-\begin{todo}
-  code de base
-\end{todo}
+Le listing~\ref{lst:context:openmp:taskwait} illustre ce concept avec un exemple très simple initialisant un tableau parallèle.
+
+\begin{lstlisting}[language=c++,caption=Création et synchronisation explicite de tâches,label=lst:context:openmp:taskwait,basicstyle=\small]
+#include <stdio.h>
+int main()
+{
+  double tableau[2];
+  #pragma omp parallel num_threads(2)
+  {
+    #pragma omp task shared(tableau)
+    {
+      tableau[0] = 0;
+    }
+    #pragma omp task shared(tableau)
+    {
+      tableau[1] = 1;
+    }
+    #pragma omp taskwait
+    #pragma omp task shared(tableau)
+    {
+      printf("Tableau : {%f, %f}\n", tableau[0], tableau[1]);
+    }
+  }
+  return 0;
+}
+\end{lstlisting}
+
 
 La version 4.0 d'OpenMP~\cite{openmp40} pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
 Le mode d'accès peut être soit |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
 Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou si il faut d'abord attendre la complétion d'une ou plusieurs autres tâches, ce qui permet de s'affranchir d'une synchronisation par |taskwait| dans énormément de cas.
+
+Le listing~\ref{lst:context:openmp:taskdep} donne un exemple de tâches avec dépendance, où la variable |toto| est initialisée puis affichée.
+
+\begin{lstlisting}[language=c++,caption=Exemple de tâches avec dépendances,label=lst:context:openmp:taskdep,basicstyle=\small]
+#include <stdio.h>
+int main()
+{
+  int toto;
+  #pragma omp parallel num_threads(2)
+  {
+    #pragma omp task shared(toto) depend(out: toto)
+    {
+      variable = 2;
+    }
+    #pragma omp task shared(toto) depend(inout: toto)
+    {
+      printf("Toto : %i\n", toto);
+    }
+  }
+  return 0;
+}
+\end{lstlisting}
 
 La dernière extension aux tâches a vu le jour dans OpenMP~4.5, qui introduit la notion de \emph{priorité} sur les tâches, permettant d'aider le support exécutif à choisir quelle tâches prête exécuter en priorité.
 
@@ -93,9 +166,20 @@ Si la vectorisation automatique n'est pas possible, il est coûteux pour le prog
 OpenMP~4.0 tente de résoudre se problème par l'introduction d'une construction |simd|, qui permet au programmeur d'indiquer quelles parties de son code peuvent être vectorisées et avec quelles contraintes (longeur maximale, alignement, quelles sont les variables d'itérations, ...).
 On peut voir ça comme une façon portable d'indiquer au compilateur comment vectoriser un code applicatif complexe.
 
-\begin{todo}
-  code de base
-\end{todo}
+Le listing~\ref{lst:context:openmp:simd} illustre la parallélisation et la vectorisation de l'addition de deux matrices dans une troisième.
+Dans cet exemple les itérations seront réparties sur les différents threads, et au sein de chaque thread le code sera vectorisé.
+
+\begin{lstlisting}[language=c++,caption=Vectorisation d'une addition de deux tableaux,label=lst:context:openmp:simd,basicstyle=\small]
+void somme(double *a, double *b, double *c, unsigned int size)
+{
+  #pragma omp for simd
+  {
+    for (unsigned int i = 0; i < size; i++) {
+      c[i] = a[i] + b[i];
+    }
+  }
+}
+\end{lstlisting}
 
 
 
@@ -109,9 +193,19 @@ Bien que des standards, comme OpenCL~\cite{Stone2010}, existent pour cibler diff
 OpenMP~4.0 introduit la construction |target|, qui permet de demander au compilateur de créer une tâche à partir de la région de code sélectionnée, qui peut ensuite être exporté sur accélérateur.
 Plusieurs clauses permettent de spécifier des dépendances, ainsi que l'ensemble des données à transférer vers l'accélérateur, et l'ensemble des données à rapatrier depuis l'accélérateur à l'issue des calculs.
 
-\begin{todo}
-  code de base
-\end{todo}
+\begin{lstlisting}[language=c++,caption=Addition sur un accélérateur,label=lst:context:openmp:target,basicstyle=\small]
+#define SIZE 40
+int main()
+{
+  double tableau[SIZE];
+  #pragma omp target map(tofrom: tableau[0:SIZE])
+  {
+    for (unsigned i = 0; i < SIZE; i++)
+      tableau[i] = i;
+  }
+  return 0;
+}
+\end{lstlisting}
 
 
 Si la norme indique le support de plusieurs accélérateurs, ils doivent cependant être tous du même type, et la transformation du code C/C++/Fortran du bloc est laissé au compilateur implémentant la norme.
@@ -123,21 +217,16 @@ Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adopté
 
 La version~4.0 d'OpenMP voit aussi l'ajout d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
 
-Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer.
+Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer, et permet d'indiquer au support exécutif quelles ressources physiques lui sont disponible.
 Le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|.
 Elle peut être une liste précise d'indice de coeurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
 
 Il n'y a pas de dépendances entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.
 
 Le second ajout est la possibilité de spécifier la manière dont sont affectés les threads aux \emph{places}, à l'aide de la variable d'environnement |OMP_PROC_BIND|.
-Elle peut prendre les valeurs suivantes : \emph{close}, \emph{spread}, \emph{master}.
 
-\begin{todo}
-réécrire cette partie pour faire moins manuel et plus intéressant vis à vis de nos travaux
-\end{todo}
-
-Avec la valeur \emph{close}, les threads seront successivement affectés aux places les plus proches les unes des autres. Par exemple si les places sont \emph{"cores"} - l'ensemble des coeurs de la machine, et que la machine a deux sockets de 8 coeurs, les threads OpenMP seront affectés successivement aux coeurs 0 (sur le socket 0) jusqu'à 7 (toujours sur le socket 0), puis 8 (sur le socket 1) jusqu'à 15 (sur le socket 1).
-Avec la valeur \emph{spread}, l'ordre d'affectation sera alors le coeur 0 (sur le socket 0), puis 8 (socket 1), puis 1 (socket 0), puis 9 (socket 1), etc...
-Avec la valeur \emph{master}, les threads sont placés sur la même place que le thread master.
-L'exemple typique pour cette valeur est la gestion de régions parallèles imbriquées : en affectant la valeur "sockets" à |OMP_PLACES|, on peut avoir deux régions parallèles imbriquées dont les threads sont correctement affectés aux deux sockets (les deux threads master est affectés à deux sockets distincts, mais pour chaque région tous les threads sont associées au même socket).
+À travers cette option il est possible de demander à ce que les threads soit groupés proches les uns des autres sur les \emph{places} (\emph{close}), ou au contraire le plus éloigné possible (\emph{spread}).
+S'il est possible d'expérimenter avec ces valeurs, il faut absolument éviter de désactiver le placement fixe des threads (valeur \emph{false}) : cela permettrait au système d'exploitation de migrer les threads d'une région parallèle sur les différentes places, ce qui pourrait entraîner une perte de la localité des données, et donc une dégradation des performances.
+Une bonne valeur par défaut dans un contexte NUMA est de mettre |OMP_PROC_BIND| à \emph{true}, afin de fixer les threads sur les cœurs.
+Il suffit ensuite d'utiliser l'expressivité des \emph{places} pour spécifier exactement quels cœurs utiliser.
 
