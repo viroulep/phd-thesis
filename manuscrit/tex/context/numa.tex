@@ -77,19 +77,47 @@ En fonction des fabricants, ces caches peuvent être soit \emph{inclusifs} (c'es
 
 Au sein d'un nœud, le L3 est généralement partagé par tous les cœurs, alors que les caches L1 et L2 sont spécifiques à un cœur.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics{processor_small}
+  \caption{Schéma d'un processeur multicœurs}\label{fig:context:schema-caches}
+\end{figure}
+
+La figure~\ref{fig:context:schema-caches} décrit la hiérarchie typique d'un processeur multicœurs que l'on peut trouver sur un nœud NUMA.
+Dans cet exemple, le processeur dispose de 8 cœurs, et chaque cœur dispose d'une cache L1 indépendant pour les données et les instructions (32 Ko chacun), d'un cache L2 (256 Ko), et d'un cache L3 partagé avec 7 autres cœurs (20 Mo).
+
+
 En général les développeurs d'applications pour le HPC accordent beaucoup d'attention à l'optimisation de leur application, pour que les parties de code séquentiel critiques utilisent des données qui puissent être contenues dans le L1/L2.
 De même, beaucoup d'optimisations au sein des compilateurs visent également cet objectif.
 
 Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les cœurs d'un même nœud.
 
 \begin{todo}
-GRAPHE : 2.1.1 schéma de l'architecture des caches
-
-TODO : tableau latences accès caches vs processeurs (sandy, broadwell, knl, bulldozer, ryzen).
-
 TODO : ref + paragraph sur les caches configurables du ryzen.
 Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé Jenga : http://people.csail.mit.edu/sanchez/papers/2017.jenga.isca.pdf
 \end{todo}
+
+\begin{table}[ht]
+\def\arraystretch{1.5}
+\centering
+\begin{tabular}{|c||c|c|c|c|}\hline
+  Cache & \multicolumn{2}{c|}{Intel Sandy Bridge} & \multicolumn{2}{c|}{Intel Broadwell}  \\ \cline{2-5} 
+ & Latence & Bande passante & Latence & Bande passante \\ \hline
+ L1 & 1.6 ns & 16 Go/s & 1.8 ns & 32 Go/s \\ \hline
+ L2 & 5.0 ns & 14 Go/s & 5.4 ns & 17 Go/s \\ \hline
+ L3 & ~20 ns & 8 Go/s & ~24 ns & 9 Go/s \\ \hline
+ RAM & ~90 ns & 4 Go/s & ~140 ns & 7 Go/s \\ \hline
+\end{tabular}
+\caption{Tableau synthétiques des latences et bande passante en fonction du niveau de cache et du processeur}\label{tab:synthese-processeurs}
+\end{table}
+
+Afin de donner un ordre d'idée des latences et bande passantes sur les différents processeurs, le tableau~\ref{tab:synthese-processeurs} récapitule les chiffres en fonction de la génération du processeurs.
+Les mesures ont été faites à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour la latence, les temps considérés sont ceux du benchmark |lat_mem_rd| avec un accès aléatoire à la mémoire.
+Pour la bande passante les temps considérés sont ceux du benchmark |bw_mem|, en utilisant un équivalent de |memcpy|.
+Pour la latence, tout effet potentiel du prefetcher est annulé par l'utilisation de \emph{pointer chasing} (l'adresse de la case suivante à charger est située dans la case courante), ce qui n'est pas le cas pour la bande passante.
+
+Comme on peut le voir sur ces chiffres, le coût d'accès à la mémoire principale est prohibitif par comparaison aux différents caches, y compris le L3.
+Les différentes caractéristiques de ces processeurs et des machines sur lesquels ils sont intégrés seront étudiées en détails dans la section~\ref{sec:contribs:machines}.
 
 \subsubsection{Politiques d'éviction}
 
