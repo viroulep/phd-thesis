@@ -1,35 +1,25 @@
 \section{Architectures à mémoire partagée}\label{sec:context:numa}
 
-\begin{todo}
-
-  -> parler protocole de cohérence de cache (dans interconnexion peut être)
-  -> remonter les sections archi, le cache mérite son propre truc
-
-\end{todo}
-
 
 Les architectures à mémoire partagée ont subit des changements majeurs liés à l'évolution des processeurs.
 L'augmentation du nombre de cœurs par processeur a introduit des problèmes d'accès à la mémoire centrale : dans une architecture composée d'une unique mémoire, plusieurs cœurs cherchant à accéder à la mémoire vont rentrer en concurrence et introduire de la contention et donc des délais dans l'accès à la mémoire, ce qui pénalise formtement les performances.
 
 Pour pallier ce problème, les constructeurs ont divisé la mémoire centrale en plusieurs parties physiquement distinctes, appelées \emph{nœuds}.
+Le nœud NUMA est le composant de base pour une architecture NUMA.
 Chaque nœud est constitué d'une partie de la mémoire centrale, d'un contrôleur local d'accès à ce bloc mémoire, ainsi que d'un certain nombre de cœurs de calcul.
 L'ensemble des nœuds de la machine sont ensuite reliés entre eux par un réseau d'interconnexion.
 La topologie de l'interconnexion ne permet généralement pas d'avoir des nœuds équidistants, ce qui introduit une hiérarchie mémoire.
 
 Malgré le fait que les différentes parties de l'architecture soient physiquement séparées, le système d'exploitation voit l'ensemble comme une unique machine.
 
-Nous décrivons dans un premier temps les caractéristiques techniques communes d'un processeur multicœur d'un nœud dans la section~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
+Nous décrivons dans un premier temps les caractéristiques techniques communes d'un processeur multicœur d'un nœud dans les sections~\ref{sec:context:numa:cache}, et~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
+Elles ont une influence directe sur le comportement du nœud au sein de la machine.
 
-\subsection{Description d'un processeur multicœurs}\label{sec:context:numa:node}
+\subsection{Caches des processeurs}\label{sec:context:numa:cache}
 
-Le nœud NUMA est le composant de base pour une architecture NUMA.
-Il n'y a pas de nombre standard de cœurs pour un nœud NUMA, ni même de quantité standard de RAM associée, mais il est certain qu'un des composants principaux d'un nœud est le processeur multicœurs.
-Certaines propriétés des processeurs, énoncées dans la suite, se retrouvent sur toutes les machines NUMA et ont une influence directe sur le comportement du nœud au sein de la machine.
-
-\subsubsection{Les caches}
 Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que pour la mémoire centrale, mais dont la capacité est beaucoup plus restreinte. Il peut être spécifique à un cœur du processeur, ou partagé par plusieurs d'entre eux.
 
-\paragraph{Fonctionnement}
+\subsubsection{Fonctionnement}
 
 Au niveau des accès le fonctionnement d'un cache est légèrement différent de celui de la mémoire centrale : plutôt que de lire uniquement un octet, c'est généralement une partie fixe de la mémoire contenant cet octet qui est chargée.
 On appelle cette quantité une \emph{ligne de cache}, et un exemple de taille standard pour une ligne de cache est 64 octets (8 nombres réels double précision).
@@ -56,7 +46,7 @@ Le choix de la ligne à évincer est un sujet très étudié, et le prochain par
 
 
 
-\paragraph{Associativité}
+\subsubsection{Associativité}
 
 Le cache ne pouvant être suffisamment grand pour contenir toute la mémoire, il faut pouvoir déterminer l'association entre l'adresse d'une ligne dans la mémoire centrale et son emplacement dans le cache.
 Il y a trois grandes catégories d'associativité utilisées par les caches :
@@ -74,7 +64,7 @@ Hill et al.~\cite{Hill1989} (Table III) illustre l'impact de l'associativité su
 Cela permet de dégager deux observations : d'une part qu'augmenter l'associativité permet de diminuer les cache miss.
 D'autre part que les défauts de cache ayant une forte associativité sont quasi exclusivement dus à la capacité du cache, alors que pour les caches à association directe les conflits d'adresse sont une part non négligeable des cache miss.
 
-\paragraph{Niveaux de caches}
+\subsubsection{Niveaux de caches}
 
 Il y a en général 3 niveaux de cache dans ces architectures :
 \begin{itemize}
@@ -101,7 +91,7 @@ TODO : ref + paragraph sur les caches configurables du ryzen.
 Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé Jenga : http://people.csail.mit.edu/sanchez/papers/2017.jenga.isca.pdf
 \end{todo}
 
-\paragraph{Politiques d'éviction}
+\subsubsection{Politiques d'éviction}
 
 Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impact direct sur les performances, et les politiques de remplacement ont été très étudiées par les différents acteurs de la communauté académique et industrielle.
 
@@ -120,6 +110,11 @@ Cela permet de limiter le nombre de bits nécessaire pour tracer les lignes à r
 
 La politique pseudo-LRU semble être la plus utilisée par les fabricants de processeurs tous niveaux de cache confondus. Al-Zoubi et al.~\cite{Al-Zoubi2004} proposent une évaluation complète et détaillée de l'impact des politiques d'éviction en fonction de l'associativité du cache, justifiant le choix des constructeurs.
 
+
+
+\subsection{Autres caractéristiques matérielles des processeurs}\label{sec:context:numa:node}
+
+En plus des caches qui nous intéresseront tout particulièrement dans la suite de ce manuscrit, les processeurs ont également d'autres composants matériels dont il est important d'avoir conscience, mais qui ont une place plus limitée dans le contexte de cette thèse : il s'agit des instructions vectorielles et de l'hyperthreading, décrit ci-après.
 
 \subsubsection{Instructions vectorielles}\label{sec:context:numa:simd}
 
@@ -143,10 +138,6 @@ En supposant que la largeur des registres (et des instructions) du processeur es
 De plus la vectorisation permet au processeur d'optimiser la décomposition de l'instruction en micro opérations et donc l'utilisation du pipeline.
 Au final on divise le nombre d'itérations, mais aussi le nombre d'accès mémoire et d'opérations par 2.
 
-
-\begin{todo}
-  pipo pieline ?
-\end{todo}
 
 \begin{todo}
   j'ai pas trouvé la ref des procs vectoriels sur ACM, (re)demander à Thierry
@@ -177,12 +168,61 @@ L'hyperthreading est généralement une option que l'on peut désactiver dans le
 
 L'une des parties majeures d'une machine NUMA est le système d'interconnexion entre les différents nœuds.
 C'est cette partie qui va déterminer à quel point cela va être couteux d'accéder à la mémoire située sur un nœud distant, et donc à quel point l'aspect NUMA de la machine va impacter les performances d'une application.
+Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents nœuds par le matériel, et n'est pas la responsabilité du programmeur ou du support exécutif.
+L'impact sur les performances peut être lié à la fois au protocole de cohérence de caches utilisé, ainsi qu'à la topologie de l'interconnexion des nœuds.
 
+
+\subsubsection{Protocoles de cohérence de cache}
+
+Le nombre de caches utilisés dans une machine NUMA peut être important, et la même ligne de la mémoire peut être présente dans plusieurs caches en même temps.
+Il est important que l'état des différentes copies soit cohérent : par exemple si une ligne a été écrite et modifiée, les copies de cette ligne dans les autres caches doivent être mises à jour.
+
+La plupart des protocoles se basent sur un ensemble d'états possibles pour une ligne de cache :
+
+\begin{description}
+  \item [Modified (M) :] la ligne a été modifiée dans le cache. Les données dans cette ligne ne sont donc pas cohérentes avec la mémoire principale. Quand la ligne est évincée, elle doit être écrite dans la mémoire principale.
+  \item [Shared (S) :] la ligne est <<propre>> (non modifiée), elle existe dans d'autres caches mais est en lecture seule dans le cache courant. Cette ligne peut être évincée sans autre action.
+  \item [Invalid (I) :] la ligne est soit absente du cache courant ou a été invalidé par un autre cache. Elle doit être récupérée depuis la mémoire principale (ou un autre cache qui en possède une copie valide).
+\end{description}
+
+Cet ensemble d'états de base forme le protocole \emph{MSI}, qui a ensuite été étendu avec plusieurs autres états :
+
+\begin{description}
+  \item [Exclusive (E) :] la ligne est présente uniquement dans le cache courant et elle est <<propre>>.
+  \item [Owned (O) :] la ligne est présente dans plusieurs caches dans un état valide, mais seul le cache courant peut y effectuer des modifications.
+    Cet état permet de partager des lignes qui ont été modifiées sans passer par une ré-écriture dans la mémoire centrale : le cache qui possède la ligne est responsable de fournir une version à jour, et d'écrire la ligne dans la mémoire centrale lorsque que la ligne est évincée.
+  \item [Forward (F) :] cet état est similaire à l'état \emph{Shared}, mais indique au cache courant qu'il est responsable de satisfaire une requête en lecture sur la ligne.
+\end{description}
+
+Intel Quick Path Interconnect~\cite{Ziakas2010} (QPI) est le système d'interconnexion utilisé dans les machines d'expérimentation que nous avons utilisé, et qui sont décrites dans la section~\ref{sec:contribs:machines}.
+Il implémente le protocole MESIF. Du à l'introduction de l'état \emph{F}, ce protocole est avantageux lorsque la latence de cache à cache est bien plus faible que la latence d'accès à la mémoire principale.
+
+Pour implémenter ce protocole, il existe deux types de mécanismes :
+
+\begin{itemize}
+  \item À base de Snooping : chaque cache observe le trafic sur le bus mémoire pour des requêtes qui concerneraient les lignes de caches dont ils possèdent une copie. Un composant dédié peut effectuer un premier filtre pour restreindre le trafic lié au mécanisme de snooping. Néanmoins ce type de mécanismes ne passent pas bien à l'échelle, et aurait du mal à obtenir de bonne performance dans les architectures NUMA, où le nombre de caches est important.
+
+  \item À base de répertoires : la donnée est placée dans un répertoire qui maintien la cohérence entre les caches. Chaque cache ne peut pas accéder directement à la mémoire principale mais doit passer par le répertoire.
+\end{itemize}
+
+Le QPI utilise un mix des deux mécanismes : il utilise des \emph{home agents} - comparables à des répertoires - qui sont les principales autorités pour fournir une version du cache depuis la mémoire principale.
+Il utilise ensuite du \emph{snooping} pour satisfaire les requêtes des différents \emph{caching agents} (les entités qui possèdent un cache, telles que les processeurs).
+
+Le QPI peut fonctionner avec deux modes de \emph{snooping} :
+\begin{description}
+  \item [Source snooping :] le \emph{caching agent} envoie la requête à tout le système. Les autres \emph{caching agent} peuvent répondre à la requête s'ils possèdent une version de la ligne de cache dans un état compatible. Le \emph{home agent} responsable de la ligne mémoire doit fournir une copie propre de la ligne de cache si besoin, et résoudre les conflits s'ils apparaissent.
+  \item [Home snooping :] le \emph{caching agent} envoie la requête au \emph{home agent}, qui envoie ensuite une requête aux \emph{caching agents} qui possèdent une copie de la ligne et peut commencer à charger la ligne depuis la mémoire. L'un des \emph{caching agents} possédant la ligne et/ou le \emph{home agent} peut ensuite envoyer la réponse.
+\end{description}
+
+Le mode \emph{source snooping} a une latence plus faible que le mode \emph{home snooping}, mais passe moins bien à l'échelle.
+C'est donc ce dernier qui est le plus adapté à un environnement NUMA, puisqu'il limite le nombre de requêtes envoyés sur le bus mémoire, et économise donc de la bande passante.
+
+
+\subsubsection{Topologies}
 \begin{todo}
   décrire le facteur NUMA et inclure des chiffre (reprendre graphe 2.1.2 plus bas)
 \end{todo}
 
-Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents nœuds par le matériel, et n'est pas la responsabilité du programmeur ou du support exécutif.
 La topologie du système d'interconnexion peut être très différente d'une machine à une autre, et de multiples exemples existent dans les machines commercialisées.
 Il existe des topologies plates, où chaque nœud est directement connecté aux autres (TODO: ref graph 2.1.2), des topologies où des couples de nœuds sont groupés entre eux et peuvent passer par un ou deux niveaux d'interconnexion (TODO: ref graph idchire).
 
@@ -197,7 +237,6 @@ groupe loin: 1.06 GB/s
 GRAPHE : 2.1.2 les chiffres de base !
 GRAPHE : 2.1.2 heatmap
 GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 socket/2 nœuds, idchire, knl)
-
 
 
 
