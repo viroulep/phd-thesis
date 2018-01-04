@@ -107,6 +107,7 @@ Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé
  L2 & 5.0 ns & 14 Go/s & 5.4 ns & 17 Go/s \\ \hline
  L3 & ~20 ns & 8 Go/s & ~24 ns & 9 Go/s \\ \hline
  RAM & ~90 ns & 4 Go/s & ~140 ns & 7 Go/s \\ \hline
+ RAM distante & ~500 ns & 1.1 Go/s & TODO & TODO \\ \hline
 \end{tabular}
 \caption{Tableau synthétiques des latences et bande passante en fonction du niveau de cache et du processeur}\label{tab:synthese-processeurs}
 \end{table}
@@ -116,7 +117,7 @@ Les mesures ont été faites à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour
 Pour la bande passante les temps considérés sont ceux du benchmark |bw_mem|, en utilisant un équivalent de |memcpy|.
 Pour la latence, tout effet potentiel du prefetcher est annulé par l'utilisation de \emph{pointer chasing} (l'adresse de la case suivante à charger est située dans la case courante), ce qui n'est pas le cas pour la bande passante.
 
-Comme on peut le voir sur ces chiffres, le coût d'accès à la mémoire principale est prohibitif par comparaison aux différents caches, y compris le L3.
+Comme on peut le voir sur ces chiffres, le coût d'accès à la mémoire principale est bien plus grand par rapport à l'accès des différents caches, et l'accès à la mémoire distante est tout simplement prohibitif.
 Les différentes caractéristiques de ces processeurs et des machines sur lesquels ils sont intégrés seront étudiées en détails dans la section~\ref{sec:contribs:machines}.
 
 \subsubsection{Politiques d'éviction}
@@ -247,25 +248,36 @@ C'est donc ce dernier qui est le plus adapté à un environnement NUMA, puisqu'i
 
 
 \subsubsection{Topologies}
-\begin{todo}
-  décrire le facteur NUMA et inclure des chiffre (reprendre graphe 2.1.2 plus bas)
-\end{todo}
 
 La topologie du système d'interconnexion peut être très différente d'une machine à une autre, et de multiples exemples existent dans les machines commercialisées.
-Il existe des topologies plates, où chaque nœud est directement connecté aux autres (TODO: ref graph 2.1.2), des topologies où des couples de nœuds sont groupés entre eux et peuvent passer par un ou deux niveaux d'interconnexion (TODO: ref graph idchire).
+L'objectif de l'interconnexion est de proposer à un maximum de nœuds d'être en lien les uns avec les autres, tout en minimisant la <<distance>> entre eux.
+Il existe des topologies plates, où chaque nœud est directement connecté aux autres, comme c'est le cas pour la machine \emph{brunch} décrite en détails dans la section~\ref{sec:contribs:machines:brunch}, mais également des topologies plus compliquées, où par exemple des couples de nœuds sont groupés entre eux et peuvent passer par un ou deux niveaux d'interconnexion, comme c'est le cas pour la machine \emph{idchire}, décrite en détail dans la section~\ref{sec:contribs:machines:idchire}.
 
-Le nombre de rebonds - \emph{hops} - à effectuer avant d'accéder à la mémoire demandée impacte directement la latence et la bande passante, comme le montre le tableau comparatif de la figure~(TODO).
+Pour illustrer la complexité et l'impact que peut avoir la topologie, prenons l'exemple de la machine \emph{idchire} dont une partie de la topologie est illustrée dans la figure TODO.
+\begin{todo}
+  faire la figure d'exemple de topo d'idchire.
+\end{todo}
 
-Chiffres :
-même noeud: 2.11 GB/s
-noeud meme group: 1.50 GB/s
-groupe proche: 1.28 GB/s
-groupe loin: 1.06 GB/s
+Physiquement accéder aux nœuds 1, 2, et 10 depuis le nœuds 0 n'est pas équivalent, et les données passent par des liaisons physiques différentes.
+Le rapport entre le coût d'accès à un nœud distant et le coût d'accès au nœud local s'appelle le \emph{facteur NUMA}.
+Le nombre de rebonds - \emph{hops} - à effectuer avant d'accéder à la mémoire demandée impacte directement la latence et la bande passante.
 
-GRAPHE : 2.1.2 les chiffres de base !
-GRAPHE : 2.1.2 heatmap
-GRAPHE : 2.1.2 montrer une version schématique d'une machine NUMA (2 socket, 1 socket/2 nœuds, idchire, knl)
+Le tableau comparatif de la figure~\ref{tab:topologie-hops} donne des chiffres indicatifs, motivant l'intérêt à porter à la localité des données.
 
+\begin{table}[ht]
+\def\arraystretch{1.5}
+\centering
+\begin{tabular}{|c||c|c|}\hline
+  Destination & idchire & brunch  \\ \hline
+ Local & 3.1 Go/s & 3.6 Go/s \\ \hline
+ Même groupe & 1.27 Go/s & NA \\ \hline
+ 1 hop & 1.12 Go/s & 3.2 Go/s \\ \hline
+ 2 hops & 1.0 Go/s & NA \\ \hline
+\end{tabular}
+\caption{Bande passante (\emph{memcpy} de 200 Mo) en fonction du nœud destinataire de la copie}\label{tab:topologie-hops}
+\end{table}
+
+Une carte complète - \emph{heatmap} - des distances est montrée dans le chapitre~\ref{chap:contrib:characterization}, Figure~\ref{fig:contribs:machines:idchire:heatmap}.
 
 
 \subsection*{Conclusion}
