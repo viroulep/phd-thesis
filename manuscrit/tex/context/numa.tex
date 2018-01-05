@@ -253,16 +253,21 @@ La topologie du système d'interconnexion peut être très différente d'une mac
 L'objectif de l'interconnexion est de proposer à un maximum de nœuds d'être en lien les uns avec les autres, tout en minimisant la <<distance>> entre eux.
 Il existe des topologies plates, où chaque nœud est directement connecté aux autres, comme c'est le cas pour la machine \emph{brunch} décrite en détails dans la section~\ref{sec:contribs:machines:brunch}, mais également des topologies plus compliquées, où par exemple des couples de nœuds sont groupés entre eux et peuvent passer par un ou deux niveaux d'interconnexion, comme c'est le cas pour la machine \emph{idchire}, décrite en détail dans la section~\ref{sec:contribs:machines:idchire}.
 
-Pour illustrer la complexité et l'impact que peut avoir la topologie, prenons l'exemple de la machine \emph{idchire} dont une partie de la topologie est illustrée dans la figure TODO.
-\begin{todo}
-  faire la figure d'exemple de topo d'idchire.
-\end{todo}
+Pour illustrer la complexité et l'impact que peut avoir la topologie, prenons l'exemple de la machine \emph{idchire} dont une partie de la topologie est illustrée dans la figure~\ref{fig:context:group-idchire}.
+La figure montre 2 nœuds NUMA sur un même groupe, la machine possède en tout 12 groupes (et donc 24 nœuds) interconnectés.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{group}
+  \caption{group idchire}\label{fig:context:group-idchire}
+\end{figure}
+
 
 Physiquement accéder aux nœuds 1, 2, et 10 depuis le nœuds 0 n'est pas équivalent, et les données passent par des liaisons physiques différentes.
 Le rapport entre le coût d'accès à un nœud distant et le coût d'accès au nœud local s'appelle le \emph{facteur NUMA}.
 Le nombre de rebonds - \emph{hops} - à effectuer avant d'accéder à la mémoire demandée impacte directement la latence et la bande passante.
 
-Le tableau comparatif de la figure~\ref{tab:topologie-hops} donne des chiffres indicatifs, motivant l'intérêt à porter à la localité des données.
+La table~\ref{tab:topologie-hops} donne un comparatif avec des chiffres indicatifs, motivant l'intérêt à porter à la localité des données.
 
 \begin{table}[ht]
 \def\arraystretch{1.5}
