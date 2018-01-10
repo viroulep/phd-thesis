@@ -13,18 +13,18 @@ Une tâche est nécessairement accompagnée de données qu'elle manipule. De la 
 
 \subsection{Traitement d'une tâche : de la création à l'exécution}\label{sec:context:others:costs}
 
-Si la notion de tâche peut paraître simple, elle s'accompagne d'un certain nombre de traitement plus ou moins automatique (en fonction du modèle de programmation), mais qui dans tous les cas a un coût.
+Si la notion de tâche peut paraître simple, elle s'accompagne d'un certain nombre de traitements plus ou moins automatiques (en fonction du modèle de programmation), mais qui dans tous les cas ont un coût.
 Les trois paragraphes suivants décrivent quelques points clés accompagnant l'utilisation des tâches, qui sont parfois cachés au programmeur.
 
 \subsubsection{Création}
 
-En fonction du modèle de programmation, la création d'une tâche peut être plus ou moins pénible pour le programmeur.
+En fonction du modèle de programmation, la création d'une tâche peut être plus ou moins complexe pour le programmeur.
 
 Prenons deux exemples représentatifs pour illustrer.
 
 En StarPU natif, voici par exemple comment on pourrait définir et créer une tâche :
 
-\begin{lstlisting}[language=c++,caption=Exemple simple en StarPU,label=lst:context:simple-starpu,basicstyle=\small]
+\begin{lstlisting}[language=c++,caption=Exemple simple en StarPU,label=lst:context:simple-starpu]
 void work() {
   // calcul
 }
@@ -60,7 +60,7 @@ void foo()
 }
 \end{lstlisting}
 
-Cela parait certes moins intrusif et pénible pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a moins d'actions effectuées en pratique !
+Cela parait certes moins intrusif et plus simple pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a moins d'actions effectuées en pratique !
 Que se passe-t-il vraiment ?
 
 Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire généré~: il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élémentaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
@@ -107,7 +107,7 @@ Au final les actions effectuées pour la création d'une tâche sont équivalent
 
 \subsubsection{Gestion}
 
-Une fois que le programmeur a définie sa tâche et l'a soumise au support exécutif, celui ci doit créer et maintenir une structure de données représentant cette tâche.
+Une fois que le programmeur a défini sa tâche et l'a soumise au support exécutif, celui ci doit créer et maintenir une structure de données représentant cette tâche.
 Celle ci peut être plus ou moins grande en fonction des informations associées à la tâche.
 
 Le support exécutif va utiliser ces informations au cours de l'exécution du programme pour déterminer quelles tâches sont prêtes pour l'exécution.
@@ -160,11 +160,11 @@ Dans l'exemple du listing~\ref{lst:context:task-dep}, la tâche |write_A| possè
 
 Étant donné qu'il y a une lecture et une écriture, le principe de cohérence séquentielle impose que les opérations soit ordonnées dans l'ordre où elles ont été créées (ici la tâche en lecture devrait avoir lieu \textbf{après} la tâche en écriture).
 
-Si on regarde le reste du programme, la tâche |B| dispose d'une dépendance en écriture sur |b| et la tâche |C| souhaite lire |a| et |b|.
+Si on regarde le reste du programme, la tâche |write_B| dispose d'une dépendance en écriture sur |b| et la tâche |read_AB| souhaite lire |a| et |b|.
 
-Étant donné que du point de vue des dépendances les tâches |write_A| et |B| sont indépendantes, elles pourraient très bien être exécutées en même temps, et |B| pourrait terminer son exécution avant même que |read_A| commence la sienne.
+Étant donné que du point de vue des dépendances les tâches |write_A| et |write_B| sont indépendantes, elles pourraient très bien être exécutées en même temps, et |write_B| pourrait terminer son exécution avant même que |read_A| commence la sienne.
 
-En revanche |C| devra forcément être exécutée après |read_A| et |B| puisqu'elle a une dépendance en lecture sur des données écrites par ces deux tâches, et qu'elle a été créée après dans l'ordre séquentiel.
+En revanche |read_AB| devra forcément être exécutée après |write_A| et |write_B| puisqu'elle a une dépendance en lecture sur des données écrites par ces deux tâches, et qu'elle a été créée après dans l'ordre séquentiel.
 
 
 \begin{lstlisting}[caption=Synchronisation via des dépendances (OpenMP),label=lst:context:task-dep]
@@ -176,9 +176,9 @@ void foo() {
   #pragma omp task depend(in: a)
   read_A(&a);
   #pragma omp task depend(out: b)
-  B(&b);
+  write_B(&b);
   #pragma omp task depend(in: a, b)
-  C(a, b);
+  read_AB(a, b);
 }
 \end{lstlisting}
 
@@ -190,13 +190,13 @@ Cet exemple de code se traduit en un DAG équivalent à la figure~\ref{fig:conte
   \caption{DAG équivalent au listing~\ref{lst:context:task-dep}}\label{fig:context:dag-dataflow}
 \end{figure}
 
-Les deux ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
+Les deux types de synchronisation ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
 Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
 
 
 \subsection{Quelques exemples de modèles de programmation}
 
-Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, TBB, et OpenMP, qui fonctionnent chacun avec des méthodes différentes : respectivement via des annotations sur des fonction, des appels dans le code utilisateur, et des directives pour le compilateur.
+Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, TBB, et OpenMP, qui fonctionnent chacun avec des méthodes différentes : respectivement via des annotations sur des fonctions, des appels dans le code utilisateur, et des directives pour le compilateur.
 
 Les listings~\ref{lst:context:cilk},~\ref{lst:context:tbb}, et ~\ref{lst:context:openmp} donnent une comparaison de l'expression du même exemple simple, le calcul du nième nombre de la suite de Fibonacci.
 
@@ -210,7 +210,7 @@ Le mot clé |cilk_spawn| vient précéder un appel de fonction pour indiquer que
 Cilk propose également une extension de la notation de tableau, ayant pour but de faciliter la vectorisation automatique par le compilateur.
 
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en Cilk,label=lst:context:cilk,basicstyle=\small]
+\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en Cilk,label=lst:context:cilk]
 int fib(int n) {
   if (n < 2)
     return n;
@@ -233,9 +233,9 @@ Elle propose différentes fonctions pour que le programmeur puisse exprimer du p
   \item Un ensemble de fonctions pour accéder à l'ordonnanceur de tâches de la bibliothèque.
 \end{itemize}
 
-La bibliothèque propose également un ensemble de structures de données à accès concurrent (listes, tables de hachage), ainsi que des allocateurs mémoires.
+La bibliothèque propose également un ensemble de structures de données à accès concurrent (listes, tables de hachage), ainsi que des allocateurs mémoire.
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en TBB,label=lst:context:tbb,basicstyle=\small]
+\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en TBB,label=lst:context:tbb]
 #include "tbb/task_group.h"
 using namespace tbb;
 
@@ -262,7 +262,7 @@ Originellement OpenMP ne proposait que du parallélisme de boucle, le concept de
 
 Le standard d'application de nos idées pour cette thèse étant OpenMP, une description détaillée des fonctionnalités et de ses spécificités est faite dans la section~\ref{sec:context:openmp}.
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en OpenMP,label=lst:context:openmp,basicstyle=\small]
+\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en OpenMP,label=lst:context:openmp]
 int fib(int n) {
   if (n < 2)
     return n;
@@ -295,9 +295,17 @@ Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le n
 La figure~\ref{fig:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
 Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quelque soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
 
+\begin{todo}
+  @Thierry : revoir la courbe, en particulier quels runtimes affichés ?
+
+  Ici c'est la première fois qu'on parle d'ompss et libkomp, on peut ne parler que des trucs standards et ressortir dans une section éval de perf.
+
+  Ou faire un paragraphe de blabla rapide sur ompss et libkomp, en disant qu'on en parlera plus tard
+\end{todo}
+
 Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important. Cela est illustré sur la figure~\ref{fig:context:granularity} : avec OmpSs le grain optimal se situe dans un intervalle de tailles de blocs assez restreint (entre environ 250 et 350), alors qu'avec clang ou libkomp une taille de bloc entre 150 et 350 permet d'obtenir des performances sensiblement équivalente.
 
-La courbe tracée avec libkomp inclue nos travaux sur l'affinité, et cela permet d'illustrer que même si cela permet d'influer sur les performances maximales, cela n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k}, ou le maximum de performance est obtenu pour tout les supports exécutif aux environs de 300.
+La courbe tracée avec libkomp inclu nos travaux sur l'affinité, et cela permet d'illustrer que même si cela permet d'influer sur les performances maximales, cela n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k}, ou le maximum de performance est obtenu pour tout les supports exécutif aux environs de 300.
 
 
 \begin{figure}[ht]
@@ -309,9 +317,9 @@ La courbe tracée avec libkomp inclue nos travaux sur l'affinité, et cela perme
 
 Le choix du grain pour une tâche dépend entièrement de l'application, et reste à l'appréciation du programmeur.
 
-\subsection*{Conclusion}
+\bigskip
 
-Bien que tout ces modèles de programmation aient leur spécificités, ils permettent tous de décrire l'application sous forme de graphe de tâches direct et acyclique (DAG).
+Bien que tous ces modèles de programmation aient leur spécificités, ils permettent tous de décrire l'application sous forme de graphe de tâches direct et acyclique (DAG).
 
 L'étape suivante consiste à exécuter ce graphe sur la machine, et pour cela le support exécutif peut se reposer sur un ensemble important de techniques d'ordonnancement. 
 

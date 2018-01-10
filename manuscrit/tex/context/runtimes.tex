@@ -26,7 +26,8 @@ CPOP ajoute en plus la prise en compte du \emph{chemin critique} dans cette prio
 
 On peut remarquer que HEFT a été adapté dans le cadre d'ordonnancement online d'application : l'ordonnanceur part d'une première estimation du temps d'exécution de chaque tâche, mais à la fin de chaque tâche il peut réagir en fonction du temps effectivement écoulé pour le calcul de cette tâche. Cette technique est par exemple utilisé dans StarPU~\cite{StarPU} ou Kaapi~\cite{Lima2015}.
 
-Certaines applications que l'on a étudié et utilisé sont des applications d'algèbre linéaire, et Jakub Kurzak et al.~\cite{Kurzak2010} ont étudiés l'ordonnancement offline de ce type d'application, afin de trouver les meilleurs ordonnancement possibles.
+Certaines applications que l'on a étudié et utilisé sont des applications d'algèbre linéaire, et Jakub Kurzak et al.~\cite{Kurzak2010} ont étudié l'ordonnancement offline de ce type d'application, et l'ont comparé à différentes implémentations \emph{online}.
+Si la version ordonnancée \emph{offline} restait meilleure, certains ordonnancements \emph{online} étaient très proches, et leur conclusion rappelait que les performances de ces ordonnancements \emph{online} pouvaient encore être améliorées.
 
 
 
@@ -41,7 +42,7 @@ Nous détaillons ci après deux types d'ordonnancement online populaires : l'ord
 
 \subsubsection{Algorithmes de listes gloutons}
 
-L'ordonnancement glouton fonctionne assez simplement : le support exécutif maintien une unique liste de tâches \emph{prête} à être exécuter.
+L'ordonnancement glouton fonctionne assez simplement : le support exécutif maintient une unique liste de tâches \emph{prêtes} à être exécuter.
 À chaque fois qu'un processeur devient disponible, l'ordonnanceur lui assigne une tâche prête.
 Il met ensuite à jour la liste des tâches prêtes, et recommence l'étape précédente jusqu'à ce qu'il n'y ait plus de tâche à exécuter.
 
@@ -57,34 +58,34 @@ Vérifier avec Thierry que les algos gloutons sont bien centralisés.
 \subsubsection{Vol de travail}\label{sec:context:runtimes:ws}
 
 Le vol de travail~\cite{Blumofe1999} fait partie des techniques d'ordonnancement online les plus répandues, et est notamment utilisé dans les supports exécutifs étudiés lors de cette thèse.
-Cette section revient donc en détail sur les mécaniques clées de ce type d'ordonnancement.
+Cette section revient donc en détail sur les mécaniques clés de ce type d'ordonnancement.
 
-Au contraire des algorithmes de listes gloutons, le vol de travail peut fonctionner de manière totalement décentralisé, avec un nombre arbitraire de file de tâches.
-Le principe de base est le suivant : le support exécutif dispose d'un certain nombre de queues de tâches prêtes, typiquement associées aux différentes ressources (tels que des coeurs de calcul).
-À chaque fois qu'un thread devient inactif, celui ci va aller <<voler>> du travail dans une queue de tâches prête.
-S'il réussi à récupérer du travail (une tâche), il va l'exécuter.
-Une fois sa tâche terminée, il va déterminer s'il y a des nouvelles tâches prêtes suite à la complétion de son travail, et les introduire dans une des queues de tâches prêtes.
+Au contraire des algorithmes de listes gloutons, le vol de travail peut fonctionner de manière totalement décentralisé, avec un nombre arbitraire de files de tâches.
+Le principe de base est le suivant : le support exécutif dispose d'un certain nombre de files de tâches prêtes, typiquement associées aux différentes ressources (tels que des coeurs de calcul).
+À chaque fois qu'un thread devient inactif, celui ci va aller <<voler>> du travail dans une file de tâches prêtes.
+S'il réussit à récupérer du travail (une tâche), il va l'exécuter.
+Une fois sa tâche terminée, il va déterminer s'il y a des nouvelles tâches prêtes suite à la complétion de son travail, et les introduire dans une des files de tâches prêtes.
 Il redevient ensuite inactif, et va de nouveau essayer de voler du travail.
 
-On constate donc qu'il y a deux moments clés où le thread doit prendre une décision importante : le choix de la queue pour l'ajout des nouvelles tâches prêtes, et le choix de la victime pour le vol.
+On constate donc qu'il y a deux moments clés où le thread doit prendre une décision importante : le choix de la file pour l'ajout des nouvelles tâches prêtes, et le choix de la victime pour le vol.
 
 \paragraph{Placement d'une tâche prête}
 
 La deuxième prise de décision concerne le placement des tâches.
 Lorsqu'un thread termine une tâche, il va devoir indiquer aux successeurs de cette tâche les dépendances qui viennent d'être satisfaites, s'il y en a.
-Si pour l'un des successeurs toutes les dépendances sont satisfaites, alors cette tâche devient prête, et il faut sélectionner une queue où la placer.
+Si pour l'un des successeurs toutes les dépendances sont satisfaites, alors cette tâche devient prête, et il faut sélectionner une file où la placer.
 
-Encore une fois de nombreuses heuristiques sont possibles. Un choix relativement commun est de faire en sorte que le thread place cette tâche dans sa propre queue de tâches.
+Encore une fois de nombreuses heuristiques sont possibles. Un choix relativement commun est de faire en sorte que le thread place cette tâche dans sa propre file de tâches.
 
 
-Dans la section~\ref{sec:contrib:ws:heuristics}, nous revenons sur comment nous avons pu agir au niveau des deux prises de décisions précédent, afin de prendre en compte la topologie des machines NUMA.
+Dans la section~\ref{sec:contrib:ws:heuristics}, nous revenons sur comment nous avons pu agir au niveau des deux prises de décisions précédentes, afin de prendre en compte la topologie des machines NUMA.
 
 \paragraph{Choix de la victime}
 
-Lors du vol de travail, le thread voleur se retrouve à devoir choisir à qui envoyer une requête de vol parmi les queues de tâches disponibles.
-Il y a évidemment plusieurs heuristiques possibles, et concrètement la "bonne" heuristique dépend directement du nombre de queues de tâches disponibles et de leurs caractéristiques, mais aussi du type de la ressource effectuant la requête de vol.
+Lors du vol de travail, le thread voleur se retrouve à devoir choisir à qui envoyer une requête de vol parmi les files de tâches disponibles.
+Il y a évidemment plusieurs heuristiques possibles, et concrètement la "bonne" heuristique dépend directement du nombre de files de tâches disponibles et de leurs caractéristiques, mais aussi du type de la ressource effectuant la requête de vol.
 
-Il y a quelques principes simples qui sont généralement utilisés, tels que commencer par voler dans sa propre queue de tâches avant d'aller voler ailleurs, mais généralement quand il y a peu d'information sur les tâches et les ressources, il suffit de choisir une victime aléatoirement.
+Il y a quelques principes simples qui sont généralement utilisés, tels que commencer par voler dans sa propre file de tâches avant d'aller voler ailleurs, mais généralement quand il y a peu d'information sur les tâches et les ressources, il suffit de choisir une victime aléatoirement.
 
 
 \subsection{Offline vs Online, lequel choisir ?}
@@ -92,9 +93,9 @@ Il y a quelques principes simples qui sont généralement utilisés, tels que co
 Il n'y a en fait pas besoin de faire un choix radical !
 
 Les applications peuvent avoir plusieurs sources d'irrégularités : d'une part cela peut tout simplement venir de la structure de l'application elle-même, mais encore du jeu de données en entrée de l'application, ou bien même des caractéristiques de l'architecture sur laquelle s'exécute l'application.
-Cette dernière source d'irrégularités peut être particulièrement présente sur les architectures hétérogènes ou NUMA, étant donné que sur celles ci les conditions d'accès à la mémoire peuvent être difficilement prévisible.
+Cette dernière source d'irrégularités peut être particulièrement présente sur les architectures hétérogènes ou NUMA, étant donné que sur celles ci les conditions d'accès à la mémoire peuvent être difficilement prévisibles.
 
-Cela veut donc dire que même pour des applications a première vue stables, une technique de base \emph{online} telle que le vol de travail semble indispensable.
+Cela veut donc dire que même pour des applications a première vue régulières, une technique de base \emph{online} telle que le vol de travail peut être envisagée.
 En revanche il est important que cette approche soit complétée par des techniques a priori \emph{offline}, afin de rassembler un maximum d'information sur les tâches exécutées, pour au final améliorer la prise de décision.
 De nombreux travaux utilisent une première approche \emph{offline} pour faire une première répartition de la charge de travail, et ajustent ensuite l'équilibrage au fur et à mesure de l'exécution de l'application.
 C'est le cas par exemple des travaux d'Agullo et al.~\cite{Agullo2016} sur la factorisation de Cholesky dans un contexte hétérogène : ils ont montré qu'un apport minimum d'informations obtenues \emph{offline} à propos des noyaux de Cholesky permet d'améliorer grandement les performances de l'application à travers des supports exécutifs \emph{online}.

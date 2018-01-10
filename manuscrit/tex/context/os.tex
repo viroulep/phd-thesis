@@ -1,4 +1,4 @@
-\section{Exploitation de ces architectures par le système}\label{sec:context:os}
+\section{Exploitation des architectures NUMA par le système d'exploitation}\label{sec:context:os}
 
 Le support des machines NUMA dans Linux est arrivé dès 2003~\cite{Dobson2003}.
 Détailler les dispositifs spécifiques à l'exploitation des machines NUMA au niveau système ne peut pas se faire sans avoir connaissance de certains mécanismes déjà existant.
@@ -10,39 +10,41 @@ La compréhension de la gestion de l'allocation de la mémoire par le système d
 Le système d'exploitation gère la mémoire par petit fragments, appelés \emph{pages}.
 Lors de l'allocation d'un tableau par exemple, si sa taille dépasse celle d'une \emph{page}, l'espace mémoire alloué consistera donc de plusieurs pages.
 
-Par défaut, le système ne donne pas une \emph{page} physique directement lors d'une allocation mémoire (comme par exemple lors d'un appel à |malloc|).
-L'allocation physique de la mémoire est faite selon une politique du système d'exploitation, et dans les versions récentes de Linux la politique standard est d'allouer la page physique lors du premier accès à la donnée (\emph{first-touch}).
 
-L'allocateur par défaut de la libc fait de la réutilisation de pages. Cela veut dire qu'après plusieurs allocations/libération successives d'espace mémoire, vous n'obtenez pas forcément des nouvelles pages.
+Par défaut, lorsque l'allocateur mémoire demande au système la réservation d'un espace mémoire constitué de plusieurs \emph{pages} (lors d'un appel à |malloc| par exemple), le système retarde l'allocation effective de ces pages jusqu'au moment du premier accès - \emph{first-touch}.
+C'est ce premier accès qui va déterminer l'allocation physique de la page : elle sera alloué sur le nœud local du processeur effectuant le \emph{first-touch}.
+
+L'allocateur par défaut de la libc fait de la réutilisation de pages. Cela veut dire qu'après plusieurs allocations/libérations successives d'espace mémoire, vous n'obtenez pas forcément des nouvelles pages.
 L'objectif derrière cela est de réduire le coût général d'une allocation, puisque l'allocation et la libération physique de nouvelles pages est couteux, et que réutiliser des pages supprime ce coût.
 En revanche le corollaire de ce constat est que le contrôle de l'allocation physique par \emph{first-touch} n'est possible que lors de la première allocation des pages.
 Ce problème est limité à la durée de vie du programme, s'il est susceptible d'apparaître, il est alors possible d'utiliser des librairies externes pour l'allocation de données, comme décrit dans la section suivante.
 
 Enfin, un dernier détail mérite de l'attention, il s'agit de la taille des pages manipulées par le système.
 En effet celle ci est configurable, et deux options sont généralement possibles : soit des pages de 4 Kilo octets, soit des - \emph{huge} - pages de 2 Mega octets.
-L'impact de cette taille peut être importante dans le cas d'un bloc de données s'étendant sur plusieurs pages : plusieurs requêtes de page de petites tailles seront plus sensible à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
+L'impact de cette taille peut être important dans le cas d'un bloc de données s'étendant sur plusieurs pages : plusieurs requêtes de pages de petites tailles seront plus sensibles à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
 
 \subsection{Prise en compte des architectures NUMA et bibliothèques externes}
 
-Avec l'arrivée du support des machines NUMA dans le système d'exploitation, plusieurs fonctionnalités fondamentales sont apparues, telles que : la capacité d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
-Mais aussi la possibilité de contrôler le placement d'un thread sur un ensemble de cœurs physiques à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un nœud, ou tout simplement de garantir qu'un thread sera exécuté par un cœur précis.
+Avec l'arrivée du support des machines NUMA dans le système d'exploitation, plusieurs fonctionnalités fondamentales sont apparues et parmi elles on retrouve : la capacité d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
+On trouve aussi la possibilité de contrôler le placement d'un thread sur un ensemble de cœurs physiques à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un nœud, ou tout simplement de garantir qu'un thread sera exécuté par un cœur précis.
 
-Plusieurs outils se sont basés sur ces briques de base pour proposer des fonctionnalités plus compliquées, parmi eux \emph{numactl} et \emph{hwloc} :
+Plusieurs outils se sont basés sur ces briques de base pour proposer des fonctionnalités plus avancées, parmi eux \emph{numactl} et \emph{hwloc} :
 
 \begin{description}
   \item [numactl~\cite{numactl} :] cet outil s'utilise avant l'utilisation d'un exécutable sur la ligne de commande. Il permet : de contrôler l'ensemble des cœurs (ou nœuds) sur lesquels les threads peuvent être placés au cours de l'exécution du programme ;
     de contrôler l'ensemble des nœuds NUMA sur lesquels peuvent être allouées des données ;
-    et encore de modifier la politique d'allocation des pages du système, en permettant par exemple de distribuer les pages successives allouées, de manière cycliques sur un ensemble de nœuds.
+    et encore de modifier la politique d'allocation des pages du système, en permettant par exemple de distribuer les pages successives allouées, de manière cyclique sur un ensemble de nœuds.
   \item [hwloc~\cite{Broquedis2010} :] cet outil permet, entre autres, d'obtenir des informations précises sur le matériel et la topologie de la machine. Il expose les facteurs NUMA théoriques fournies par le matériel, et permet de visualiser les différents nœuds et groupes de nœuds.
   Il propose également des fonctions d'allocations plus fiable que |malloc|, garantissant l'allocation de nouvelles pages, et proposant différentes politiques d'allocations (incluant le \emph{first-touch}).
 \end{description}
 
 
-
-\subsection*{Conclusion}
+\bigskip
 
 Dans la section précédente nous avons vu les détails concernant le matériel utilisé au cours de cette thèse, et dans cette section nous avons vu comment l'exploiter au niveau du système d'exploitation.
 
-En revanche le développeur d'application scientifique ne va pas directement utiliser des fonctionnalités de base au niveau système, il va plutôt bien connaitre son application ainsi que les détails sur les différentes parties qui la composent.
+Le développeur d'application scientifique n'est généralement pas un spécialiste des fonctionnalités de base du système d'exploitation : il va plutôt être un expert de son application et des parties critiques qui la composent.
 Il faut donc une couche par dessus le système d'exploitation pour lui permettre d'exprimer de manière plus abstraite son application. Cette couche est le \emph{modèle de programmation}.
-Pour cibler les architectures à mémoire partagées, les modèles de programmation à base de tâches sont très souvent utilisés, et la prochaine section leur est dédiée.
+Pour cibler les architectures à mémoire partagée, les modèles de programmation à base de tâches offrent des propriétés très intéressantes : ils permettent d'exprimer du parallélisme à grain fin, et l'équilibrage de charge est effectué de manière dynamique par le système exécutif.
+Cela permet potentiellement de maximiser l'utilisation du nombre important de ressources disponibles sur une machine NUMA.
+L'expression d'un programme à base de tâches permet également d'isoler les parties critiques du programme, ce qui peut faciliter leur analyse.

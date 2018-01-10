@@ -2,11 +2,11 @@
 
 
 Les architectures à mémoire partagée ont subit des changements majeurs liés à l'évolution des processeurs.
-L'augmentation du nombre de cœurs par processeur a introduit des problèmes d'accès à la mémoire centrale : dans une architecture composée d'une unique mémoire, plusieurs cœurs cherchant à accéder à la mémoire vont rentrer en concurrence et introduire de la contention et donc des délais dans l'accès à la mémoire, ce qui pénalise formtement les performances.
+L'augmentation du nombre de cœurs par processeur a introduit des problèmes d'accès à la mémoire centrale : dans une architecture composée d'une unique mémoire, plusieurs cœurs cherchant à accéder à la mémoire vont rentrer en concurrence et introduire de la contention et donc des délais dans l'accès à la mémoire, ce qui pénalise fortement les performances.
 
 Pour pallier ce problème, les constructeurs ont divisé la mémoire centrale en plusieurs parties physiquement distinctes, appelées \emph{nœuds}.
 Le nœud NUMA est le composant de base pour une architecture NUMA.
-Chaque nœud est constitué d'une partie de la mémoire centrale, d'un contrôleur local d'accès à ce bloc mémoire, ainsi que d'un certain nombre de cœurs de calcul.
+Chaque nœud est constitué d'une partie de la mémoire centrale, d'un contrôleur local d'accès à ce bloc mémoire, ainsi que d'un certain nombre de processeurs multicœurs, eux-mêmes composés de plusieurs cœurs de calcul.
 L'ensemble des nœuds de la machine sont ensuite reliés entre eux par un réseau d'interconnexion.
 La topologie de l'interconnexion ne permet généralement pas d'avoir des nœuds équidistants, ce qui introduit une hiérarchie mémoire.
 
@@ -15,7 +15,7 @@ Malgré le fait que les différentes parties de l'architecture soient physiqueme
 Nous décrivons dans un premier temps les caractéristiques techniques communes d'un processeur multicœur d'un nœud dans les sections~\ref{sec:context:numa:cache}, et~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
 Elles ont une influence directe sur le comportement du nœud au sein de la machine.
 
-\subsection{Caches des processeurs}\label{sec:context:numa:cache}
+\subsection{Des caches pour accélérer l'accès aux données}\label{sec:context:numa:cache}
 
 Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que pour la mémoire centrale, mais dont la capacité est beaucoup plus restreinte. Il peut être spécifique à un cœur du processeur, ou partagé par plusieurs d'entre eux.
 
@@ -52,7 +52,7 @@ Le cache ne pouvant être suffisamment grand pour contenir toute la mémoire, il
 Il y a trois grandes catégories d'associativité utilisées par les caches :
 \begin{itemize}
   \item Les caches à association directe (\emph{direct-mapped cache}) : dans ce système, chaque ligne de la mémoire est associée à exactement un emplacement dans le cache.
-    Ce système est simple, propose le meilleur temps de réponse, mais est peu prévisible et à taille identique est moins efficace que les deux autres catégories.
+    Ce système est simple, propose le meilleur temps de réponse, mais à taille identique il est moins efficace que les deux autres catégories : son manque de flexibilité ne lui permet pas de bien utiliser l'espace disponible lorsque le jeu de données à stocker devient important.
   \item Les caches complètement associatifs (\emph{fully associative cache}) : dans ce système, chaque ligne de la mémoire peut être associée à n'importe quel emplacement dans le cache.
     Cela permet de maximiser l'utilisation de l'espace disponible, mais cela induit un coût supplémentaire pour déterminer l'association entre une ligne et son emplacement.
   \item Les caches N-associatifs (\emph{N-way associative cache}) : ce système est un compromis entre les deux précédents.
@@ -60,7 +60,7 @@ Il y a trois grandes catégories d'associativité utilisées par les caches :
     Cela implique un certain nombre d'opérations sur les adresses des lignes, et l'espace pris par le composant ainsi que le temps d'accès moyen dépend directement de la valeur de N.
 \end{itemize}
 
-Hill et al.~\cite{Hill1989} (Table III) illustre l'impact de l'associativité sur la proportion de cache miss et catégorise son origine (conflit d'adresse, défaut de capacité du cache, chargement normal de la donnée).
+Hill et al.~\cite{Hill1989} illustre l'impact de l'associativité (dans la table III de l'article) sur la proportion de cache miss et catégorise son origine (conflit d'adresse, défaut de capacité du cache, chargement normal de la donnée).
 Cela permet de dégager deux observations : d'une part qu'augmenter l'associativité permet de diminuer les cache miss.
 D'autre part que les défauts de cache ayant une forte associativité sont quasi exclusivement dus à la capacité du cache, alors que pour les caches à association directe les conflits d'adresse sont une part non négligeable des cache miss.
 
@@ -70,7 +70,7 @@ Il y a en général 3 niveaux de cache dans ces architectures :
 \begin{itemize}
   \item L1 : C'est le cache le plus "proche" du CPU, mais aussi le plus petit - typiquement quelques Ko. Il est généralement découpé en deux parties distinctes : une partie pour les instructions, une autre pour les données.
   \item L2 : Ce cache est physiquement plus éloigné du processeur et présente une latence d'accès plus importante que le L1, mais propose une plus grande capacité de mémoire. Il a un ordre de grandeur de quelques centaines de Ko.
-  \item L3 : Ce cache est généralement le cache de dernier niveau - \emph{Last Layer Cache (LLC)} - sur un processeur. La latence pour y accéder est plus importante que le L2, mais sa capacité est bien supérieure, pouvant en général atteindre plusieurs Mo.
+  \item L3 : Ce cache est généralement le cache de dernier niveau - \emph{Last Level Cache (LLC)} - sur un processeur. La latence pour y accéder est plus importante que le L2, mais sa capacité est bien supérieure, pouvant en général atteindre plusieurs Mo.
 \end{itemize}
 
 En fonction des fabricants, ces caches peuvent être soit \emph{inclusifs} (c'est-à-dire que toutes les données présentes dans le L1 sont également présentes dans le L2), ou \emph{exclusifs} (c'est-à-dire qu'une donnée est garantie de n'être présente que dans l'un des caches).
@@ -113,9 +113,10 @@ Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé
 \end{table}
 
 Afin de donner un ordre d'idée des latences et bande passantes sur les différents processeurs, le tableau~\ref{tab:synthese-processeurs} récapitule les chiffres en fonction de la génération du processeurs.
-Les mesures ont été faites à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour la latence, les temps considérés sont ceux du benchmark |lat_mem_rd| avec un accès aléatoire à la mémoire.
+Les mesures ont été faites à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour la latence, les débits considérés sont ceux du benchmark |lat_mem_rd| avec un accès aléatoire à la mémoire.
 Pour la bande passante les temps considérés sont ceux du benchmark |bw_mem|, en utilisant un équivalent de |memcpy|.
-Pour la latence, tout effet potentiel du prefetcher est annulé par l'utilisation de \emph{pointer chasing} (l'adresse de la case suivante à charger est située dans la case courante), ce qui n'est pas le cas pour la bande passante.
+La majorité des processeurs dotés d'un cache dispose également d'un composant matériel - le \emph{prefetcher} - dont le but est de charger en avance des données dans le cache en fonction des accès déjà effectués aux données.
+Pour la latence, tout effet potentiel de ce composant est annulé par l'utilisation de \emph{pointer chasing} (l'adresse de la case suivante à charger est située dans la case courante), ce qui n'est pas le cas pour la bande passante.
 
 Comme on peut le voir sur ces chiffres, le coût d'accès à la mémoire principale est bien plus grand par rapport à l'accès des différents caches, et l'accès à la mémoire distante est tout simplement prohibitif.
 Les différentes caractéristiques de ces processeurs et des machines sur lesquels ils sont intégrés seront étudiées en détails dans la section~\ref{sec:contribs:machines}.
@@ -127,13 +128,13 @@ Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impac
 La politique optimale serait de remplacer la ligne qui sera réutilisée le plus tard, mais ce genre de clairvoyance est impossible à implémenter en pratique.
 Un certain nombre d'alternatives ont donc été imaginées, et sont décrites ci-après :
 \begin{itemize}
-  \item Random : cette politique choisi une ligne à remplacer au hasard. Sa simplicité la rend simple à implémenter en pratique, et a notamment été utilisée dans les processeurs ARM Cortex-R~\cite{ARM-Cortex-R}.
-  \item First-In First-Out : comme son nom l'indique, la ligne remplacée est la première qui est rentrée dans le cache parmi celles présentes.
+  \item Random : cette politique choisit une ligne à remplacer au hasard. Sa simplicité la rend simple à implémenter en pratique, et a notamment été utilisée dans les processeurs ARM Cortex-R~\cite{ARM-Cortex-R}.
+  \item First-In First-Out : comme son nom l'indique, la ligne remplacée est la plus ancienne qui est rentrée dans le cache parmi celles présentes.
   \item Least Recently Used (LRU) : dans cette politique, chaque ligne dispose de plusieurs bits représentant la date de la dernière utilisation de cette ligne. La ligne remplacée est celle ayant été utilisée il y a le plus longtemps.
   \item Pseudo-LRU : cette politique offre une version dégradée permettant de gérer des caches de grandes tailles.
 Lorsque l'associativité du cache dépasse un certain seuil, le coût d'implémentation de LRU devient trop important~\cite{Kedzierski2010}, l'alternative proposée par les politiques pseudo-LRU est donc de remplacer une ligne parmi celles utilisées il y a le plus longtemps.
 Cela permet de limiter le nombre de bits nécessaire pour tracer les lignes à remplacer potentielles.
-  \item Autres politiques adaptatives : dans le cas spécifique du cache de dernier niveau (LLC), certains fabriquants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
+  \item Autres politiques adaptatives : dans le cas spécifique du cache de dernier niveau (LLC), certains fabricants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
     \emph{Dynamic Re-Referency Interval Prediction} en est un exemple, qui a été présenté parmi d'autres par Jaleel et al.~\cite{Jaleel2010}.
 \end{itemize}
 
@@ -141,7 +142,7 @@ La politique pseudo-LRU semble être la plus utilisée par les fabricants de pro
 
 
 
-\subsection{Autres caractéristiques matérielles des processeurs}\label{sec:context:numa:node}
+\subsection{Du parallélisme au sein du processeur pour augmenter la puissance de calcul}\label{sec:context:numa:node}
 
 En plus des caches qui nous intéresseront tout particulièrement dans la suite de ce manuscrit, les processeurs ont également d'autres composants matériels dont il est important d'avoir conscience, mais qui ont une place plus limitée dans le contexte de cette thèse : il s'agit des instructions vectorielles et de l'hyperthreading, décrit ci-après.
 
@@ -185,7 +186,7 @@ Afin de maximiser l'utilisation de ces ressources, certains processeurs Intel so
 Le concept est assez simple : avoir deux cœurs logiques (\emph{hyperthreads}) associés à un seul cœur physique.
 De cette manière lorsqu'un thread est en attente sur une donnée (par exemple lors d'un chargement d'une donnée depuis la mémoire), le second peut profiter des UALs disponibles.
 
-Pour des tâches peu gourmandes en ressources ou utilisant beaucoup de données, cela peut effectivement se traduire par un gain de performances, mais pour le cas des applications HPC il faut regarder le type d'applications utilisées pour savoir si on peut espérer un gain ou non.
+Pour des tâches peu gourmandes en ressources ou utilisant beaucoup de données, cela peut effectivement se traduire par un gain de performances, mais dans le cadre du calcul haute performance il faut regarder le type d'applications utilisées pour savoir si on peut espérer un gain ou non.
 En particulier les caches L1 et L2 sont partagés par les deux hyperthreads, donc si le code séquentiel généré est optimisé pour les tailles de caches correspondant, exécuter le même type de code séquentiel sur deux hyperthreads peut entrainer du \emph{cache trashing}.
 Au meilleur des cas l'hyperthreading améliorera les performances mais ne sera pas forcément très efficace, atteignant par exemple entre 2.3 et 3.3 de speed-up pour 4 hyperthreads par cœur~\cite{Jeffers2016} sur les derniers processeurs d'Intel, les Xeon Phi.
 Si l'application est très intensive en calcul et utilise au maximum les UALs, l'hyperthreading n'apportera pas grand chose, voire rien.
@@ -193,7 +194,7 @@ Si l'application est très intensive en calcul et utilise au maximum les UALs, l
 L'hyperthreading est généralement une option que l'on peut désactiver dans le BIOS de la machine, ou éviter en plaçant correctement les threads de son application.
 
 
-\subsection{Interconnexion des nœuds}\label{sec:context:numa:interconnect}
+\subsection{Passage à l'échelle supérieure : interconnexion des processeurs}\label{sec:context:numa:interconnect}
 
 L'une des parties majeures d'une machine NUMA est le système d'interconnexion entre les différents nœuds.
 C'est cette partie qui va déterminer à quel point cela va être couteux d'accéder à la mémoire située sur un nœud distant, et donc à quel point l'aspect NUMA de la machine va impacter les performances d'une application.
@@ -229,9 +230,9 @@ Il implémente le protocole MESIF. Du à l'introduction de l'état \emph{F}, ce 
 Pour implémenter ce protocole, il existe deux types de mécanismes :
 
 \begin{itemize}
-  \item À base de Snooping : chaque cache observe le trafic sur le bus mémoire pour des requêtes qui concerneraient les lignes de caches dont ils possèdent une copie. Un composant dédié peut effectuer un premier filtre pour restreindre le trafic lié au mécanisme de snooping. Néanmoins ce type de mécanismes ne passent pas bien à l'échelle, et aurait du mal à obtenir de bonne performance dans les architectures NUMA, où le nombre de caches est important.
+  \item À base de Snooping : chaque cache observe le trafic sur le bus mémoire pour des requêtes qui concerneraient les lignes de caches dont il possède une copie. Un composant dédié peut effectuer un premier filtre pour restreindre le trafic lié au mécanisme de snooping. Néanmoins ce type de mécanismes ne passe pas bien à l'échelle, et aurait du mal à obtenir de bonnes performances dans les architectures NUMA, où le nombre de caches est important.
 
-  \item À base de répertoires : la donnée est placée dans un répertoire qui maintien la cohérence entre les caches. Chaque cache ne peut pas accéder directement à la mémoire principale mais doit passer par le répertoire.
+  \item À base de répertoires : la donnée est placée dans un répertoire qui maintient la cohérence entre les caches. Chaque cache ne peut pas accéder directement à la mémoire principale mais doit passer par le répertoire.
 \end{itemize}
 
 Le QPI utilise un mix des deux mécanismes : il utilise des \emph{home agents} - comparables à des répertoires - qui sont les principales autorités pour fournir une version du cache depuis la mémoire principale.
@@ -259,11 +260,11 @@ La figure montre 2 nœuds NUMA sur un même groupe, la machine possède en tout 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{group}
-  \caption{group idchire}\label{fig:context:group-idchire}
+  \caption{Schéma d'un groupe de deux nœuds sur idchire}\label{fig:context:group-idchire}
 \end{figure}
 
 
-Physiquement accéder aux nœuds 1, 2, et 10 depuis le nœuds 0 n'est pas équivalent, et les données passent par des liaisons physiques différentes.
+Physiquement accéder aux nœuds 1, 2, et 10 depuis le nœud 0 n'est pas équivalent, et les données passent par des liaisons physiques différentes.
 Le rapport entre le coût d'accès à un nœud distant et le coût d'accès au nœud local s'appelle le \emph{facteur NUMA}.
 Le nombre de rebonds - \emph{hops} - à effectuer avant d'accéder à la mémoire demandée impacte directement la latence et la bande passante.
 
@@ -284,8 +285,7 @@ La table~\ref{tab:topologie-hops} donne un comparatif avec des chiffres indicati
 
 Une carte complète - \emph{heatmap} - des distances est montrée dans le chapitre~\ref{chap:contrib:characterization}, Figure~\ref{fig:contribs:machines:idchire:heatmap}.
 
-
-\subsection*{Conclusion}
+\bigskip
 
 Cette partie s'est concentrée sur les connaissances de base nécessaires pour comprendre l'interaction entre les différents composants des architectures NUMA.
 Le développeur d'application ne va généralement pas influer directement sur ces composants, en revanche il est capital d'avoir conscience des caractéristiques de chacun d'entre eux pour pouvoir expliquer facilement tel ou tel comportement de l'application.
