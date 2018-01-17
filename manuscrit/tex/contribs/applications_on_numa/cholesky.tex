@@ -1,17 +1,62 @@
 \section{Une étude de cas : Cholesky}\label{chap:contribs:apps:cholesky}
 
 Afin de mettre en application nos analyses nous avons choisi comme cas d'étude une application d'algèbre linéaire populaire et bien connue : la factorisation de Cholesky.
+Une manière standard de paralléliser les applications d'algèbre linéaire est de découper le problème en l'appliquant à différentes sous parties (ou \emph{blocs}) des matrices.
 
-On va étudier en détail son exécution et ses parties critiques, et comment on a pu améliorer son exécution, donc il faut expliquer l'algo
+Nous allons étudier en détails l'algorithme de Cholesky par bloc, voir quelles sont ses parties critiques et leurs comportements, et nous allons également voir comment nous avons pu améliorer son exécution.
+
 
 \subsection{Description générale}
 
-Factorisation d'une matrice symétrique définie positive, par bloc.
+La factorisation de Cholesky a pour but de résoudre l'équation suivante :
+
+$$ A = L*L^T$$
+
+Où $A$ est une matrice symétrique définie positive de nombre réels, et $L$ est l'inconnue, une matrice triangulaire inférieure.
+
+Pour paralléliser la résolution de cette équation, on va découper la matrice $A$ par bloc, et appliquer un algorithme de Cholesky par bloc.
+On peut donc caractériser une factorisation de Cholesky par sa taille de bloc et sa largeur en nombre de blocs.
+
+L'algorithme de résolution par bloc repose sur quatre algorithmes basiques d'algèbre linéaire tirés des \emph{BLAS} - \emph{Basic Linear Algebra Subprograms} - décrit ci-dessous~:
 
 
-On peut caractériser une factorisation par sa taille de bloc et sa largeur en nombre de blocs.
+\paragraph{POTRF(A)}
 
-cf diagram, repose sur quatres noyaux, décrit ci après
+Ce noyau effectue la factorisation de Cholesky de base sur une matrice $A$.
+
+\paragraph{TRSM(A, B)}
+
+Ce noyau effectue l'opération suivante~: $A*X = B$, où $A$ est une matrice triangulaire, et $B$ une matrice générique. $B$ est écrasée par la matrice solution $X$.
+
+\paragraph{SYRK(A, C)}
+
+Ce noyau effectue l'opération suivante~: $C = A*A' + C$, où $A$ est une matrice générique, et $C$ est une matrice symétrique.
+
+\paragraph{GEMM(A, B, C)}
+
+Ce noyau effectue une multiplication de matrices génériques, définie de la manière suivante~: $C = A*B + C$, où $A$, $B$, et $C$ sont des matrices génériques.
+
+L'algorithme peut se formuler de la manière suivante~:
+
+\begin{lstlisting}[language=c++]
+for (int k = 0; k < n_blocs; k++) {
+  DPOTRF(A(k, k));
+
+  for (int m = k+1; m < n_blocs; m++) {
+    DTRSM(A(k, k), A(k, m));
+
+    for (int m = k+1; m < n_blocs; m++) {
+      DSYRK(A(k, m), A(k, k));
+
+      for (int n = k+1; n < m; n++) {
+        DGEMM(A(k, n), A(k, m), A(n, m));
+      }
+    }
+  }
+}
+\end{lstlisting}
+
+Pour mieux imager l'algorithme, les opérations se produisant sur chaque bloc de la matrice au rang |k| sont illustrées sur la figure~\ref{fig:contribs:apps:cholesky:rank-update}
 
 \begin{figure}[ht]
   \centering
@@ -19,29 +64,15 @@ cf diagram, repose sur quatres noyaux, décrit ci après
   \caption{Itération du rang k de la factorisation de Cholesky}\label{fig:contribs:apps:cholesky:rank-update}
 \end{figure}
 
-À chaque itération on fait les trucs décrit sur la figure~\ref{fig:contribs:apps:cholesky:rank-update}
-
-\paragraph{potrf}
-
-(ou dpotrf pour des |double|)
-
-Cholesky pur sur un bloc
-
-\paragraph{trsm}
-
-Mise à jour du panneau sous le dpotrf (colonne), triangular solve A X = B
-
-\paragraph{syrk}
-
-Maj des sous matrice diagonale (multiplication de matrice triangulaire)
-
-\paragraph{gemm}
 
 \subsection{Graphe de dépendances}
 
-\begin{todo}
-graph de dépendances cholesky 5x5
-\end{todo}
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.7\textwidth]{cholesky-dag-5}
+  \caption{DAG d'un Cholesky de largeur 5}\label{fig:contribs:apps:cholesky:dag-5}
+\end{figure}
+
 
 Décrire aussi dépendances de chaque tâche
 
