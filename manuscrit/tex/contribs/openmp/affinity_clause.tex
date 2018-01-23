@@ -20,7 +20,7 @@ Dans la plupart des applications que nous avons utilisé nous avons constaté qu
   \item Allocation et initialisation de chacun des blocs au fur et à mesure des besoins ou de la construction des structures de données de l'application.
 \end{itemize}
 
-Dans les deux cas l'initialisation des données devant être groupées ensemble a lieu dans une même tâche, il suffit alors de pouvoir gérer la distribution de ces tâches avant l'exécution pour effectivement distribuer les données (en se basant sur le principe du \emph{first-touch}, décrit dans la section~\ref{sec:context:numa:os}).
+Dans les deux cas l'initialisation des données devant être groupées ensemble a lieu dans une même tâche, il suffit alors de pouvoir gérer la distribution de ces tâches avant l'exécution pour effectivement distribuer les données (en se basant sur le principe du \emph{first-touch}, décrit dans la section~\ref{sec:context:os}).
 
 Nous avons donc mis en place une clause s'appliquant sur une région parallèle, pouvant spécifier une distribution par défaut des tâches sur la topologie de l'architecture :
 

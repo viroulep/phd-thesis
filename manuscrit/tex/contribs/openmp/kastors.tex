@@ -141,13 +141,27 @@ for (k=0; k<NB; k++) {
 L'application Strassen utilise des décompositions de matrices pour calculer le produit de grandes matrices denses.
 De manière similaire à SparseLU, nous avons modifié l'implémentation des BOTS pour ajouter du parallélisme au niveau des additions dans l'algorithme, et nous avons exprimé des dépendances de données plutôt que d'utiliser une synchronisation à base de |taskwait|.
 
+\subsection{Discussions et perspectives}
 
-\subsection{Un aperçu des performances}
+Nous avons évalué l'intérêt des tâches avec dépendances comparé aux tâches indépendantes dans l'article publié à IWOMP2014~\cite{Virouleau2014}.
+Les expériences ont été mené sur toutes les applications avec plusieurs supports exécutifs.
+Les résultats ont montrés que l'utilisation des dépendances n'était jamais négatif pour les performances, et induisait en fait une amélioration dans la majorité des cas que nous avons testé.
+Cela a pu confirmer que les supports exécutifs pouvaient gérer les synchronisations finement, éliminant ainsi les inactivités des threads dues aux |taskwait|.
 
-trucs particulier : numactl
+D'autres part, ces applications et expériences ont permises de mettre en évidence d'autres limitations des tâches OpenMP.
 
-TODO : ajouter des courbes, des détails sur les compilos/runtimes utilisés, et faire une première visualisation de ce qu'apporte les dépendances.
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{jacobi_scale_noaff}
+  \caption{Comparaison des performances de Jacobi, avec une taille de matrice de 49152}\label{fig:contribs:openmp:kastors:jacobi-motiv}
+\end{figure}
 
-GRAPHE : 4.2.3 performances générales kastors, tâches vs dépendances (probablement du papier). opportunité pour noter le problème sur jacobi taskdep.
+La figure~\ref{fig:contribs:openmp:kastors:jacobi-motiv} regroupe une comparaison de l'application de jacobi en fonction de la version implémentée (à base de boucles ou de tâche avec dépendances) et du support exécutif.
+La scalabilité de l'application en elle même est limitée, mais il n'y a pas de raison, a priori, qu'il y ait une dégradation de performances de l'application avec l'augmentation du nombre de cœurs.
+Jacobi est une application stencil, et chacune des tâches successives (ou groupe d'itérations pour la version à base de boucles) dépend énormément de la réutilisation du cache L2~: la structure de tâches ne permet pas d'exprimer ce genre de <<dépendances>>, lors de l'ordonnancement certaines tâches vont se faire voler et briser la localité du cache L2, introduisant une grosse dégradation des performances.
 
-GRAPHE : 5.1.3, courbes motivantes pour l'affinité (ça peut être jacobi, ça peut être l'étude distante/locale des noyaux de Cholesky)
+Ce problème pourrait être résolu si l'on pouvait exprimer une \emph{affinité} entre une tâche et un cœur de la machine, par exemple.
+De plus les résultats de la section~\ref{sec:contribs:apps:cholesky:carton} ont montrés l'importance de la proximité des données pour les différents noyaux de Cholesky, ce qui représente une autre motivation pour la proposition d'une clause permettant l'expression d'une \emph{affinité} entre une tâche et un élément de la machine.
+
+La section suivante aborde ce point, et la section~\ref{sec:contribs:perf_eval} décrit les résultats obtenus à partir des KASTORS étendus avec nos propositions.
+
