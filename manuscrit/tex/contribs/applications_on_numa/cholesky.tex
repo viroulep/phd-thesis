@@ -96,17 +96,40 @@ Le nombre de tâches créées au rang $k$, ainsi que le nombre d'opérations ari
 
 Les \gemm sont donc très largement majoritaires dans l'algorithme quand la largeur de la matrice augmente, et sont également les plus intensifs en terme d'opérations.
 
-\subsection{Étude préliminaire des performances de Cholesky}
+\subsection{Observations préliminaires et limites}
 
-GRAPHE : 4.2.4 performances détaillées Cholesky : impact de la taille de la matrice, de la taille de bloc, de la machine. tailles = 8k, 16k, 32k, bs = 128/256/512. (*sans* affinité, juste un topo)
+La figure~\ref{fig:context:granularity} a montré qu'on pouvait observé l'impact de certains paramètres, tels que la taille de bloc ou le support exécutif, sur les performances globales.
 
-\begin{todo}
-  Faire figure distrib des temps de tâches, + exemple de perf de cholesky
+Certains supports exécutifs permettent d'aller plus loin via un système de traces, permettant d'observer certaines caractéristiques de tâches particulières.
 
-  La figure distrib enchaine sur la section suivante
-\end{todo}
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\textwidth]{graph_evolution_cholesky_8192_224}
+  \caption{Évolution des performances de Cholesky pour une taille de matrice de 8192 et une taille de bloc de 224}\label{fig:contribs:apps:cholesky:overview-8192-224}
+\end{figure}
+
+Pour illustrer cela, prenons un exemple d'évolution des performances de Cholesky en fonction du nombre de cœurs utilisés, montré sur la figure~\ref{fig:contribs:apps:cholesky:overview-8192-224}. Dans cette exemple la taille de matrice est de 8192, la taille de bloc de 224, et le support exécutif utilisé est libKOMP.
+
+En activant le support des traces, on peut avoir plus de détails sur l'exécution individuelle de chacune des tâches.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{graph_distrib_overview_8192_224}
+  \caption{Distribution des différents noyaux en fonction du nombre de cœurs}\label{fig:contribs:apps:cholesky:distrib-overview-8192-224}
+\end{figure}
+
+La figure~\ref{fig:contribs:apps:cholesky:distrib-overview-8192-224} montre, pour chaque type de tâche (ou \emph{noyau}), la répartition du temps d'exécution (en cycles) en fonction du nombre de cœurs.
+
+À part pour 16 cœurs, on peut constater que la répartition est assez large~: pour un \gemm sur 192 cœurs, le nombre de cycles nécessaire pour l'exécution peut varier du simple au double !
+Nous souhaiterions donc identifier d'où vient ce phénomène, afin d'éventuellement le corriger, et retomber sur un pic de performance clair et stable (comme par exemple pour la distribution des \potrf sur 16 cœurs).
+
+Malheureusement il n'existait pas, à notre connaissance, d'outil permettant d'isoler une (ou plusieurs) tâches d'une application, et permettant de changer certains paramètres prédéfinis pouvant avoir un impact sur le temps d'exécution de la tâche.
+Nous avons donc utilisé \outil dans le but de comprendre et d'analyser plus en profondeur nos observations préliminaires.
 
 \subsection{Caractérisation détaillée des noyaux via \outil}
+
+L'objectif de cette section est de décrire le processus expérimental nous ayant permis d'analyser et comprendre le comportement des quatre noyaux de Cholesky~: \potrf, \trsm, \syrk, \gemm, qui a finalement abouti à des améliorations du support exécutif.
+Nous allons donc aborder d'une part les types de scénarios exécutés via \outil, puis illustrer les résultats que nous avons obtenus avec des exemples significatifs.
 
 \subsubsection{Description des scénario}
 
@@ -232,7 +255,9 @@ Elle a bien un impact sur le niveau de performance globale de chaque noyau, mais
 
 \subsubsection{Impact de la bibliothèque BLAS}
 
+\begin{todo}
 GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : étude de comportement sur des paramètres représentatifs (obj : montrer l'impact des blas)
 OpenBLAS, MKL, ATLAS
 matter for top perf, not for overall behavior
+\end{todo}
 
