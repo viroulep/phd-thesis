@@ -12,7 +12,7 @@ Si l'on souhaitait cibler les modèles de programmation à base de tâches, il f
 Face à l'absence de suite de benchmarks ciblant certaines fonctionnalités d'OpenMP que nous souhaitions utiliser, nous avons commencé par publier une suite de benchmarks, les KASTORS~\cite{Virouleau2014}.
 Les applications présentes dans cette suite ont été adaptées depuis des applications existantes, afin d'utiliser les constructions dont nous avions besoin, et qui sont aujourd'hui utilisées par la communauté.
 
-Nous avons également écrit un outil plus générique, NOMDEL4OUTIL, afin de pouvoir évaluer plus précisément certaines parties ciblées des applications.
+Nous avons également écrit un outil plus générique, \outil, afin de pouvoir évaluer plus précisément certaines parties ciblées des applications.
 L'objectif derrière cet outil est de se libérer de certaines contraintes se présentant lors de l'observation de ces parties de code au cours de l'exécution complète du programme.
 En extrayant les parties critiques on peut faire varier à loisir, et précisément, des paramètres tels que le placement des données ou le jeu de données en entrée, afin d'analyser finement quels impacts ils ont et comment l'architecture sous-jacente réagit.
 
@@ -31,6 +31,6 @@ La seconde est axée sur l'extension du support exécutif~\cite{Virouleau2016a},
 Au cours de cette thèse les architectures NUMA ont évolué, on peut alors se demander dans quelle mesure l'évolution du matériel impacte les travaux de cette thèse.
 Le dernier objectif est donc d'analyser les travaux effectués - voir les compléter - afin de proposer des approches indépendantes du matériel, dans le but de faciliter le travail du programmeur et du développeur de support exécutif à l'avenir.
 
-Parmi nos travaux, NOMDEL4OUTIL propose une approche transposable à tout type d'architecture, et nous avons fait des travaux préliminaires sur un simulateur, qui à partir des données de cet outil peut donner un aperçu des performances de l'application complète.
+Parmi nos travaux, \outil propose une approche transposable à tout type d'architecture, et nous avons fait des travaux préliminaires sur un simulateur, qui à partir des données de cet outil peut donner un aperçu des performances de l'application complète.
 Le coût - en temps - de changer l'implémentation utilisée par un support exécutif est assez important, ces travaux préliminaires ont pour objectif de donner un premier aperçu de l'impact que pourrait avoir une modification de l'ordonnancement par le support exécutif.
 Cela permet ainsi, lors du "portage" d'une application ou d'un support exécutif sur une nouvelle architecture, d'estimer son comportement, et évaluer si des changements dans l'un des deux sont nécessaires.

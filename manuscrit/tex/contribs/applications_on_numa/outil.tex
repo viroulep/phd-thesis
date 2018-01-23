@@ -1,7 +1,12 @@
 \section{Exécution précise de noyaux}\label{sec:contribs:outil}
 
-\subsection{Besoins pour un outil spécifique}
+\subsection{Besoins pour un outil spécifique: \outil}
 
+\begin{todo}
+  reformuler ça pour exposer le problème généralement.
+
+  On présente d'abord l'outil, puis l'application pour la caractérisation des machines et des parties critiques d'applications.
+\end{todo}
 Les résultats de la section précédente montrent que l'on peut tout à fait étudier le comportement global d'une application sur une machine. On peut évidemment observer aussi les variations de ce comportement global lorsqu'on change certains détails, via l'utilisation par exemple de \emph{numactl}.
 
 En revanche, si l'on connait bien son application, on a envie de pouvoir étudier le comportement précis de certaines parties critiques de l'application afin de pouvoir identifier ce qui cause le comportement global.
@@ -15,7 +20,7 @@ Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend 
 
 Une fois cela fait, cela permettra d'identifier des potentielles variations de comportement, et ajuster les heuristiques d'ordonnancement pour prendre en compte ces variations.
 
-C'est à ce besoin que répond NOMDEL4OUTIL : permettre à l'utilisateur de définir ce qu'il exécute et où, et garantir cette exécution, avec un certain nombre de variables observables.
+C'est à ce besoin que répond \outil : permettre à l'utilisateur de définir ce qu'il exécute et où, et garantir cette exécution, avec un certain nombre de variables observables.
 
 Dans la suite de ce chapitre, on appellera l'ensemble des paramètres décrivant cette expérience un \emph{scenario}.
 
@@ -158,40 +163,13 @@ Dès que les threads sont créés ils commencent à exécuter les actions prête
 
 Lorsque la dernière action du scenario est terminée, l'ensemble des données des observateurs est affiché à l'utilisateur sur la sortie standard.
 
-\subsection{Exemples de noyaux}
+\subsection{Application et exemples de scenario}
 
-\subsubsection{Test de bande passante}
+\outil nous a servi dans deux types de contexte~: pour la caractérisation des machines sur lesquelles nous avons effectuées nos expériences, et pour l'étude détaillées des parties critiques des applications que nous avons utilisées.
 
-Noyau naïf pour estimer la bande passante noeud à noeud
-
-\subsubsection{dgemm naif}
-
-cf les perf plus haut, pour vérifier que le comportement des caches miss était pas lié à l'implem.
+La section~\ref{sec:contribs:machines} dresse un profil détaillé des machines et présente une utilisation de \outil pour mesurer certaines caractéristiques de la machine, qui n'aurait pas été facilement mesurable à travers d'autres outils.
+La section~\ref{sec:contribs:apps:cholesky} présente une étude de cas de l'une des applications que nous avons utilisé~: la factorisation de Cholesky.
+Elle revient sur le fonctionnement de l'outil, les observations préliminaires que nous avons effectué, et la valeur ajoutée qu'a eu \outil dans la compréhension détaillée et l'amélioration des performances de l'application.
 
 
-\subsection{Application aux noyaux de Cholesky}
-
-On a identifié les noyaux BLAS important dans la section~\ref{chap:contribs:apps:cholesky}.
-
-\subsubsection{Quelles caractéristiques observer ?}
-Perf ctr, perfs tout court
-
-\paragraph{Impact de la taille de bloc}
-
-GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : graphe sur tailles de bloc critiques vis à vis L2/L3, accès locaux (obj: voir l'impact de la taille de bloc)
-Meilleur cas : tout local, quelques tailles < L2, < L3, > L3
-
-\paragraph{Impact des accès distants}
-
-GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : Pour "bons" blocs, montrer impact de lecture distante, + écriture distante.
-
-Pire cas : tout distant, quelques tailles < L2, < L3, > L3
-
-\subsubsection{Impact de la bibliothèque BLAS}
-
-GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : étude de comportement sur des paramètres représentatifs (obj : montrer l'impact des blas)
-OpenBLAS, MKL, ATLAS
-matter for top perf, not for overall behavior
-
-\subsection{Conclusion : modélisation de base possible}
 
