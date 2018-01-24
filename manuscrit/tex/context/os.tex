@@ -23,7 +23,7 @@ Enfin, un dernier détail mérite de l'attention, il s'agit de la taille des pag
 En effet celle ci est configurable, et deux options sont généralement possibles : soit des pages de 4 Kilo octets, soit des - \emph{huge} - pages de 2 Mega octets.
 L'impact de cette taille peut être important dans le cas d'un bloc de données s'étendant sur plusieurs pages : plusieurs requêtes de pages de petites tailles seront plus sensibles à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
 
-\subsection{Prise en compte des architectures NUMA et bibliothèques externes}
+\subsection{Prise en compte des architectures NUMA et bibliothèques externes}\label{sec:context:os:lib}
 
 Avec l'arrivée du support des machines NUMA dans le système d'exploitation, plusieurs fonctionnalités fondamentales sont apparues et parmi elles on retrouve : la capacité d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
 On trouve aussi la possibilité de contrôler le placement d'un thread sur un ensemble de cœurs physiques à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un nœud, ou tout simplement de garantir qu'un thread sera exécuté par un cœur précis.

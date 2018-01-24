@@ -78,11 +78,17 @@ Les processeurs Broadwell disposent d'instructions FMA~\footnote{\emph{Fused Mul
 L'interconnexion des nœuds NUMA est effectué à travers l'Intel \emph{Quick Path Interconnect} (QPI).
 Contrairement à idchire, la topologie de la machine est relativement plate~: les nœuds sont directement connectés les uns aux autres, et seule la notion d'accès distant ou local permet de distinguer une hiérarchie.
 
-\begin{figure}[h]
+\begin{figure}[t!]
   \centering
   \includegraphics[width=\textwidth]{heatmap_brunch}
   \caption{Carte de la bande passante de brunch}\label{fig:contribs:machines:brunch:heatmap}
 \end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{link_saturation_brunch}
+  \caption{Bande passante depuis le nœud 0, en fonction du nombre de threads effectuant une copie et du nœud destination}\label{fig:contribs:machines:brunch:saturation}
+\end{figure}
+
 
 La Figure~\ref{fig:contribs:machines:brunch:heatmap} présente la bande passante nœud à nœud en fonction de la source et de la destination, mesurée à l'aide d'une copie de tableau (|memcpy|) de 200 Mo.
 Bien qu'une diagonale se dégage clairement, la différence entre accès local et accès distant n'est de l'ordre que de 10\%, comme en témoigne l'échelle de couleur sur la figure.
@@ -90,8 +96,12 @@ Bien qu'une diagonale se dégage clairement, la différence entre accès local e
 \subsubsection{Mesure des liens}
 
 De même que pour idchire, nous avons effectué des observations complémentaires pour caractériser plus précisément les liens locaux et distant, afin de déterminer leur saturation.
+Les résultats de ces expériences ont été rassemblés sur la figure~\ref{fig:contribs:machines:brunch:saturation}.
+Bien que la bande passante soit bien plus importante que sur idchire, les liens arrivent à saturation bien plus vite~: à peine 20\% de charge du nœud permet de saturer la bande passante.
 
-\begin{todo}
-  TODO, faire le graphe et la conclusion
-\end{todo}
+\bigskip
+\bigskip
+
+Ces résultats sur les capacités physique des machines vont avoir un impact important dans la section suivante~: nous allons faire une étude de cas d'une application - la factorisation de Cholesky, et nous allons en étudier individuellement les parties critiques.
+Certaines de ces parties critiques peuvent utiliser un large ensemble de données, en pleine charge de la machine les performances seront donc limitées par les résultats que nous venons de décrire.
 
