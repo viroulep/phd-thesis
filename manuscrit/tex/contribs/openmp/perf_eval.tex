@@ -169,7 +169,7 @@ Dans un premier temps, nous avons donc commencé par ajouter un ensemble de stru
 Nous avons également ajouté une file de tâche privée par thread et par nœud, afin de pouvoir implémenter facilement la notion d'affinité stricte.
 
 Dans un second temps, nous avons modifié les fonctions de placement des tâches prêtes et de sélection d'une victime à voler.
-Nous avons directement implémenté les stratégies présentées dans la section~\ref{} qui avaient le mieux fonctionné, à savoir~:
+Nous avons directement implémenté les stratégies présentées dans la section~\ref{sec:contrib:ws:heuristics} qui avaient le mieux fonctionné, à savoir~:
 \begin{itemize}
   \item pour l'affinité entre une tâche et une donnée, le placement de la tâche est effectuée selon la stratégie \emph{pNumaWLoc}, définie dans la section~\ref{sec:openmp:runtime:push}.
   \item la sélection d'une file de tâche à voler se fait hiérarchiquement, dans l'ordre indiqué par la stratégie \emph{sNumaProc}, définis dans la section~\ref{sec:openmp:runtime:select}.
@@ -181,8 +181,18 @@ Dans la suite des expériences, nous appellerons ce support exécutif \emph{libK
 
 /!\ pour ces xp les versions de gcc/clang ont changé, ainsi que les BLAS !
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{graph_all_cholesky_brunch}
+  \caption{Graphe incomplet des perfs de cholesky sur brucnh}\label{fig:contribs:perf_eval:eval-cholesky-brunch}
+\end{figure}
+
 \begin{todo}
-GRAPHE : 5.5.2, Cholesky : (presque non-)impact stratégies affinité sur brunch/idkat
+Finir les mesures pour le graphe
+
+C'est assez intéressant, parce qu'en fait l'affinité donne un clair avantage dès lors que les tailles de blocs font que la majorité des noyaux (gemm+trsm+syrk) sorte du cache !
+
+Pour l'instant ma conclusion c'est qu'il faut commencer à regarder le dataset manipulé par les tâches pour prendre nos décisions (ce qui peut être évalué à travers le simulateur).
 \end{todo}
 
 

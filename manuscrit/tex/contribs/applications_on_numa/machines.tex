@@ -35,7 +35,7 @@ Pour chaque nœud il y a 12 nœuds situés à un rebond, et 10 nœuds situés à
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.9\textwidth]{link_saturation}
-  \caption{Bande passante depuis le nœud 0, en fonction du nombre de threads effectuant une copie et du nœud destination}\label{fig:contribs:machines:idchire:saturation}
+  \caption{Bande passante vers le nœud 0, en fonction du nombre de threads effectuant une copie et du nœud source}\label{fig:contribs:machines:idchire:saturation}
 \end{figure}
 
 
@@ -52,14 +52,21 @@ Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques
 Pour chaque type de nœud source (même nœud, distant sur le même groupe, distant via un rebond, distant via deux rebonds), nous avons effectués de une à huit copies simultanées.
 
 
-La Figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante cumulée en fonction de nombre de copies simultanées ayant lieu, et en fonction du nœud cible.
+La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante point à point, en fonction de nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
 On constate que la bande passante maximum du lien local atteint 12.2 Go/s, et qu'il commence à saturer lorsque plus de la moitié des cœurs sont utilisés.
 Le lien groupe plafonne à 5.6 Go/s, le lien distant 1 plafonne à 5.1 Go/s, et le lien distant 2 à 4.8 Go/s.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{link_output_saturation}
+  \caption{Bande passante depuis le nœud 0 vers un nœud distant, en fonction du nombre de threads distant effectuant une copie}\label{fig:contribs:machines:idchire:saturation-output}
+\end{figure}
 
-\begin{todo}
-  Figure saturation output du noeud
-\end{todo}
+Pour terminer la caractérisation de ces liens, nous avons finalement mesuré la bande passante maximale que l'on peut obtenir en <<sortie>> d'un nœud, en saturant les différents liens.
+La figure~\ref{fig:contribs:machines:idchire:saturation-output} montre la bande passante cumulée lors d'une copie du nœud 0 vers un nœud distant, en fonction du nombre de threads effectuant une copie.
+La bande passante maximale en sortie de nœud est donc de 7.5 Go/s, et commence à saturer aux alentours d'une vingtaine de copies distantes.
+
+
 
 
 \subsection{brunch}\label{sec:contribs:machines:brunch}
