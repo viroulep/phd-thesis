@@ -1,9 +1,9 @@
-\section{Compilateurs (OpenMP, TODO changer ce titre)}\label{sec:rw:compilers}
+\section{Compilateurs et interopérabilité}\label{sec:rw:compilers}
 
 
 Avant de rentrer dans le vif du sujet, il nous paraît important d'insister sur la distinction entre compilateur et support exécutif.
 
-Tous les modèles de programmation ne sont pas implémenté par tous les compilateurs, mais par contre le fonctionnement général reste le même.
+Tous les modèles de programmation ne sont pas implémentés par tous les compilateurs, mais par contre le fonctionnement général reste le même.
 Le code source va contenir des directives (|#pragma|) ou des appels de fonctions décrits par le modèle de programmation. Le code source va ensuite être plus ou moins transformé par le compilateur.
 
 La section~\ref{sec:context:others:costs} décrit en détail la transformation de code s'opérant dans le cas d'OpenMP.
@@ -11,8 +11,11 @@ La conséquence directe de cette transformation est qu'il existe un \textbf{coup
 
 Dans le cas spécifique d'OpenMP il y a principalement 3 compilateurs qui implémentent (et suivent rapidement) le standard : GCC, ICC, et Clang.
 
+\subsection{Un point sur l'état des compilateurs}
 
-\subsubsection{GCC}
+TODO : décrire le compilo comme un point d'entrée sur une ABI, derrière on branche un runtime
+
+\paragraph{GCC}
 
 Le compilateur GCC est livré avec son support exécutif par défaut : libGOMP.
 Les développeurs du compilateur sont généralement très réactifs aux évolutions du standard, et GCC supporte OpenMP~4.0 depuis la version 4.9.
@@ -22,7 +25,7 @@ L'ordonnancement des tâches est gérée par la technique du vol de travail, ave
 
 
 
-\subsubsection{ICC}
+\paragraph{ICC}
 
 
 ICC est livré avec son support exécutif - open source~\footnote{https://www.openmprtl.org/} - libIOMP.
@@ -31,7 +34,7 @@ Il supporte la version~4.0 d'OpenMP depuis la version 15.0.
 ICC dispose d'un support privilégié pour accélérateur (construction |target|) ciblant les Xeon Phi.
 
 
-\subsubsection{Clang/LLVM}
+\paragraph{Clang/LLVM}
 
 Le support d'OpenMP dans Clang a été ajouté d'un coup, contrairement à GCC où il a été progressivement enrichi.
 Intel a tout d'abord ajouté le support dans un clone de Clang : \emph{clang-omp}~\footnote{https://clang-omp.github.io/}.
@@ -39,7 +42,7 @@ Il y a ensuite eu un effort d'ingénierie pour l'inclure dans Clang, et la licen
 
 OpenMP~4.0 est supporté depuis la version 3.8 de Clang (sauf pour la partie |target|).
 
-\subsubsection{Compatibilité}
+\subsection{Compatibilité}
 
 Dans un scenario idéal, on pourrait à loisir interchanger les compilateurs et supports exécutifs utilisés : par exemple compiler du code avec GCC, et l'exécuter en utilisant le support exécutif d'Intel.
 

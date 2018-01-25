@@ -1,9 +1,8 @@
 \section{Techniques d'amélioration de la localité des données}\label{sec:rw:numa}
 
-\subsection{Introduction}
 
-La problématique de la localité des données a été abordée dans plusieurs contextes.
-Rien qu'en prenant les travaux se restreignant aux architectures NUMA, on obtient une quantité d'articles qui est suffisamment grande pour qu'il existe plusieurs papiers résumant ces travaux et synthétisant les avancées.
+La problématique de la localité des données a été étudiée de manière extensive par la communauté, en particulier dans le contexte des architectures NUMA.
+Parmi les nombreuses publications sur le sujet, deux d'entre elles font l'effort d'en présenter une synthèse didactique, énumérant un certain nombre de bonnes pratiques à adopter s'agissant de l'exécution de tâches en contexte NUMA.
 
 %NUMA-aware scheduling for both memory- and compute-bound tasks
 \paragraph{Reinman~\cite{Reinman2015}} a regroupé différents travaux selon le type de tâches qu'ils ciblaient, et propose en conclusion des recommandations lorsque l'on cherche à ordonnancer des programmes à base de tâches sur des machines NUMA.
@@ -12,49 +11,46 @@ L'auteur distingue principalement deux types de tâches : compute-bound et memor
 Si certaines des 8 recommandations sont très spécifiques aux types de tâches, d'autres décrivent bien les points qu'il faut avoir en tête lorsque l'on cible les architectures NUMA.
 Il indique notamment l'importance de la distribution des données de l'application sur l'ensemble des nœuds NUMA, l'importance de la localité des données, ainsi que l'importance de garder les tâches et leur données ensemble lors du vol de travail.
 
-Dans le cadre spécifique des tâches OpenMP, Terboven et al.~\cite{Terboven2012} ont fait une étude du comportement général des tâches sur les architectures NUMA, et donne des indications assez générales sur les bases pour aborder le problème, comme par exemple assurer le placement fixe d'un thread sur sur cœur de calcul, ou encore les types d'ordonnancement prévus dans le standard qui sont le plus efficace dans ce cas.
-
-Décrire l'ensemble des travaux qui ont été effectués dans ce domaine n'est pas possible, voir dans certains cas n'est pas pertinent, puisque les architectures et langages évoluent.
-Les sections suivantes décrivent quelques approches standards et des travaux représentatifs de ces techniques, qui ont eu un impact sur le développement de nos travaux décrits dans les chapitres~\ref{chap:contrib:characterization} et~\ref{chap:contrib:openmp}.
+Dans le cadre spécifique des tâches OpenMP, \textbf{Terboven et al.~\cite{Terboven2012}} ont fait une étude du comportement général des tâches sur les architectures NUMA, et donne des indications assez générales sur les bases pour aborder le problème, comme par exemple assurer le placement fixe d'un thread sur cœur de calcul, ou encore les types d'ordonnancement prévus dans le standard qui sont les plus efficaces dans ce cas.
 
 
 
 \subsection{Groupement des calculs ensemble}
 
-Les techniques utilisées par les travaux suivant ont tous en commun le groupement des calculs sur des éléments topologiquement proches dans la hiérarchie.
-L'objectif derrière cette idée est de "cloisonner" la charge de travail (par exemple les itérations de boucles) afin de limiter les accès distant et encourager la réutilisation du cache.
+Les techniques utilisées par les travaux suivants ont tous en commun le groupement des calculs sur des éléments topologiquement proches dans la hiérarchie.
+L'objectif derrière cette idée est de "cloisonner" la charge de travail (par exemple les itérations de boucles) afin de limiter les accès distants et encourager la réutilisation du cache.
 
 %OpenMP task scheduling strategies for multicore NUMA systems
 \paragraph{Olivier et al.~\cite{Olivier2012, Olivier2013}} font l'état des problèmes se posant lors de l'équilibrage de charge sur les architectures NUMA.
 Ils notent en particulier que s'il permet de limiter l'inactivité de certains cœurs, il entraine aussi une augmentation des cache miss ainsi qu'une augmentation des accès distants, plus coûteux.
 
 Leur principale contribution s'oriente autour d'une stratégie d'ordonnancement prenant en compte la hiérarchie de la mémoire au sein de l'architecture.
-Ils définissent un domaine de voisinage, qu'ils appellent \emph{shepherd}, qui regroupe un ensemble de cœur voisins dans la hiérarchie.
-Cet ensemble peut être défini à plusieurs niveaux : il peut être défini pour un seul cœur, pour un ensemble de cœur partageant le même cache L3, ou pour un socket comprenant plusieurs processeurs multicœurs.
+Ils définissent un domaine de voisinage, qu'ils appellent \emph{shepherd}, qui regroupe un ensemble de cœurs voisins dans la hiérarchie.
+Cet ensemble peut être défini à plusieurs niveaux : il peut être défini pour un seul cœur, pour un ensemble de cœurs partageant le même cache L3, ou pour un socket comprenant plusieurs processeurs multicœurs.
 
-Ils proposent ensuite une extensions au vol de travail : ils définissent un \emph{shepherd} (et donc une queue de tâches) par nœud NUMA, et ils proposent que chaque \emph{shepherd} aille voler un ensemble de tâches lorsque leur propre queue de tâche est vide.
-Au sein d'un \emph{shepherd}, le travail est réparti aux threads associés aux cœurs d'une manière LIFO, qui permet un ordonnancement en profondeur dans le but de rester au plus proche de l'exécution et de favoriser la réutilisation des caches.
+Ils proposent ensuite une extension au vol de travail : ils définissent un \emph{shepherd} (et donc une file de tâches) par nœud NUMA, et ils proposent que chaque \emph{shepherd} aille voler un ensemble de tâches lorsque leur propre file de tâche est vide.
+Au sein d'un \emph{shepherd}, le travail est réparti entre les threads associés aux cœurs d'une manière LIFO, qui permet un ordonnancement en profondeur dans le but de rester au plus proche de l'exécution et de favoriser la réutilisation des caches.
 
 
 %Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
-\paragraph{Clet-Ortega et al.~\cite{Clet2014}} présentent des techniques de vols de travail favorisant les vols locaux plutôt que distant.
-Ils constatent qu'une queue centralisée introduit un fort coût de gestion compte tenu du fait que le nombre de tâches créées peut être élevé, et proposent l'utilisation d'une queue de tâche par thread du support exécutif pour pallier ce problème.
+\paragraph{Clet-Ortega et al.~\cite{Clet2014}} présentent des techniques de vol de travail favorisant les vols locaux plutôt que distants.
+Ils constatent qu'une file centralisée introduit un fort coût de gestion compte tenu du fait que le nombre de tâches créées peut être élevé, et proposent l'utilisation d'une file de tâches par thread du support exécutif pour pallier ce problème.
 Cela introduit du même coup une vision décentralisée de la gestion des tâches, et en couplant ça avec une analyse de la topologie via hwloc, ils introduisent la notion de voisins pour un thread.
 
-La deuxième partie de leur contribution consiste à étendre le vol de travail pour privilégier les vols dans les queues voisines, restreignant ainsi les calculs sur des groupes de cœurs physiques proche.
+La deuxième partie de leur contribution consiste à étendre le vol de travail pour privilégier les vols dans les files voisines, restreignant ainsi les calculs sur des groupes de cœurs physiques proches.
 %Towards Efficient OpenMP Strategies for Non-Uniform Architectures
-Cette approche est reprise par Tahan et al.~\cite{Tahan2014}. Chaque thread dispose d'une liste privée des autres queues de threads, triée par la distance au cœur sur lequel s'exécute le thread.
+Cette approche est reprise par Tahan et al.~\cite{Tahan2014}. Chaque thread dispose d'une liste privée des autres files de threads, triée par la distance au cœur sur lequel s'exécute le thread.
 
 
 
 \paragraph{Pilla et al.~\cite{Pilla2014}} proposent des extensions au support exécutif ciblant spécifiquement les architectures NUMA et les applications itératives.
 À chaque pas de temps, leur ordonnanceur va tenter de corriger un déséquilibre de charge en déplaçant des tâches d'un cœur à un autre.
-Pour évaluer si une tâche devrait être déplacer sur un autre cœur, ils prennent en compte plusieurs facteurs : la charge du cœur, la quantité de communication que la tâche effectue avec d'autres tâche du cœur, le facteur NUMA entre les deux cœurs, et la quantité de communication locale que la tâche effectuerait sur son cœur actuel.
+Pour évaluer si une tâche devrait être déplacée sur un autre cœur, ils prennent en compte plusieurs facteurs : la charge du cœur, la quantité de communication que la tâche effectue avec d'autres tâches du cœur, le facteur NUMA entre les deux cœurs, et la quantité de communication locale que la tâche effectuerait sur son cœur actuel.
 Ils ont effectué ces extensions dans Charm++~\cite{Kale1993} qui à l'avantage de leur fournir directement des informations sur les performances des tâches aux précédents pas de temps.
 Pour résumé ils vont favoriser le rééquilibrage de charge sur des cœurs voisins, et considérer un équilibrage sur un cœur distant si les caractéristiques de la tâche le permettent.
 
 
-\subsection{Distribution des données et déplacement des calculs}
+\subsection{Distribution initiale des données et placement des calculs}
 
 Nous avons ici regroupé les techniques consistant à contrôler le placement de ses données, et à essayer d'ajuster au mieux l'ordonnancement pour que le calcul s'effectue proche des données.
 Cette approche assez naturelle vise d'une part à réduire la contention au sein d'un même contrôleur mémoire, mais également à minimiser les accès distants coûteux.
@@ -64,39 +60,42 @@ Cette extension de Fortran 90 ne concerne pas du tout les architectures NUMA, ma
 
 Le principe de cette extension est de distribuer la \emph{possession} de chaque élément des tableaux manipulés sur les différents cœurs, et de répartir la charge de travail (les instructions ou groupe d'instructions) sur les cœurs qui possèdent les éléments que ces instructions manipulent.
 
+Ils proposaient un ensemble complet de fonctionnalités pour contrôler le découpage des données, qui pour certaines n'ont jamais été implémentées par les compilateurs du fait de leur complexité.
 
 %Memory Affinity for Hierarchical Shared Memory Multiprocessors
 \paragraph{Pousa Ribeiro et al.~\cite{Pousa2009}} propose une bibliothèque externe pour contrôler l'allocation de données sur les différents nœuds NUMA.
 Ils proposent plusieurs types de mécanismes :
 \begin{itemize}
-  \item bind : un contrôle précis du nœud sur lequel doit être allouer la donnée
+  \item bind : un contrôle précis du nœud sur lequel doit être allouée la donnée
   \item cyclic : pour distribuer de manière cyclique les pages (ou groupes de pages) de la mémoire allouée sur un ensemble de nœuds.
   \item random : pour distribuer aléatoirement les pages (ou groupes de pages) de la mémoire allouée sur un ensemble de nœuds.
 \end{itemize}
-Cela nécessite une modification du code mais permet, contrairement à \emph{numactl}, d'avoir une distribution basée sur les données effectivement manipulées par l'application.
+
+Contrairement à \emph{numactl}, cette bibliothèque permet d'avoir une distribution basée sur les blocs de données effectivement manipulées par l'application.
+Elle peut s'utiliser soit via une modification du code, soit via un compilateur source à source.
 
 
 
 %An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
 \paragraph{Durand et al.~\cite{Durand2013}} abordent le thème de l'ordonnancement de boucles irrégulières sur machine NUMA.
 D'une part ils utilisent le concept de \emph{domaine de voisinage} définie dans la section précédente pour avoir une vue hiérarchique de la machine, et assurent la distribution des données de l'application sur l'ensemble des \emph{domaines de voisinage}.
-D'autre part ils étendent le support exécutif pour rendre les boucles \emph{adaptatives}~: lorsqu'un thread n'a plus d'itérations à exécuter, il peut aller voler un autre thread qui lui donnera une partie des itérations qui lui ont été attribué.
+D'autre part ils étendent le support exécutif pour rendre les boucles \emph{adaptatives}~: lorsqu'un thread n'a plus d'itérations à exécuter, il peut aller voler un autre thread qui lui donnera une partie des itérations non traitées qui lui ont été attribuées.
 
 Cette approche est intéressante dans notre contexte, car au delà de montrer qu'ils compensent l'irrégularité des itérations, ils montrent surtout l'importance de la distribution des données manipulées.
 
 %Optimizing ccNUMA locality for task-parallel execution under OpenMP and TBB on multicore-based systems
-\paragraph{Wittman et Hager~\cite{Wittmann2011}} proposent une approche très intéressante compte tenu des constructions disponibles en 2011 (tâches indépendantes).
+\paragraph{Wittman et Hager~\cite{Wittmann2011}} proposent une approche très intéressante compte tenu des constructions disponibles en 2011 dans le standard OpenMP (tâches indépendantes).
 La supposition de départ est une application dans laquelle chaque tâche lit et écrit un unique bloc de données.
 Ils proposent l'introduction d'une structure similaire au \emph{domaine de voisinage} par nœud NUMA.
-Dans cette structure ils stockent une queue de blocs de données.
+Dans cette structure ils stockent une file de blocs de données.
 
-Dans un premier temps le programmeur distribue équitablement l'ensemble des blocs de données dans l'ensemble des queues des \emph{domaine de voisinage}.
-Ensuite il va créer autant de tâches que de blocs de données existant.
-Lors de l'exécution, la tâche va déterminer dans quelle \emph{domaine de voisinage} elle se trouve, et manuellement retirer un bloc de données de la queue correspondante pour effectuer le calcul.
+Dans un premier temps le programmeur distribue équitablement l'ensemble des blocs de données dans l'ensemble des files des \emph{domaines de voisinage}.
+Ensuite il va créer autant de tâches que de blocs de données existants.
+Lors de l'exécution, la tâche va déterminer dans quel \emph{domaine de voisinage} elle se trouve, et manuellement retirer un bloc de données de la file correspondante pour effectuer le calcul.
 
-Si cette approche a le mérite d'améliorer significativement la localité des données, certains aspects sont assez contraignant.
-D'une part le programmeur se retrouve à effectuer lui même des actions qui appartiennent typiquement au support exécutif, et pourrait être faites de manière transparentes.
-Et d'autre part, aucun contrôle n'est fait pour s'assurer que le nombre de tâches sur chaque \emph{domaine de voisinage} est le bon (seul le nombre global de tâches est assurés).
+Si cette approche a le mérite d'améliorer significativement la localité des données, certains aspects sont assez contraignants.
+D'une part le programmeur se retrouve à effectuer lui même des actions qui appartiennent typiquement au support exécutif, et pourrait être faites de manière transparente.
+Et d'autre part, aucun contrôle n'est fait pour s'assurer que le nombre de tâches sur chaque \emph{domaine de voisinage} est le bon (seul le nombre global de tâches est assuré).
 Ils résolvent ce problème en permettant à une tâche d'aller voler un bloc de données dans un autre voisinage, si le sien est vide.
 
 
@@ -108,7 +107,7 @@ Ils résolvent ce problème en permettant à une tâche d'aller voler un bloc de
 %runtime will always follow unless there is starvation in the local node. Kurzak [23] described an implementation of the Cholesky factorization using static schedul- ing where threads work only on a one-dimensional cyclic distribution in order to keep locality
 \paragraph{Al-Omairy et al.~\cite{Al-Omairy2015}} ont concentré leurs travaux sur l'inversion de matrices symétriques et la factorisation de Cholesky.
 Ils ont étendu le support exécutif et le modèle de programmation d'OmpSs afin de permettre de prendre en compte la distance aux données lors du vol de travail.
-Leur premier axe est de restreindre le vol de travail à l'intérieur du noeud : les threads ne peuvent voler que dans une queue commune au noeud NUMA.
+Leur premier axe est de restreindre le vol de travail à l'intérieur du noeud : les threads ne peuvent voler que dans une file commune au noeud NUMA.
 Le second est de tracer la localité des données : ils utilisent des tâches d'initialisations pour détecter où sont allouées les données. Lors de l'exécution du programme cette information est utilisée pour ordonnancer une tâche sur le noeud où il y a le plus de données manipulées par la tâche.
 
 
@@ -116,10 +115,10 @@ Le second est de tracer la localité des données : ils utilisent des tâches d'
 
 %Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
 %Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
-\paragraph{Dans un contexte hétérogène} plusieurs travaux s'attaquent à l'ordonnancement de tâches en ciblant plusieurs GPU.
+\paragraph{En contexte hétérogène} plusieurs travaux s'attaquent à l'ordonnancement de tâches en ciblant plusieurs GPU.
 Le problème de localité des données que l'on rencontre sur les architectures NUMA est encore plus critique lorsque l'on cible ce type d'accélérateur.
 Bleuse et al.~\cite{Bleuse2014}, ainsi que Lima et al.~\cite{Lima2015} étendent le vol de travail avec des stratégies ciblant les architectures multi-GPU.
-Pour décider du placement d'une tâche prête, ils considèrent les données déjà présentes sur les différents GPUs, et place la tâche dans la queue du GPU sur lequel le plus de données sont présentes.
+Pour décider du placement d'une tâche prête, ils considèrent les données déjà présentes sur les différents GPUs, et place la tâche dans la file du GPU sur lequel le plus de données sont présentes.
 
 Ils montrent une réduction significative de la quantité de données transférée au cours de l'exécution, ce qui se traduit sur certaines classes d'application par un gain important de performance comparé aux stratégies basées sur HEFT ou du vol de travail standard.
 
@@ -129,7 +128,7 @@ Ils montrent une réduction significative de la quantité de données transfér�
 \end{todo}
 
 
-\subsection{Migrations des données et des calculs}\label{sec:rw:numa:thread-data}
+\subsection{Migrations dynamique des données et conservation de la localité}\label{sec:rw:numa:thread-data}
 
 Dans cette dernière catégorie, les travaux effectués vont chercher à garantir la localité des données en regroupant les calculs, mais aussi en déplaçant les données manipulées par les calculs pendant l'exécution, pour réduire les accès distants.
 Cela peut être fait à deux niveaux : soit au niveau du support exécutif, soit au plus bas niveau, directement dans le noyau du système.
@@ -140,14 +139,14 @@ Si l'on se place au niveau du noyau les informations ne sont disponibles qu'à l
 \paragraph{ForestGOMP~\cite{Broquedis2010a}} est un support exécutif ciblant spécifiquement les architectures NUMA.
 Ils constatent que le parallélisme que permet d'exprimer OpenMP~2.5 est plat, et que cela pose problème lors de l'exploitation des machines NUMA.
 Étant donné que le parallélisme imbriqué peut être vu comme une forme de hiérarchie, ils proposent de superposer ce type de parallélisme sur la topologie des machines NUMA.
-Pour cela ils regroupent les threads imbriqués en \emph{bulles}, qui pourront ensuite être ordonnancé sur différents niveaux de la hiérarchie mémoire.
+Pour cela ils regroupent les threads imbriqués en \emph{bulles}, qui pourront ensuite être ordonnancés sur différents niveaux de la hiérarchie mémoire.
 
 
 ForestGOMP repose sur deux composants :
 \begin{itemize}
   \item MARCEL : ce composant est en charge de l'ordonnancement des \emph{bulles} sur la hiérarchie de la machine. Son objectif est de les placer au mieux, c'est-à-dire faire en sorte qu'elles soient exécutées par des cœurs d'un même nœud, et de les déplacer si l'équilibrage de charge le nécessite.
   \item MaMI : ce composant gère le placement et la migration des données manipulées par les \emph{bulles}.
-Il prend en charge une distribution initiale des données des différentes \emph{bulles}, qui sera pris en compte par MARCEL lors du placement initial des \emph{bulles}.
+Il prend en charge une distribution initiale des données des différentes \emph{bulles}, qui sera prise en compte par MARCEL lors du placement initial des \emph{bulles}.
 Lors de l'équilibrage de charge, MaMI permet la migration des données associées à la \emph{bulle} en marquant les pages manipulées, et en forçant le déplacement physique des pages proches du prochain thread qui touchera une page marquée (\emph{next-touch}).
 \end{itemize}
 
@@ -155,17 +154,17 @@ Ils montrent des gains significatifs de performances et une réduction de la con
 
 %Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
 \paragraph{Drebes et al.~\cite{Drebes2014}} ont implémenté des stratégies d'ordonnancement ciblant les architectures NUMA dans OpenStream.
-Le support exécutif fonctionne par vol de travail (avec une queue de tâches par cœur), et récupère des informations sur la hiérarchie mémoire via hwloc lors de son initialisation.
-Les tâches expriment leurs dépendances de données sur des \emph{buffer}, dans lesquels plusieurs peuvent écrire ou lire des données.
+Le support exécutif fonctionne par vol de travail (avec une file de tâches par cœur), et récupère des informations sur la hiérarchie mémoire via hwloc lors de son initialisation.
+Les tâches expriment leurs dépendances de données sur des \emph{buffers}, dans lesquels plusieurs peuvent écrire ou lire des données.
 Ces dépendances permettent non seulement de déterminer l'ordre d'exécution des différentes tâches, mais également de connaître précisément l'ensemble des données manipulées par plusieurs tâches, ainsi que leur taille.
 
 Leurs stratégies visent à améliorer la localité et la distribution des données au cours de l'exécution en jouant sur plusieurs facteurs.
 \begin{itemize}
-  \item Lors de la sélection d'une queue de tâches à voler, il va favoriser le vol sur les cœurs voisins.
-  \item Lors du placement des tâches prêtes, il va déterminer le nœud sur lequel sont alloués ses \emph{buffer} de données en entrée, et placer la tâche sur un cœur de ce nœud.
+  \item Lors de la sélection d'une file de tâches à voler, il va favoriser le vol sur les cœurs voisins.
+  \item Lors du placement des tâches prêtes, il va déterminer le nœud sur lequel sont alloués ses \emph{buffers} de données en entrée, et placer la tâche sur un cœur de ce nœud.
   \item Ils vont gérer l'allocation des \emph{buffers} des tâches de manière à garder le maximum de données locales.
 Lorsque l'allocation d'un \emph{buffer} est nécessaire (par exemple avant l'exécution d'une tâche qui écrit dedans), le support exécutif va regarder les différentes tâches qui contribuent à ce \emph{buffer} ainsi que la taille de leur contribution. À partir de là ils définissent la notion de \emph{dépendance forte} sur la tâche qui contribue le plus, et alloue le \emph{buffer} sur le nœud où va s'exécuter cette tâche.
-Si la tâche à l'origine de l'allocation a été volée, l'allocation est fait localement et ignore la \emph{dépendance forte} : cela permet de corriger des problèmes constatés sur des schémas de dépendances en forme d'arbre.
+Si la tâche à l'origine de l'allocation a été volée, l'allocation est faite localement et ignore la \emph{dépendance forte} : cela permet de corriger des problèmes constatés sur des schémas de dépendances en forme d'arbre.
 \end{itemize}
 
 Ils montrent que la combinaison de ces facteurs permet d'augmenter significativement le rapport du nombre d'accès locaux sur le nombre d'accès distant, et ce sur des classes d'applications variées.
