@@ -12,14 +12,19 @@ La topologie de l'interconnexion ne permet généralement pas d'avoir des nœuds
 
 Malgré le fait que les différentes parties de l'architecture soient physiquement séparées, le système d'exploitation voit l'ensemble comme une unique machine.
 
-Nous décrivons dans un premier temps les caractéristiques techniques communes d'un processeur multicœur d'un nœud dans les sections~\ref{sec:context:numa:cache}, et~\ref{sec:context:numa:node}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
+Nous décrivons dans un premier temps les caractéristiques techniques communes d'un processeur multicœur d'un nœud dans les sections~\ref{sec:context:numa:multicore}, puis celles des systèmes d'interconnexion des nœuds dans la section~\ref{sec:context:numa:interconnect}.
 Elles ont une influence directe sur le comportement du nœud au sein de la machine.
 
-\subsection{Des caches pour accélérer l'accès aux données}\label{sec:context:numa:cache}
+\subsection{À l'intérieur d'un processeur multicœur}\label{sec:context:numa:multicore}
+
+Les sections suivantes décrivent d'une part les différents caches (et leurs spécificités) présents dans les processeurs multicœurs et cruciaux pour avoir de bonnes performances~; mais aussi le parallélisme qu'ils peuvent exposer pour augmenter les performances, via des instructions ou composants matériel spécifiques.
+
+
+\subsubsection{Des caches pour accélérer l'accès aux données}\label{sec:context:numa:cache}
 
 Le cache est une mémoire pour laquelle le temps d'accès est bien meilleur que pour la mémoire centrale, mais dont la capacité est beaucoup plus restreinte. Il peut être spécifique à un cœur du processeur, ou partagé par plusieurs d'entre eux.
 
-\subsubsection{Fonctionnement}
+\paragraph{Fonctionnement}
 
 Au niveau des accès le fonctionnement d'un cache est légèrement différent de celui de la mémoire centrale : plutôt que de lire uniquement un octet, c'est généralement une partie fixe de la mémoire contenant cet octet qui est chargée.
 On appelle cette quantité une \emph{ligne de cache}, et un exemple de taille standard pour une ligne de cache est 64 octets (8 nombres réels double précision).
@@ -46,7 +51,7 @@ Le choix de la ligne à évincer est un sujet très étudié, et le prochain par
 
 
 
-\subsubsection{Associativité}
+\paragraph{Associativité}
 
 Le cache ne pouvant être suffisamment grand pour contenir toute la mémoire, il faut pouvoir déterminer l'association entre l'adresse d'une ligne dans la mémoire centrale et son emplacement dans le cache.
 Il y a trois grandes catégories d'associativité utilisées par les caches :
@@ -64,7 +69,7 @@ Hill et al.~\cite{Hill1989} illustre l'impact de l'associativité (dans la table
 Cela permet de dégager deux observations : d'une part qu'augmenter l'associativité permet de diminuer les cache miss.
 D'autre part que les défauts de cache ayant une forte associativité sont quasi exclusivement dus à la capacité du cache, alors que pour les caches à association directe les conflits d'adresse sont une part non négligeable des cache miss.
 
-\subsubsection{Niveaux de caches}
+\paragraph{Niveaux de caches}
 
 Il y a en général 3 niveaux de cache dans ces architectures :
 \begin{itemize}
@@ -121,7 +126,7 @@ Pour la latence, tout effet potentiel de ce composant est annulé par l'utilisat
 Comme on peut le voir sur ces chiffres, le coût d'accès à la mémoire principale est bien plus grand par rapport à l'accès des différents caches, et l'accès à la mémoire distante est tout simplement prohibitif.
 Les différentes caractéristiques de ces processeurs et des machines sur lesquels ils sont intégrés seront étudiées en détails dans la section~\ref{sec:contribs:machines}.
 
-\subsubsection{Politiques d'éviction}
+\paragraph{Politiques d'éviction}
 
 Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impact direct sur les performances, et les politiques de remplacement ont été très étudiées par les différents acteurs de la communauté académique et industrielle.
 
@@ -142,11 +147,11 @@ La politique pseudo-LRU semble être la plus utilisée par les fabricants de pro
 
 
 
-\subsection{Du parallélisme au sein du processeur pour augmenter la puissance de calcul}\label{sec:context:numa:node}
+\subsubsection{Du parallélisme au sein du processeur pour augmenter la puissance de calcul}\label{sec:context:numa:node}
 
 En plus des caches qui nous intéresseront tout particulièrement dans la suite de ce manuscrit, les processeurs ont également d'autres composants matériels dont il est important d'avoir conscience, mais qui ont une place plus limitée dans le contexte de cette thèse : il s'agit des instructions vectorielles et de l'hyperthreading, décrit ci-après.
 
-\subsubsection{Instructions vectorielles}\label{sec:context:numa:simd}
+\paragraph{Instructions vectorielles}\label{sec:context:numa:simd}
 
 Le concept de vectorisation est l'action d'appliquer une même instruction sur plusieurs données (ou un \emph{vecteur} de données) nécessitant la même opération.
 Ce type d'instructions est appelée SIMD, pour \emph{Single Instruction Multiple Data}.
@@ -178,7 +183,7 @@ La première d'entre elles, SSE (\emph{Streaming SIMD Extensions}), a été intr
 
 La plupart des processeurs actuels (depuis les Sandy Bridge d'Intel, et les Bulldozer d'AMD, en 2011) supportent au moins l'extension AVX avec des registres de 128 bits.
 
-\subsubsection{Hyperthreading}
+\paragraph{Hyperthreading}
 
 Chaque cœur possède un certain nombre d'UAL (Unité Arithmétique et Logique) qui lui sont privées. Lorsqu'il est en attente d'une donnée de la mémoire centrale, ces UALs ne sont pas utilisées, et des cycles CPU sont donc "perdus" à ne rien faire.
 

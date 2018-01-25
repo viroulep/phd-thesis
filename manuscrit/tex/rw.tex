@@ -1,14 +1,21 @@
-
-\begin{savequote}[6cm]
-<< Some other great quote  >>
-\qauthor{Someone}
-\end{savequote}
+%\begin{savequote}[6cm]
+%<< Some other great quote  >>
+%\qauthor{Someone}
+%\end{savequote}
 \chapter{État de l'art}\label{chap:rw}
 \chaptertoc
 
-L'objectif de ce chapitre est de donner un aperçu des travaux existant dans le contexte de cette thèse.
 
-Nous allons donc voir tout d'abord les différents supports exécutifs existant pour modèles de programmation à base de tâches, ensuite nous verrons les différentes techniques d'ordonnancement existantes pour cibler spécifiquement les machines NUMA, et enfin nous verrons les différents benchmarks existant pour étudier les performances des supports exécutifs.
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.5\textwidth]{schema-application-os}
+  \caption{Schéma des acteurs impliqués dans l'exécution d'une application}\label{fig:rw:application-os}
+\end{figure}
+
+L'objectif de ce chapitre est de donner un aperçu des travaux existant dans le contexte de cette thèse.
+Comme on peut le voir sur la figure~\ref{fig:rw:application-os}, un certain nombres d'acteurs sont impliqués dans l'exécution d'une application.
+
+Les parties application, système d'exploitation, et matériel ont été traitées dans le chapitre précédent~; ce chapitre ce concentrera dans un premier temps sur une partie précise des supports exécutifs, en abordant les différentes techniques d'ordonnancement existantes pour cibler spécifiquement les machines NUMA, puis nous verrons un état de l'art des supports exécutifs existant, et enfin nous ferons un point sur les compilateurs OpenMP.
 
 
 
