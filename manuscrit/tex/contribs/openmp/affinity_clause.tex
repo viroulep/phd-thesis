@@ -132,16 +132,5 @@ Les paramètres de la fonction correspondent aux paramètres de la clause :
 \subsection*{Conclusion}
 
 Le programmeur peut, à travers les extensions proposées, exprimer à la fois la distribution de données qu'il désire, ainsi que la manière dont la localité des données devrait être maintenu au cours de l'exécution de l'application.
+Ces extensions ont été implémentées dans le compilateur Clang~\footnote{https://gitlab.inria.fr/openmp/clang}. Afin de pouvoir utiliser les informations fournies par le programmeur, nous avons également du étendre le support exécutif~: les modifications effectuées sont décrites dans la section suivante.
 
-\begin{todo}
-  il faut que je résume ce que le programmeur donne, là où on l'a implémenté, et que j'ouvre sur le fait qu'on l'utilise au runtime pour enchainer sur la section suivante.
-\end{todo}
-
-%L'implémentation proposée pour |omp_get_node_from_data| repose sur les informations disponibles à travers l'appel système de Linux |get_mempolicy|.
-
-%We implemented these extensions in the Clang compiler, based on the 3.8 version\footnote{https://github.com/viroulep/clang}; and we also added the corresponding entry points in Clang's OpenMP runtime\footnote{https://github.com/viroulep/openmp}.
-
-%Please note only the entry points have been implemented in Clang's OpenMP runtime, the actual runtime support has only been implemented in our OpenMP runtime and is described in the following section.
-
-
-%ouvrir sur support exécutif

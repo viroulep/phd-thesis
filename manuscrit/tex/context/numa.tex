@@ -31,7 +31,7 @@ Lorsqu'une instruction demande le chargement d'une valeur située en mémoire, l
 \end{description}
 
 %(je vire ça vu qu'on ne parle de niveaux de cache que plus tard) Si le cœur a accès à plusieurs niveaux de cache, la requête est transférée au niveau supérieur, et seul le dernier niveau effectue la requête à la mémoire centrale.
-Une fois qu'une ligne est chargée dans le cache, elle n'y reste pas de manière permanente, plusieurs raisons décrites ci-après peuvent entraîner son \emph{éviction} du cache :
+Une fois qu'une ligne est chargée dans le cache, elle n'y reste pas de manière permanente, plusieurs raisons décrites ci-après peuvent entraîner son \emph{éviction} du cache~:
 
 \begin{itemize}
   \item Le maintien de la cohérence : lorsqu'un cœur modifie une ligne de cache dans son propre cache, cette même ligne est \emph{invalidée} dans les caches des autres processeurs qui en disposent d'une version.

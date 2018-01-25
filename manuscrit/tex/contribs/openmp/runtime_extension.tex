@@ -78,11 +78,6 @@ Ces deux stratégies pourront servir de base de comparaison avec les stratégies
   \item [sNumaProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_numa_proc}~; elle est similaire à la précédente, mais l'ordre de parcours est inversé : après avoir visité sa propre file (1) le voleur regarde d'abord les files des nœuds NUMA (2) avant de regarder les files des cœurs (3, 4). De même que pour la stratégie précédente, le reste de la topologie est parcourue de manière similaire (5, 6, 7).
 \end{description}
 
-\begin{todo}
-  Faire un schéma avec toutes les places, et griser celles non concernées par la stratégie
-  Numéroter les places avec l'ordre de visite !
-\end{todo}
-
 
 \subsection{Distribution des tâches d'initialisation}
 
