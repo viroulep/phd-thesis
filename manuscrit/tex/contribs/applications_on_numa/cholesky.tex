@@ -42,9 +42,7 @@ Ce noyau effectue une multiplication de matrices génériques, définie de la ma
   \caption{Itération du rang k de la factorisation de Cholesky}\label{fig:contribs:apps:cholesky:rank-update}
 \end{figure}
 
-\paragraph{L'algorithme par bloc}
-
-L'algorithme peut se formuler de la manière suivante~:
+\paragraph{Algorithme par bloc~:} plusieurs manières d'exprimer l'algorithme par bloc existent, dans PLASMA~\cite{Kurzak2013} il est formulé de la manière suivante~:
 
 \begin{lstlisting}[language=c++]
 for (int k = 0; k < n_blocs; k++) {
@@ -71,7 +69,7 @@ Pour permettre de mieux représenter l'algorithme, les opérations se produisant
 Le parallélisme de l'algorithme est donc principalement libéré par les \potrf ainsi que les \trsm.
 
 Cela peut être illustré par la Figure~\ref{fig:contribs:apps:cholesky:dag-5}, qui donne le graphe de dépendances d'une factorisation de Cholesky de largeur 5.
-Le chemin critique de l'application est mis en valeur avec des liens en gras. Comme on peut le constater, tous les \potrf se trouvent sur ce chemin critique.
+Le chemin critique de l'application (en considérant un coût de 1 par tâche) est mis en valeur avec des liens en gras. Comme on peut le constater, tous les \potrf se trouvent sur ce chemin critique.
 
 \begin{figure}[h]
   \centering
@@ -180,6 +178,14 @@ Ce comportement a également été observé pour d'autres tailles de blocs. Sur 
   %https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
   % sandy bridge : https://tu-dresden.de/zih/forschung/ressourcen/dateien/abgeschlossene-projekte/benchit/2014_MSPC_authors_version.pdf?lang=en
   % haswell : https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
+\end{todo}
+
+\begin{todo}
+  J'ai fait les courbes en bloc 96, à ajouter
+\end{todo}
+
+\begin{todo}
+  dgemm à la main ? (pour exclure effect des instructions vectorielles ou autres
 \end{todo}
 
 \subsubsection{Impact de la localité des accès}\label{sec:contribs:apps:cholesky:locality}
