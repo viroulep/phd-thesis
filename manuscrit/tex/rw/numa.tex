@@ -187,30 +187,8 @@ Des travaux similaires ont été effectués par Yu et al.~\cite{Yu2017} sur des 
 \subsection*{Conclusion}
 
 Tous ces travaux ont eu un impact sur les idées que nous avons développé au cours de la thèse, mais ceux prenant en compte à la fois la hiérarchie mémoire, le placement des calculs par rapport aux données, et le contrôle du placement des données nous semblent les plus intéressant dans notre contexte.
-Tous les travaux décrits dans cette section ont été effectués avant l'introduction des tâches avec dépendances dans OpenMP, nous avons donc pu exploiter des informations additionnelles par rapport à eux.
 
-\begin{todo}
-est-ce qu'il faut se positionner dès maintenant par rapport à l'état de l'art (et donc spoiler ce qu'on présente en chap 5) ?
-\end{todo}
+Les travaux que nous mettons en avant dans le chapitre~\ref{chap:contrib:openmp} se basent sur une combinaison des idées évoquées~: nous suivons une approche où l'on tire parti des informations présentes concernant la hiérarchie de la machine, et où nous proposons de contrôler à la fois le placement des données, et à la fois la localité des données tout au long de l'exécution de l'application.
 
-%Le chapitre~\ref{chap:contrib:openmp} introduit nos contributions 
-
-
-
-%\subsection{inclassés}
-
-%\cite{Selva2015}, (thèse) Performance Monitoring of Throughput Constrained Dataflow Programs Executed On Shared-Memory Multi-core Architectures
-
-%\cite{Zhuravlev2012}, Survey of Scheduling Techniques for Addressing Shared Resources in Multicore Processors
-%Travaux point de vue OS, pour un processeur multicoeurs (UMA !).
-%Contention-aware scheduler.
-%Cool, mais seulement à l'intérieur d'un noeud.
-
-
-%\cite{Marowka2004}, OpenMP-oriented applications for distributed shared memory architectures
-  %%\item NUMA (with ref to the "main" chapter)
-  %%\item task + Workstealing (with ref to the "main" chapter)
-
-
-%\cite{Tchiboukdjian2010}, A Work Stealing Scheduler for Parallel Loops on Shared Cache Multicores
-
+Contrairement aux travaux décrits dans cette section, nous avons accès à plus d'information à travers les dépendances des tâches. Nous proposons également une clause supplémentaire pour permettre à l'utilisateur de fournir des informations explicite concernant l'affinité éventuelles entre les tâches et leurs données.
+Cela nous permet donc d'effectuer des choix pertinents vis à vis de l'application, en nous basant sur l'emplacement physique réel des données des tâches, que l'utilisateur peut également distribuer lors de l'initialisation de l'application via une autre clause spécifique.
