@@ -3,23 +3,77 @@
 Il existe un certain nombres d'autres supports exécutifs, pour OpenMP comme d'autres modèle de programmation.
 Les sections ci après introduisent ceux ayant des thématiques très proches de cette thèse.
 
-\subsection{Kaapi}
+\subsection{XKaapi}
 
-Kaapi~\cite{Gautier2007} est un support exécutif à base de tâche avec dépendances, ciblant les architectures multicœurs ou hétérogène.
-Il dispose d'une couche - libKOMP~\cite{Broquedis2012} - implémentant à la fois les ABIs de libGOMP et libOMP, ce qui permet de l'utiliser directement en compilant via GCC ou Clang, et en changeant le support exécutif chargé à l'exécution.
+XKaapi~\cite{Gautier2007} est un support exécutif, à base de tâche avec dépendances, ciblant les architectures multicœurs et hétérogènes.
+Il repose sur hwloc pour découvrir la topologie de la machine, et utilise ces informations à de multiples endroits.
 
-Son moteur d'ordonnancement fonctionne par vol de travail.
-Le support exécutif dispose d'une vision hiérarchique de la machine, ce qui a pu offrir une base propice pour l'ajout d'heuristiques d'ordonnancement plus complexes que celles initialement présentes (décrites en section~\ref{sec:contrib:ws:heuristics}).
+XKaapi dispose d'un nombre important de fonctionnalités spécifiques à l'ordonnancement de tâches.
+Une attention particulière a été portée au coût de création des tâches au sein du support exécutif, qui a été diminué au maximum (TODO : ref needed).
+Le moteur d'ordonnancement de XKaapi fonctionne par vol de travail, et implémente les étapes critiques de \emph{sélection} et de \emph{placement} décrites dans la section~\ref{sec:context:runtimes:ws}. Il est facile d'ajouter des heuristiques additionnelles pour ces deux étapes, ce qui nous a permis d'implémenter dans ce support exécutifs les extensions décrites dans la section~\ref{sec:contrib:ws:heuristics}.
 
-L'outil de génération de traces disponible permet également une analyse pointue du comportement des applications, à travers les compteurs de performances matériels et une analyse par type de tâche.
+Le nombre de files de tâches repose sur les informations fournies par hwloc~: XKaapi implémente une file de tâches par niveau de la hiérarchie (i.e.~: une file par cœur, une file par nœud NUMA, etc...), qui sont éventuellement utilisées par les heuristiques.
+
+Pour la gestion de ces files, XKaapi implémente le protocole THE~\cite{cilk5} proposé par Cilk. Ce protocole permet de faire de manière non bloquante des accès concurrent à la même file de tâche. Le principe est le suivant~: le \emph{voleur} - distant - va venir prendre des tâches en tête de file, et la \emph{victime} (ou le thread local) va venir ajouter ou retirer des tâches en queue de file.
+Le seul conflit se produit lorsque la file n'a qu'un seul élément, et il peut être résolu par un simple \emph{compare-and-swap}, se traduisant par un échec de la requête pour l'un, et un succès pour l'autre.
+
+En plus de l'utilisation de ce protocole, XKaapi peut effectuer de l'agrégation de requêtes de vols~: lorsque plusieurs voleur font effectuer des requêtes sur la même victime, seul le premier voleur arrivé va effectuer la requête de vol, et récupérer suffisamment de tâche pour l'ensemble des voleurs.
+Les gains théoriques liés à ce mécanismes ont été étudiés par Tchiboukdjian et al.~\cite{Tchiboukdjian2010a}.
+
+Pour observer le comportement des applications exécutées, il dispose d'un outil de génération de traces.
+Cela permet une analyse pointue du comportement de l'application, à travers les compteurs de performances matériels et une analyse par type de tâche.
+Cet outil nous a permis de faire des observations préliminaires déjà très poussées, sur une étude de cas abordée dans la section~\ref{sec:contribs:apps:cholesky:observations}.
+
+XKaapi est principalement utilisé comme prototype de recherche, et a été utilisé pour l'implémentation de certains travaux proches des thématiques de cette thèse, en particulier celle de la localité des données~\cite{Durand2013, Bleuse2014, Lima2015}.
+
+Enfin il dispose d'une couche de compatibilité pour OpenMP, nommée libKOMP~\cite{Broquedis2012}.
+Cette couche implémente à la fois les ABIs de libGOMP et libOMP, ce qui permet de l'utiliser pour exécuter des programmes OpenMP~4.5 directement en compilant via GCC ou Clang, et en changeant le support exécutif chargé à l'exécution.
+
+
+
+\subsection{libGOMP}
+
+libGOMP~\cite{Novillo2006} est le support exécutif OpenMP fourni avec le compilateur GCC.
+
+Au niveau des fonctionnalités, il implémente la totalité du standard OpenMP~4.5.
+Comme la majorité des supports exécutifs, libGOMP réutilise les threads qui sont créés entre différentes région parallèles successives, pour éviter d'avoir à payer le coût de destruction/création d'un thread inutilement.
+Les gestion des constructions à base de boucles et de tâches sont complètement séparées dans le support exécutif.
+Vis à vis de la hiérarchie de l'architecture cible, il n'y a aucune disposition particulière pour essayer de la prendre en compte.
+
+Pour la gestion des tâches, il a des différences majeures dans la manière de fonctionner par rapport à XKaapi~: il fonctionne bien par vol de travail, mais en revanche il n'y a qu'une seule file de tâches par \emph{team}, et donc une seule file pour l'ensemble des threads !
+Si fonctionnellemment cette caractéristiques n'est pas un problème, cela peut avoir un impact sur les performances compte tenu du fait que tous les threads devront se synchroniser pour accéder à la même struture de données.
+Cela se voit d'ailleurs sur la figure~\ref{fig:context:granularity} illustrant l'impact de la granularité des tâches~: pour des petites tailles de bloc (et donc un grand nombre de tâches), libGOMP est loin derrière à cause du surcout entrainé par la gestion de la liste de tâches.
+(cf figure 2.4 sur la granularité)
+
+Néanmoins, en tant que support exécutif grand public et largement utilisé, il constitue une référence intéressante.
+
+\subsection{libOMP}
+
+libOMP est le support exécutif OpenMP fourni avec le compilateur Clang, directement basé sur le support exécutif d'Intel fourni avec ICC.
+Ils partagent donc exactement les même caractéristiques.
+
+Compte tenu du fait qu'il a été développé à la base par des développeurs d'Intel, une partie de ses fonctionnalités ont été motivées par l'exploitation du matériel produit par Intel comme le Xeon Phi.
+
+De manière similaire à libGOMP, la gestion des boucles et des tâches est séparée, et les threads (et même les \emph{teams} et leurs structures de données associées) sont réutilisés par les régions parallèles successives.
+
+En revanche libOMP se distingue de libGOMP de part ses structures de données~: chaque thread d'une \emph{team} possède une file de tâche propre.
+Il conserve donc un fonctionnement très proche de XKaapi, dans le sens où il passe par des fonctions de \emph{sélection} et \emph{placement} lors du vol de travail.
+Les heuristiques de base pour ces fonctions sont les suivantes~: la sélection a lieu aléatoirement parmi les file de tâches disponibles~; lors de vols successifs, le voleur essaye en priorité la dernière file dans laquelle il a réussi à voler une tâche. Le placement a lieu dans la file du thread courant.
+
+Bien que ce mécanisme n'ait pas été initialement conçu pour permettre d'interchanger des stratégies, cela proposait une base suffisamment solide pour accueillir les extensions que nous proposons dans le chapitre~\ref{chap:contrib:openmp}.
+Les modifications que nous avons apporté à ce support exécutif sont détaillées dans la section~\ref{sec:contribs:perf_eval:libkomp}.
 
 
 \subsection{OmpSs}\label{subsec:rw:ompss}
 
-OmpSs~\cite{OMPSs} est un modèle de programmation visant à étendre OpenMP, visant à étendre le support du parallélisme asynchrone (à base de tâches avec dépendances par exemple), et de l'hétérogénéité.
+OmpSs~\cite{OMPSs} est un modèle de programmation visant à étendre OpenMP, en particulier le support du parallélisme asynchrone (à base de tâches avec dépendances par exemple), et de l'hétérogénéité.
 La syntaxe est les détails dans l'utilisation peuvent être légèrement différents, mais les constructions et concepts restent les même.
-
 OmpSs est composé d'un compilateur, \emph{Mercurium}, et d'un support exécutif \emph{Nanos++}.
+
+Du point de vue de la gestion des tâches, Nanos fonctionne également par vol de travail.
+Par défaut l'ordonnanceur fonctionne à l'aide d'une unique file de tâches à priorité, néanmoins l'interface de base d'un ordonnanceur doit fournir les fonctions |getReadyTask| et |addReadyTask|, qui sont équivalente aux fonctions de sélection et placement déjà évoquées.
+Il ne dispose pas d'ordonnanceur prenant en compte la localité des données, mais certains d'entre eux disposent de file de tâches associées à certains éléments de la hiérarchie (cœur ou nœud NUMA).
+
 
 \subsection{OpenStream}
 
@@ -49,6 +103,3 @@ La création de tâches se fait à l'aide d'appels au support exécutif, et en p
 Cela permet donc à QUARK de déterminer un ordre d'exécution sur les tâches pour son ordonnancement.
 L'avantage principal de QUARK par rapport aux autres modèle de programmation similaires est qu'il propose des extensions spécifiques à certains algorithmes d'algèbre linéaire présent dans PLASMA.
 
-\subsection{libGOMP}
-
-\subsection{libOMP}
