@@ -153,10 +153,10 @@ D'autres part, ces applications et expériences ont permises de mettre en évide
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{jacobi_scale_noaff}
-  \caption{Comparaison des performances de Jacobi, avec une taille de matrice de 49152}\label{fig:contribs:openmp:kastors:jacobi-motiv}
+  \caption{Comparaison des performances de Jacobi sur idchire, avec une taille de matrice de 49152}\label{fig:contribs:openmp:kastors:jacobi-motiv}
 \end{figure}
 
-La figure~\ref{fig:contribs:openmp:kastors:jacobi-motiv} regroupe une comparaison de l'application de jacobi en fonction de la version implémentée (à base de boucles ou de tâche avec dépendances) et du support exécutif.
+La figure~\ref{fig:contribs:openmp:kastors:jacobi-motiv} regroupe une comparaison de l'application de jacobi en fonction de la version implémentée (à base de boucles ou de tâche avec dépendances) et du support exécutif, effectuée sur idchire.
 La scalabilité de l'application en elle même est limitée, mais il n'y a pas de raison, a priori, qu'il y ait une dégradation de performances de l'application avec l'augmentation du nombre de cœurs.
 Jacobi est une application stencil, et chacune des tâches successives (ou groupe d'itérations pour la version à base de boucles) dépend énormément de la réutilisation du cache L2~: la structure de tâches ne permet pas d'exprimer ce genre de <<dépendances>>, lors de l'ordonnancement certaines tâches vont se faire voler et briser la localité du cache L2, introduisant une grosse dégradation des performances.
 

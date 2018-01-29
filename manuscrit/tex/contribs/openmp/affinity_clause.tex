@@ -3,7 +3,7 @@
 \subsection{Description du besoin}
 
 Dans un contexte où l'on souhaite améliorer le contrôle sur les tâches et leurs données, OpenMP~4.0 ne propose pas grand chose d'efficace.
-Les fonctionnalités les plus proche que nous pourrions utiliser sont les |OMP_PLACES| et |OMP_PROCBIND|, mais cela n'a d'effet que sur le placement des threads sur la topologie, et non sur les tâches qui leur sont attribuées. Il n'y a rien au sein d'OpenMP qui permet d'exprimer une relation entre une tâche et une partie de la topologie de la machine.
+Les fonctionnalités les plus proche que nous pourrions utiliser sont les |OMP_PLACES| et |OMP_PROCBIND|, mais cela n'a d'effet que sur le placement des threads sur la topologie, et non sur les tâches qui leur sont attribuées. Il n'y a rien au sein d'OpenMP qui permet d'exprimer une relation entre une tâche et une donnée ou une partie de la topologie de la machine.
 
 En dehors d'OpenMP, les programmeurs utilisent généralement des bibliothèques ou outils externes dans le but de contrôler le placement des données~\cite{Pousa2009, Broquedis2010a}.
 Ces approches peuvent être soit inefficaces (comme dans le cas de \emph{numactl}), ou relativement intrusive (dans le cas de l'utilisation d'une bibliothèque externe).
@@ -129,8 +129,16 @@ Les paramètres de la fonction correspondent aux paramètres de la clause :
 \end{description}
 
 
-\subsection*{Conclusion}
+\subsection{Notes d'implémentation}
 
-Le programmeur peut, à travers les extensions proposées, exprimer à la fois la distribution de données qu'il désire, ainsi que la manière dont la localité des données devrait être maintenu au cours de l'exécution de l'application.
-Ces extensions ont été implémentées dans le compilateur Clang~\footnote{https://gitlab.inria.fr/openmp/clang}. Afin de pouvoir utiliser les informations fournies par le programmeur, nous avons également du étendre le support exécutif~: les modifications effectuées sont décrites dans la section suivante.
+Les extensions ont été implémentées dans le compilateur Clang~\footnote{https://gitlab.inria.fr/openmp/clang}, en nous basant sur la version~3.9.
 
+Pour intégrer ces extensions, nous avons dans un premier temps étendu différentes parties du \emph{frontend} de Clang~: la partie en charge de l'analyse syntaxique, pour permettre la compréhension des nouvelles clauses et l'enrichissement de l'arbre syntaxique abstrait avec les informations présentes~;
+et la partie en charge de l'analyse sémantique afin d'appliquer certaines restrictions sur les clauses (telles que les constructions sur lesquelles elles peuvent être appliquées, ou le type des données attendu).
+
+Dans un second temps nous avons étendu la génération de code, en ajoutant différents point d'entrée dans l'ABI et en passant les données présentes dans l'arbre.
+
+L'ajout des nouveaux points d'entrées dans l'ABI signifie qu'il faut également rajouter leur prise en compte dans le support exécutif, et que du code (contenant des affinités) compilé par notre version modifiée du compilateur n'est pas compatible avec des supports exécutif n'implémentant pas ces points d'entrée.
+
+
+L'extension du support exécutif et l'utilisation des informations fournies par le programmeur sont décrites dans la section suivante.

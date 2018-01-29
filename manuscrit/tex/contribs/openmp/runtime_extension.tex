@@ -2,7 +2,7 @@
 
 Cette partie complète la section précédente, puisqu'elle se concentre sur l'exploitation des informations fournies par l'utilisateur, ainsi que sur la prise en compte des architectures NUMA côté support exécutif.
 
-Ces extensions ciblent des supports exécutifs fonctionnant par vol de travail (voir section~\ref{sec:context:runtimes:ws}), et ont été implémenté dans Kaapi ainsi que libKOMP (TODO: ref aux sections décrivant ça ?).
+Ces extensions ciblent des supports exécutifs fonctionnant par vol de travail (voir section~\ref{sec:context:runtimes:ws}), et ont été implémenté dans Kaapi ainsi que libKOMP (voir section~\ref{sec:contribs:perf_eval:portage_libkomp}).
 
 \subsection{Hiérarchiser le support exécutif}
 
@@ -77,6 +77,39 @@ Ces deux stratégies pourront servir de base de comparaison avec les stratégies
     Si cela également, le reste de la topologie sera parcourue de manière similaire : un nœud sera choisi aléatoirement, les files des cœurs puis celle du nœud seront visitées.
   \item [sNumaProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_numa_proc}~; elle est similaire à la précédente, mais l'ordre de parcours est inversé : après avoir visité sa propre file (1) le voleur regarde d'abord les files des nœuds NUMA (2) avant de regarder les files des cœurs (3, 4). De même que pour la stratégie précédente, le reste de la topologie est parcourue de manière similaire (5, 6, 7).
 \end{description}
+
+\subsubsection{Résultats préliminaires~: comparaison des stratégies}
+\label{sec:openmp:runtime:preliminary_results}
+
+Lorsque nous avons proposé ce travail a EuroPar 2016, nous avions implémentées ces stratégies dans XKaapi~\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/xkaapi.git, branche 'public/europar2016'} et effectué nos expériences sur idchire.
+La configuration de la machine et de son environnement était significativement différente de celle présentée dans cette thèse~: à la fois au niveau matériel étant donné que la machine était configurée avec des \emph{huge page}, et à la fois au niveau logiciel, les KASTORS et les supports exécutifs ayant subit plusieurs changements.
+Une comparaison directe avec nos résultats récents de la section~\ref{sec:contribs:perf_eval} serait trompeuse, nous faisons donc un point dès maintenant sur comment nos choix ont été guidés.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{graph_all_strat_idchire}
+  \caption{Performances des différentes stratégies pour Cholesky (N=32768, BS=512)}\label{fig:contribs:perf_eval:eval-strategies}
+\end{figure}
+
+La figure~\ref{fig:contribs:perf_eval:eval-strategies} regroupe les performances de ces stratégies sur un exemple représentatif de leur comportement~: une factorisation de Cholesky sur une matrice de taille 32768 avec une taille de bloc de 512.
+Les meilleures performances de GCC sont indiquées comme repère.
+
+Parmi les stratégies choisies il y a~:
+\begin{itemize}
+  \item Deux stratégies <<naïves>> avec vol de travail aléatoire, soit au niveau des cœurs (1), soit au niveau des nœuds (2)
+  \item Une stratégie prenant en compte l'affinité, mais n'effectuant la gestion des tâches qu'au niveau des nœuds (3)
+  \item Quatre stratégies prenant en compte l'affinité et favorisant un placement des tâches à deux niveaux (dans la file du nœud NUMA si l'affinité pointe sur un nœud distant, ou dans la file du cœur courant si l'affinité pointe vers le nœud local). La différence entre les stratégies 4, 5, 6, et 7 réside dans la stratégie de sélection des victimes lors du vol de travail.
+\end{itemize}
+
+La première chose à remarquer est que les stratégies a priori naïves offre des performances tout à fait acceptables (libGOMP via GCC, 1, et 2) !
+
+Deux stratégies sortent clairement du lot~: 6 et 7. Leur spécificité commune est qu'elles utilisent complètement les deux niveaux de hiérarchie, tant lors du placement des tâches que lors de la sélection d'une victime à voler.
+Leur différence est uniquement l'ordre de parcours des files de tâches~: 7 commence par essayer de voler les nœuds puis ensuite les cœurs, 6 fait l'inverse (une description détaillée avec des schémas est donnée dans la section~\ref{sec:contrib:ws:heuristics}).
+
+Conserver un placement hiérarchique mais avoir une sélection principalement sur un seul niveau de hiérarchie n'est pas concluant (4 et 5).
+Prendre en compte l'affinité mais ne faire du placement ou de la sélection que parmi les files des nœuds NUMA (3) offre des performances juste équivalente à une stratégie basique de vol de travail (1).
+
+Nous avons donc conclu que le plus bénéfique était de prendre complètement en compte la hiérarchie de la machine ainsi que le placement des données, et la stratégie 7 est celle que nous avons implémentée lorsque nous avons portée nos idées dans le support exécutif libOMP (décrit en section~\ref{sec:contribs:perf_eval:libkomp}).
 
 
 \subsection{Distribution des tâches d'initialisation}
