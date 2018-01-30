@@ -106,7 +106,7 @@ Certains supports exécutifs permettent d'aller plus loin via un système de tra
   \caption{Évolution des performances de Cholesky pour une taille de matrice de 8192 et une taille de bloc de 224}\label{fig:contribs:apps:cholesky:overview-8192-224}
 \end{figure}
 
-Pour illustrer cela, prenons un exemple d'évolution des performances de Cholesky en fonction du nombre de cœurs utilisés, montré sur la figure~\ref{fig:contribs:apps:cholesky:overview-8192-224}. Dans cette exemple la taille de matrice est de 8192, la taille de bloc de 224, et le support exécutif utilisé est libKOMP.
+Pour illustrer cela, prenons un exemple d'évolution des performances de Cholesky en fonction du nombre de cœurs utilisés, montré sur la figure~\ref{fig:contribs:apps:cholesky:overview-8192-224}. Dans cette exemple la taille de matrice est de 8192, la taille de bloc de 224, et le support exécutif utilisé est libKOMP sans aucune extension relative à l'affinité des données.
 
 En activant le support des traces, on peut avoir plus de détails sur l'exécution individuelle de chacune des tâches.
 
@@ -118,8 +118,15 @@ En activant le support des traces, on peut avoir plus de détails sur l'exécuti
 
 La figure~\ref{fig:contribs:apps:cholesky:distrib-overview-8192-224} montre, pour chaque type de tâche (ou \emph{noyau}), la répartition du temps d'exécution (en cycles) en fonction du nombre de cœurs.
 
-À part pour 16 cœurs, on peut constater que la répartition est assez large~: pour un \gemm sur 192 cœurs, le nombre de cycles nécessaire pour l'exécution peut varier du simple au double !
-Nous souhaiterions donc identifier d'où vient ce phénomène, afin d'éventuellement le corriger, et retomber sur un pic de performance clair et stable (comme par exemple pour la distribution des \potrf sur 16 cœurs).
+On constate deux types de répartitions~:
+\begin{itemize}
+  \item Une distribution relativement restreinte des cycles de chaque noyau, typiquement observée pour 16 cœurs.
+    La distribution peut avoir plusieurs pics~: pour \gemm sur 16 cœurs par exemple.
+    Cela pourrait être expliqué par le nombre de cas possible pour le placement des blocs de données manipulés par le noyau~: avec 16 cœurs il y a 2 nœuds impliqués, et donc 4 cas pour la position des blocs (3 locaux, 2 locaux, 1 local, 3 distants), ce qui pourrait correspondre aux 4 niveaux de performances observés.
+  \item Une distribution relativement large, typiquement observée pour un grand nombre de cœur. Pour un \gemm sur 192 cœurs, le nombre de cycles nécessaire pour l'exécution peut varier du simple au double !
+\end{itemize}
+
+Nous souhaiterions identifier d'où vient cette évolution dans la distribution, afin d'éventuellement la corriger pour retomber sur un pic de performance clair et stable (comme par exemple pour la distribution des \potrf sur 16 cœurs).
 
 Malheureusement il n'existait pas, à notre connaissance, d'outil permettant d'isoler une (ou plusieurs) tâches d'une application, et permettant de changer certains paramètres prédéfinis pouvant avoir un impact sur le temps d'exécution de la tâche.
 Nous avons donc utilisé \outil dans le but de comprendre et d'analyser plus en profondeur nos observations préliminaires.
@@ -180,14 +187,6 @@ Ce comportement a également été observé pour d'autres tailles de blocs. Sur 
   % haswell : https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
 \end{todo}
 
-\begin{todo}
-  J'ai fait les courbes en bloc 96, à ajouter
-\end{todo}
-
-\begin{todo}
-  dgemm à la main ? (pour exclure effect des instructions vectorielles ou autres
-\end{todo}
-
 \subsubsection{Impact de la localité des accès}\label{sec:contribs:apps:cholesky:locality}
 
 La section~\ref{sec:contribs:machines} a montré des différences significatives dans les temps d'accès à la mémoire locale et distante.
@@ -227,9 +226,7 @@ Cette distribution montre un unique pic bien définie pour chaque noyau (environ
 En revanche le passage à 26 cœurs (avec donc 2 cœurs situés seuls sur un autre nœud), montre une distribution avec deux pics~: un pic important correspondant au 24 premiers cœurs, et un second pic plus petit, montrant des performances beaucoup plus grandes, pour les 2 cœurs situé sur l'autre nœud.
 Les autres panneaux montrent l'évolution de ces pics pour arriver au panneau 48, où les deux nœuds sont complètement utilisés.
 
-\begin{todo}
-  Ici il y a aussi deux pics sur le panneau 48. Cela doit venir de la manière dont j'ai initialisé les accès distants : le premier nœud utilise des données du deuxième nœud, qui utilise des données du troisième nœud. Donc en pratique les liens du deuxième nœuds sont plus utilisés que ceux du premier : il doit donc un peu peiner à fournir les données nécessaires au premier nœud, ce qui expliquerait pourquoi il y a deux groupes de perf.
-\end{todo}
+%Note : Ici il y a aussi deux pics sur le panneau 48. Cela doit venir de la manière dont j'ai initialisé les accès distants : le premier nœud utilise des données du deuxième nœud, qui utilise des données du troisième nœud. Donc en pratique les liens du deuxième nœuds sont plus utilisés que ceux du premier : il doit donc un peu peiner à fournir les données nécessaires au premier nœud, ce qui expliquerait pourquoi il y a deux groupes de perf.
 
 
 L'impact de la localité des données est majeure dans le cas où le jeu de données manipulé par l'ensemble des cœurs ne tient pas dans le cache L3.

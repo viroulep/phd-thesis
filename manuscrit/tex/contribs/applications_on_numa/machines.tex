@@ -6,13 +6,11 @@ La seconde, \emph{brunch}, est basé sur des processeurs Intel plus récents de 
 
 \subsection{idchire}\label{sec:contribs:machines:idchire}
 
-\begin{todo}
-  Faire référence aux chiffres de latences/BP des caches du chapitre 2 (table 2.1)
-\end{todo}
 
 Cette machine est équipée de 24 processeurs Intel(R) Xeon(R) CPU E5-4640 (Sandy Bridge), cadencés à 2.4 GHz.
 Chacun de ce processeurs est associé à 31 Go de RAM pour former un nœud NUMA, ils disposent de 8 cœurs physiques partageant 20 Mo de cache L3 (20-ways associatif).
 Chacun des cœur à accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2 (8-ways associatif).
+Les latences et bandes passantes relatives à chacun des niveaux de cache sont présentées dans le tableau~\ref{tab:synthese-processeurs}.
 
 La machine entière dispose donc de 192 cœurs physiques, et de 744 Go de RAM.
 Les processeurs Sandy Bridge disposent de l'extension vectorielle AVX, permettant d'effectuer 4 additions et 4 multiplication de nombres flottant à double précision en un cycle, portant le pic de performance théorique de la machine à 3.6 TFLOPs.
@@ -80,6 +78,7 @@ Cette machine est équipée de 4 processeurs Intel(R) Xeon(R) CPU E7-8890 v4 (Br
 
 Chacun de ce processeurs est associé à 378 Go de RAM pour former un nœud NUMA, ils disposent de 24 cœurs physiques partageant 60 Mo de cache L3 (20-ways associatifs).
 Chacun des cœur à accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2.
+Les latences et bandes passantes relatives à chacun des niveaux de cache sont présentées dans le tableau~\ref{tab:synthese-processeurs}.
 
 La machine entière dispose donc de 96 cœurs physiques, et de 1.5 To de RAM.
 Les processeurs Broadwell disposent d'instructions FMA~\footnote{\emph{Fused Multiply-Add}, permettant d'effectuer une addition et une multiplication en une étape}, permettant d'effectuer 8 additions et multiplications de nombres flottant à double précision en un cycle, portant le pic de performance théorique de la machine à 3.3 TFLOPs.

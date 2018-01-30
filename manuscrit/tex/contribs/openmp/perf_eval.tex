@@ -144,21 +144,41 @@ Compte tenu des résultats montrés dans la section~\ref{sec:contribs:apps:chole
 
 \paragraph{Évolution en fonction du nombre de cœurs}
 
+La figure~\ref{fig:contribs:perf_eval:eval-cholesky-idchire} illustre l'évolution de l'impact de l'affinité en fonction du nombre de cœurs et de la taille de matrice sur idchire.
+
+
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\textwidth]{graph_all_cholesky_brunch}
-  \caption{Graphe incomplet des perfs de cholesky sur brucnh}\label{fig:contribs:perf_eval:eval-cholesky-brunch}
+  \includegraphics[width=\textwidth]{graph_all_cholesky_idchire}
+  \caption{Performance en fonction du nombre de cœurs et de la taille de matrice sur idchire}\label{fig:contribs:perf_eval:eval-cholesky-idchire}
 \end{figure}
 
-blabla 
+Comme pour les expériences précédentes, les tailles de blocs correspondantes sont 256 pour la taille 8192, et 512 pour la taille 32768.
+Les deux tailles de matrice choisies représentent les deux situations décrites précédemment~: dans un cas les données des noyaux de Cholesky tiennent dans le cache L3, dans l'autre non.
+Dans le cas d'une petite taille de bloc on peut constater que la courbe de libKOMP se situe entre libOMP et libGOMP, ne donnant donc aucun résultat concluant, voir même étant coûteux par rapport à un simple vol de travail aléatoire comme dans libOMP !
+Pour une grosse taille de bloc en revanche c'est clair et net~: après avoir suivi le même départ, les courbes divergent. Les supports exécutif libOMP et libGOMP affichent les même performances, tandis que l'affinité offre un net gain.
 
+\begin{figure}[t!]
+  \centering
+  \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads}
+  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur idchire}\label{fig:contribs:perf_eval:eval-qr-cholesky-idchire}
+\end{figure}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads_brunch}
+  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur brunch}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
+\end{figure}
+
+Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montre les résultats des factorisations QR et Cholesky (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
+Comparer les mêmes instances sur les deux machines donne des résultats intéressant~: leurs caractéristiques ne changent pas l'allure général des courbes, en revanche le faible facteur NUMA de brunch fait bien sentir que l'affinité n'est rentable que lorsque la machine est chargée à partir d'un seuil élevé (environ 75\%).
+Alors que sur idchire la différence se voit dès une trentaine de cœur (qui correspond d'ailleurs à 4 nœuds NUMA).
+
+En faisant ces expériences nous avons constaté un comportement assez atypique de QR avec l'affinité~: il y a 3 petits pics de performances à 32, 64, et 128 cœurs (soit 4, 8, et 16 nœud NUMA) !
+Nous n'avons pas pu faire une étude aussi approfondie de QR que de Cholesky, mais ici on peut penser que la distribution des données est responsable de ces pics. La distribution utilisée est cyclique, et sur un nombre de nœud NUMA en puissance de 2 cela doit fournir des propriétés favorables à l'application.
 
 \begin{todo}
-Finir les mesures pour le graphe (cf figure~\ref{fig:contribs:perf_eval:eval-cholesky-brunch}) et le commentaire.
-
-C'est assez intéressant, parce qu'en fait l'affinité donne un clair avantage dès lors que les tailles de blocs font que la majorité des noyaux (gemm+trsm+syrk) sorte du cache !
-
-Pour l'instant ma conclusion c'est qu'il faut commencer à regarder le dataset manipulé par les tâches pour prendre nos décisions (ce qui peut être évalué à travers le simulateur).
+  Je dois bien avouer que j'ai pas de chiffres pour argumenter mon hypothèse sur les 3 pics...
+  Ça veut surtout dire qu'il doit y avoir une distribution de données bien mieux en fonction du nombre de nœud NUMA utilisée !
 \end{todo}
 
 
@@ -179,17 +199,3 @@ Une distribution de données a été rajoutée dans l'application, avec égaleme
 Cela permet de garantir la réutilisation des données présentes dans le cache L2 (point critique pour cette application), et éviter des migrations de tâches inappropriées.
 Les performances obtenues avec les versions à base de boucles sont faibles comparativement aux résultats de l'affinité, néanmoins cela vient du fait qu'il n'y a pas eu d'effort particulier de fait pour que le découpage des itérations correspondent à celui des distributions des données.
 Les performances des deux versions devraient théoriquement être équivalentes~: l'affinité stricte est là pour restreindre la portée du vol de travail qui dégradait les performances, phénomène qui ne devrait pas être présent dans une version à base de boucles.
-
-
-
-
-
-\begin{todo}
-  Il faut aussi comparer ça au simulateur. Peut être plus simplement faire une section à part.
-
-  Vu que c'est principalement effectué avec le nouveau libkomp, peut être mettre ça dans une section suivant celle du "portage" vers le runtime intel.
-
-  À discuter de où on met ça...
-\end{todo}
-
-
