@@ -1,10 +1,10 @@
 all: FORCE
 
 FORCE: version.tex
-	pdflatex Master.tex
-	bibtex Master
-	pdflatex Master.tex
-	pdflatex Master.tex
+	pdflatex phd.tex
+	bibtex phd
+	pdflatex phd.tex
+	pdflatex phd.tex
 
 clean:
 	rm -f *.aux *.brf *.log *.bbl *.blg *.dvi *.ps *.pdf *.*toc *.kilepr *.backup *.maf *.mtc* *.out
