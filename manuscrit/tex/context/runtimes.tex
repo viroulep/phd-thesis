@@ -18,7 +18,7 @@ Pour cette raison beaucoup de supports exécutifs décident d'utiliser des techn
 Comme on l'a vu dans la section précédente, dans un modèle de programmation à base de tâches, le programme est représenté par un DAG.
 La "meilleure" exécution de l'application revient donc à calculer l'ordonnancement optimal de ce DAG sur les ressources disponibles.
 Malheureusement ce problème est NP-complet~\cite{Cook1971}, il faut donc trouver des approximations, ou ajouter des restrictions sur le DAG ou les ressources.
-Nous mentionnons ci-après quelques algorithmes offline, qui ont d'ailleurs parfois été adaptés pour être - partiellement - utilisés dans des méthodes online.
+Nous mentionnons ci-après quelques algorithmes offline, qui ont d'ailleurs parfois été adaptés pour être --- partiellement --- utilisés dans des méthodes online.
 
 Dominant Sequence Clustering (DSC)~\cite{Yang1994} est un algorithme permettant de trouver un ordonnancement optimal pour certaines classes de DAG, et de trouver des 2-approximations pour tout type de DAG, sur des architectures homogènes non bornées.
 Pour l'ordonnancement sur des ressources hétérogènes, Heterogeneous Earliest Finish Time (HEFT)~\cite{HEFT}, et Critical-Path-on-a-Processor (CPOP)~\cite{HEFT}, sont des heuristiques très populaires qui analysent le DAG de l'application et assignent une priorité aux tâches en fonction d'informations connues statiquement, tels que le coût des transferts de données vers chaque ressources, où les durées estimées des tâches.
