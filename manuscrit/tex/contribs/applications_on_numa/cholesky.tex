@@ -77,17 +77,17 @@ Le chemin critique de l'application (en considérant un coût de 1 par tâche) e
   \caption{DAG d'un Cholesky de largeur 5}\label{fig:contribs:apps:cholesky:dag-5}
 \end{figure}
 
-Le nombre de tâches créées au rang $k$, ainsi que le nombre d'opérations arithmétiques, ou \emph{flops}, sont résumés dans la table~\ref{tab:contribs:apps:cholesky:kernels-info}.
+Le nombre de tâches créées pour une largeur $k$, ainsi que le nombre d'opérations arithmétiques (ou \emph{flops}) en fonction de la taille de bloc $N$, sont résumés dans la table~\ref{tab:contribs:apps:cholesky:kernels-info}.
 
 \begin{table}[h]
 \def\arraystretch{1.5}
 \centering
 \begin{tabular}{|c||c|c|}\hline
-  Noyau & Nombre au rang $k$ & Flops en fonction de la taille de bloc $N$~\cite{LAWN41} \\ \hline
-  \potrf & 1 & $\frac{N^3}{3} + \frac{N^2}{2} + \frac{N}{6}$ \\ \hline
-  \trsm & $k$ & $N^3$ \\ \hline
-  \syrk & $k$ & $N^2*(N+1)$ \\ \hline
-  \gemm & $\frac{k*(k-1)}{2}$ & $2*N^3$ \\ \hline
+  Noyau & Nombre pour une largeur $n$ & Flops pour une taille de bloc $N$~\cite{LAWN41} \\ \hline
+  \potrf & $n$ & $\frac{N^3}{3} + \frac{N^2}{2} + \frac{N}{6}$ \\ \hline
+  \trsm & $\frac{n*(n-1)}{2}$ & $N^3$ \\ \hline
+  \syrk & $\frac{n*(n-1)}{2}$ & $N^2*(N+1)$ \\ \hline
+  \gemm & $\sum_{k=1}^{n}\frac{(k-1)*(k-2)}{2}$ & $2*N^3$ \\ \hline
 \end{tabular}
 \caption{Nombre et complexité des différents noyaux}\label{tab:contribs:apps:cholesky:kernels-info}
 \end{table}
@@ -136,7 +136,7 @@ Nous avons donc utilisé \outil dans le but de comprendre et d'analyser plus en 
 L'objectif de cette section est de décrire le processus expérimental nous ayant permis d'analyser et comprendre le comportement des quatre noyaux de Cholesky~: \potrf, \trsm, \syrk, \gemm, qui a finalement abouti à des améliorations du support exécutif.
 Nous allons donc aborder d'une part les types de scénarios exécutés via \outil, puis illustrer les résultats que nous avons obtenus avec des exemples significatifs.
 
-\subsubsection{Description des scénario}
+\subsubsection{Description des scénario}\label{sec:contribs:apps:cholesky:scenario}
 
 Afin d'étudier le comportement de chaque noyau impliqué dans Cholesky, nous avons définie des scénerios où ils sont exécutés avec un contrôle sur les conditions d'exécution.
 
