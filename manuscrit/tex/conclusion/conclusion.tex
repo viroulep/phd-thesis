@@ -5,11 +5,62 @@
 \chapter{Conclusion}\label{chap:conclusion}
 \chaptertoc
 
+Le calcul haute performance répond aux besoins toujours plus grand de la simulation, et les supercalculateurs embarquent un nombre très important de machine à mémoire partagée.
+La tendance dans ces machines est à la multiplication du nombre de cœurs de calcul plutôt qu'à l'augmentation de la fréquence.
+Les architectures ont donc évoluées, et pour répondre aux besoins en terme d'accès à la mémoire elles sont maintenant découpées en plusieurs nœuds, regroupant des cœurs de calcul et de la mémoire.
+Cela introduit du même coup un temps d'accès à la mémoire non uniforme pour les différents cœurs, d'où le qualificatif NUMA --- Non Uniform Memory Access --- pour ce type d'architectures.
+
+Pour en faire une exploitation efficace, les applications scientifiques devraient prendre en compte la hiérarchie mémoire imposée par le matériel.
+Mais cela n'est possible que si les modèles de programmation et les supports exécutifs utilisés par ces applications évoluent pour supporter ces architectures.
+Les modèles de programmation à base de tâche sont particulièrement adaptés pour cibler les architectures NUMA~: l'aspect dynamique de l'ordonnancement d'un graphe de tâche permet d'assurer un équilibrage de charge efficace même lors d'irrégularités lors des calculs.
+De plus cela permet d'exprimer un parallélisme à grain fin, nécessaire pour fournir du travail au nombre important de cœurs de calcul.
+
+OpenMP est le standard \emph{de-facto} pour les architectures à mémoire partagée.
+Les évolutions du langage ont montrées qu'il pouvait s'adapter au nouveau matériel, et il propose maintenant un ensemble de fonctionnalités autour du paradigme de la programmation par tâches.
+Néanmoins les concepts spécifiques aux architectures NUMA sont encore peu présent~: bien que des efforts récent ait été fait pour contrôler le placement des threads de calculs sur la topologie de l'architecture, il n'y a pas rien pour aider le support exécutif à conserver la localité des données au cours de l'ordonnancement.
+
 \section*{Contributions de cette thèse}
+
+Les travaux de cette thèse ont été portés sur plusieurs facettes liés au développement et à l'exécution d'application scientifiques sur les architectures NUMA.
+
+Dans un premier temps nous avons introduit \outil, un outil permettant de faciliter la caractérisation de machines et d'applications scientifiques, à travers des scénarios définis par l'utilisateur.
+Nous l'avons utilisé pour évaluer la hiérarchie mémoire de nos machines d'expérimentation, idchire et brunch.
+Nous l'avons également utilisé dans le contexte d'une étude de cas sur la factorisation de Cholesky, où il nous a permis d'évaluer précisément le comportement des quatre noyaux sur lesquels la factorisation repose.
+Nous avons confirmé et mesuré l'impact de la localité des données sur ces noyaux, et identifié un axe possible d'amélioration pour l'ordonnancement de ce type d'application.
+
+Dans un second temps nous avons donc introduit des extensions au modèle de programmation utilisé pour cette application, OpenMP, permettant aux programmeurs~:
+\begin{itemize}
+  \item de contrôler la distribution des données lors de l'initialisation de l'applicaiton
+  \item et d'exprimer une \emph{affinité} entre une tâche et une donnée ou un élément de la topologie.
+\end{itemize}
+
+Nous avons implémenté ces propositions dans le compilateur Clang.
+Ces changements ont été accompagnés de l'extension de deux supports exécutifs~: XKaapi, un support exécutif expérimental, et libOMP, le support exécutif grand public de l'infrastructure LLVM.
+L'objectif des extensions a été à la fois de pouvoir utiliser l'affinité exprimée dans le programme, mais aussi d'exploiter les plusieurs niveaux de hiérarchie présentés par la machine lors du vol de travail.
+Les résultats des expériences que nous avons mené ont confirmés et ont permis d'apprécier le gain de performances liés à l'affinité sur un ensemble d'applications.
+Ils ont aussi permis de mettre en valeur que l'intérêt de l'affinité était principalement lié à la taille des données manipulées par les tâches.
+
+Enfin nous avons pu commencer des développements autour d'un simulateur, avec deux objectifs principaux~: pouvoir tester de nouvelles heuristiques sans avoir de lourds couts de développement à payer dans les supports exécutifs~; et pouvoir comparer les performances réelles des supports exécutifs par rapport à ce qu'il serait théoriquement possible d'atteindre.
+Les résultats préliminaires obtenus sont encourageants et confirment l'intérêt d'une telle approche.
 
 
 \section*{Perspectives}
 
+Au delà de la simulation mentionnée dans la section précédente, cette thèse ouvre plusieurs perspectives.
 
+La première et la plus importante semble être \textbf{l'amélioration de la collaboration entre le compilateur et le support exécutif}.
+Le compilateur peut dans certains cas avoir accès à des informations critiques concernant les différentes tâches.
+En supposant qu'il ait accès au code complet correspondant à une tâche, il peut alors connaître la taille des données manipulées, ainsi que le type d'opérations effectuées sur ces données.
+Transmettre ces informations au support exécutif pourrait lui permettre de prendre de meilleures décisions quand au placement des tâches.
+Une piste que nous n'avons pas eu le temps d'exploiter concerne l'\emph{intensité opérationnelle} des tâches~: a priori une tâche avec une grande intensité (plusieurs opérations par ligne de cache chargée) serait plus <<rentable>> à voler qu'une tâche de faible intensité, où la performance est complètement dirigée par le temps d'accès à ses données.
 
+Une deuxième perspective serait \textbf{d'appliquer des idées similaires dans un contexte hétérogène}.
+L'arrivée de constructions pour supporter les accélérateurs dans OpenMP offre une porte d'entrée standard pour attaquer des supports exécutifs hétérogène.
+Les idées développées au cours de cette thèse pourraient être étendues pour attacher des informations aux constructions \emph{target}, et permettre au support exécutif de faire des choix pertinents vis à vis des tâches à exécuter sur le ou les accélérateurs.
 
+Enfin les architectures vont continuer à évoluer. Il y aura sûrement des changements en terme de topologie des machines, et les propositions qui ont été faites au cours de cette thèse constituent une bonne base pour permettre aux supports exécutifs de s'adapter au nouveau matériel.
+
+\begin{todo}
+  parler du CW ? Si oui comment l'aborder vis à vis des contributions ?
+  Simple extension pour exprimer plus de parallélisme ?
+\end{todo}

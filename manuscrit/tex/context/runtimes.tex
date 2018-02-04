@@ -61,7 +61,7 @@ Le vol de travail~\cite{Blumofe1999} fait partie des techniques d'ordonnancement
 Cette section revient donc en détail sur les mécaniques clés de ce type d'ordonnancement.
 
 Au contraire des algorithmes de listes gloutons, le vol de travail peut fonctionner de manière totalement décentralisé, avec un nombre arbitraire de files de tâches.
-Le principe de base est le suivant : le support exécutif dispose d'un certain nombre de files de tâches prêtes, typiquement associées aux différentes ressources (tels que des coeurs de calcul).
+Le principe de base est le suivant : le support exécutif dispose d'un certain nombre de files de tâches prêtes, typiquement associées aux différentes ressources (tels que des cœurs de calcul).
 À chaque fois qu'un thread devient inactif, celui ci va aller <<voler>> du travail dans une file de tâches prêtes.
 S'il réussit à récupérer du travail (une tâche), il va l'exécuter.
 Une fois sa tâche terminée, il va déterminer s'il y a des nouvelles tâches prêtes suite à la complétion de son travail, et les introduire dans une des files de tâches prêtes.

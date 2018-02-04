@@ -8,8 +8,8 @@ En revanche, si l'on connait bien son application, on a envie de pouvoir étudie
 
 La suite naturelle de cette identification est de déterminer s'il y a des améliorations possibles pour ce comportement local, et comment l'améliorer en pratique.
 
-Dans le cas d'une application à base de flots de données, chaque partie de l'application est bien identifiée, et correspond à un noeud dans le graphe de tâches.
-Toutes les données manipulées par une partie de l'application sont facilement identifiées également, puisqu'il s'agit des connexions entre les noeuds du graphe de tâches.
+Dans le cas d'une application à base de flots de données, chaque partie de l'application est bien identifiée, et correspond à un nœud dans le graphe de tâches.
+Toutes les données manipulées par une partie de l'application sont facilement identifiées également, puisqu'il s'agit des connexions entre les nœuds du graphe de tâches.
 
 Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend à la fois du placement de son exécution, ainsi que du placement de ces données. On a donc envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données.
 
@@ -22,7 +22,7 @@ Dans la suite de ce chapitre, on appellera l'ensemble des paramètres décrivant
 \subsection{Description d'un scenario}
 
 Ce qu'on appelle ici un \emph{scenario} n'est ni plus ni moins que la description d'une expérience.
-Par exemple on pourrait vouloir "observer les performances en gigaflops d'une multiplication de matrices carrées sur le coeur 0 d'une machine".
+Par exemple on pourrait vouloir "observer les performances en gigaflops d'une multiplication de matrices carrées sur le cœur 0 d'une machine".
 C'est un scenario simple, et l'exemple que l'on prendra pour illustrer les points un peu plus formel qui vont suivre.
 
 En pratique un scenario est défini de la manière suivante :
@@ -44,7 +44,7 @@ L'utilisateur doit fournir les noms et type des variables utilisées en paramèt
 
 En pratique ces variables peuvent soit être des constantes, ou bien être initialisées par une action dans le scénario.
 
-Pour revenir à l'exemple du scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un coeur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille de bloc, |block_size|.
+Pour revenir à l'exemple du scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un cœur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille de bloc, |block_size|.
 
 Voici concrêtement à quoi ressemblerait la déclaration de ces données :
 
@@ -68,11 +68,11 @@ L'utilisateur indique une série d'actions à exécuter, et avec quels paramètr
 
 Chaque action peut avoir les caractéristiques suivantes :
 \begin{itemize}
-  \item core: nombre entier indiquant le coeur sur lequel exécuter l'action.
+  \item core: nombre entier indiquant le cœur sur lequel exécuter l'action.
   \item kernel: chaine de caractères avec le nom de l'action, correspondant à un noyau connu du programme.
   \item params: liste de variables à passer à l'action, leur nom doit correspondre à des données déclarées dans la section précédente.
   \item repeat: nombre entier indiquant le nombre de fois que cette action doit être répétée.
-  \item sync: booléen indiquant s'il faut synchroniser le démarrage de cette action avec celui des autres actions présentes dans les file d'attente des autres coeurs.
+  \item sync: booléen indiquant s'il faut synchroniser le démarrage de cette action avec celui des autres actions présentes dans les file d'attente des autres cœurs.
 \end{itemize}
 
 Si on continue dans l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice, le lancement du dgemm une fois que ces matrices sont initialisées.
@@ -148,10 +148,10 @@ Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'a
 Le flot d'exécution est le suivant :
 
 \paragraph{Lecture et analyse du scenario}
-L'outil charge le scenario fourni par l'utilisateur, créer les différentes données, et analyse les actions pour déterminer l'ensemble des coeurs physiques qui seront utilisés au cours des actions.
+L'outil charge le scenario fourni par l'utilisateur, créer les différentes données, et analyse les actions pour déterminer l'ensemble des cœurs physiques qui seront utilisés au cours des actions.
 
 \paragraph{Déroulement des actions}
-Pour chacun des coeurs utilisés, un thread est créé et attaché à ce coeur. De plus, une queue d'actions (FIFO) est créée pour ce thread.
+Pour chacun des cœurs utilisés, un thread est créé et attaché à ce cœur. De plus, une file d'actions (FIFO) est créée pour ce thread.
 L'ensemble des actions sont poussées dans les tâches correspondantes dans l'ordre du fichier.
 
 Dès que les threads sont créés ils commencent à exécuter les actions prêtes ; avant et après chaque actions l'ensemble des observateurs pour cette actions sont appelés afin de les collecter pour cette action.

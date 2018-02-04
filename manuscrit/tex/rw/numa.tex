@@ -107,8 +107,8 @@ Ils résolvent ce problème en permettant à une tâche d'aller voler un bloc de
 %runtime will always follow unless there is starvation in the local node. Kurzak [23] described an implementation of the Cholesky factorization using static schedul- ing where threads work only on a one-dimensional cyclic distribution in order to keep locality
 \paragraph{Al-Omairy et al.~\cite{Al-Omairy2015}} ont concentré leurs travaux sur l'inversion de matrices symétriques et la factorisation de Cholesky.
 Ils ont étendu le support exécutif et le modèle de programmation d'OmpSs afin de permettre de prendre en compte la distance aux données lors du vol de travail.
-Leur premier axe est de restreindre le vol de travail à l'intérieur du noeud : les threads ne peuvent voler que dans une file commune au noeud NUMA.
-Le second est de tracer la localité des données : ils utilisent des tâches d'initialisations pour détecter où sont allouées les données. Lors de l'exécution du programme cette information est utilisée pour ordonnancer une tâche sur le noeud où il y a le plus de données manipulées par la tâche.
+Leur premier axe est de restreindre le vol de travail à l'intérieur du nœud : les threads ne peuvent voler que dans une file commune au nœud NUMA.
+Le second est de tracer la localité des données : ils utilisent des tâches d'initialisations pour détecter où sont allouées les données. Lors de l'exécution du programme cette information est utilisée pour ordonnancer une tâche sur le nœud où il y a le plus de données manipulées par la tâche.
 
 
 

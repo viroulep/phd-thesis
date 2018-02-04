@@ -227,7 +227,7 @@ La version~4.0 d'OpenMP voit aussi l'ajout d'un ensemble de fonctionnalités aya
 
 Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer, et permet d'indiquer au support exécutif quelles ressources physiques lui sont disponible.
 Le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|.
-Elle peut être une liste précise d'indice de coeurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
+Elle peut être une liste précise d'indice de cœurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
 
 Il n'y a pas de dépendances entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.
 
