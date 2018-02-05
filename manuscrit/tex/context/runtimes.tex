@@ -10,10 +10,10 @@ En particulier la section~\ref{sec:context:runtimes:ws} décrit en détail le \e
 Les techniques d'ordonnancement offline supposent connues les informations à propos du matériel et des tâches à exécuter, telles que leur temps d'exécution en utilisant telle où telle ressource, ou encore les contraintes de précédence à respecter pour l'exécution.
 Avant l'exécution un ordonnancement des tâches est généré à partir de ces informations, et il est stocké pour être ensuite rejoué à l'exécution.
 
-Ce type de calcul d'ordonnancements a plusieurs avantages : d'une part l'exécution de l'application est totalement déterministe et reproductible ; ensuite cela entraine très peu de coût au niveau du support exécutif lors de l'exécution du programme, puisque les décisions ont déjà été prises ; et enfin cela permet de minimiser l'inactivité des processeurs, même en cas de dépendances complexes.
+Ce type de calcul d'ordonnancement a plusieurs avantages : d'une part l'exécution de l'application est totalement déterministe et reproductible ; ensuite cela entraine très peu de coût au niveau du support exécutif lors de l'exécution du programme, puisque les décisions ont déjà été prises ; et enfin cela permet de minimiser l'inactivité des processeurs, même en cas de dépendances complexes.
 
 En revanche il y a plusieurs détails qui peuvent jouer contre l'utilisation de telles techniques~\cite{Locke1992} : l'ordonnancement généré est très sensible à la justesse des informations utilisées. Si une ou plusieurs tâches viennent à durer plus longtemps que prévu, cela peut tout simplement rendre l'ordonnancement très inefficace.
-Pour cette raison beaucoup de supports exécutifs décident d'utiliser des techniques dynamiques, ou l'ordonnanceur réagit au cours de l'exécution.
+Pour cette raison beaucoup de supports exécutifs décident d'utiliser des techniques dynamiques, où l'ordonnanceur réagit au cours de l'exécution.
 
 Comme on l'a vu dans la section précédente, dans un modèle de programmation à base de tâches, le programme est représenté par un DAG.
 La "meilleure" exécution de l'application revient donc à calculer l'ordonnancement optimal de ce DAG sur les ressources disponibles.
@@ -21,12 +21,12 @@ Malheureusement ce problème est NP-complet~\cite{Cook1971}, il faut donc trouve
 Nous mentionnons ci-après quelques algorithmes offline, qui ont d'ailleurs parfois été adaptés pour être --- partiellement --- utilisés dans des méthodes online.
 
 Dominant Sequence Clustering (DSC)~\cite{Yang1994} est un algorithme permettant de trouver un ordonnancement optimal pour certaines classes de DAG, et de trouver des 2-approximations pour tout type de DAG, sur des architectures homogènes non bornées.
-Pour l'ordonnancement sur des ressources hétérogènes, Heterogeneous Earliest Finish Time (HEFT)~\cite{HEFT}, et Critical-Path-on-a-Processor (CPOP)~\cite{HEFT}, sont des heuristiques très populaires qui analysent le DAG de l'application et assignent une priorité aux tâches en fonction d'informations connues statiquement, tels que le coût des transferts de données vers chaque ressources, où les durées estimées des tâches.
+Pour l'ordonnancement sur des ressources hétérogènes, Heterogeneous Earliest Finish Time (HEFT)~\cite{HEFT}, et Critical-Path-on-a-Processor (CPOP)~\cite{HEFT}, sont des heuristiques très populaires qui analysent le DAG de l'application et assignent une priorité aux tâches en fonction d'informations connues statiquement, telles que le coût des transferts de données vers chaque ressource, ou les durées estimées des tâches.
 CPOP ajoute en plus la prise en compte du \emph{chemin critique} dans cette priorité.
 
 On peut remarquer que HEFT a été adapté dans le cadre d'ordonnancement online d'application : l'ordonnanceur part d'une première estimation du temps d'exécution de chaque tâche, mais à la fin de chaque tâche il peut réagir en fonction du temps effectivement écoulé pour le calcul de cette tâche. Cette technique est par exemple utilisé dans StarPU~\cite{StarPU} ou Kaapi~\cite{Lima2015}.
 
-Certaines applications que l'on a étudié et utilisé sont des applications d'algèbre linéaire, et Jakub Kurzak et al.~\cite{Kurzak2010} ont étudié l'ordonnancement offline de ce type d'application, et l'ont comparé à différentes implémentations \emph{online}.
+Certaines applications que l'on a étudiée et utilisée sont des applications d'algèbre linéaire, et Jakub Kurzak et al.~\cite{Kurzak2010} ont étudié l'ordonnancement offline de ce type d'application, et l'ont comparé à différentes implémentations \emph{online}.
 Si la version ordonnancée \emph{offline} restait meilleure, certains ordonnancements \emph{online} étaient très proches, et leur conclusion rappelait que les performances de ces ordonnancements \emph{online} pouvaient encore être améliorées.
 
 
@@ -35,14 +35,14 @@ Si la version ordonnancée \emph{offline} restait meilleure, certains ordonnance
 
 Contrairement à l'ordonnancement offline, les techniques d'ordonnancement online vont prendre les décisions concernant l'ordonnancement des tâches à l'exécution.
 Ces techniques n'ont pas besoin d'information préalable sur les tâches, cela les rend donc beaucoup plus réactives aux aléas de l'exécution que les techniques offline.
-En contrepartie, la prise de décision à l'exécution introduit un surcout pour le support exécutif, se répercutant directement sur le temps total d'exécution.
+En contrepartie, la prise de décision à l'exécution introduit un surcoût pour le support exécutif, se répercutant directement sur le temps total d'exécution.
 
 
-Nous détaillons ci après deux types d'ordonnancement online populaires : l'ordonnancement de listes glouton et le vol de travail.
+Nous détaillons ci-après deux types d'ordonnancement online populaires : l'ordonnancement de listes glouton et le vol de travail.
 
 \subsubsection{Algorithmes de listes gloutons}
 
-L'ordonnancement glouton fonctionne assez simplement : le support exécutif maintient une unique liste de tâches \emph{prêtes} à être exécuter.
+L'ordonnancement glouton fonctionne assez simplement : le support exécutif maintient une unique liste de tâches \emph{prêtes} à être exécutées.
 À chaque fois qu'un processeur devient disponible, l'ordonnanceur lui assigne une tâche prête.
 Il met ensuite à jour la liste des tâches prêtes, et recommence l'étape précédente jusqu'à ce qu'il n'y ait plus de tâche à exécuter.
 
@@ -62,7 +62,7 @@ Cette section revient donc en détail sur les mécaniques clés de ce type d'ord
 
 Au contraire des algorithmes de listes gloutons, le vol de travail peut fonctionner de manière totalement décentralisé, avec un nombre arbitraire de files de tâches.
 Le principe de base est le suivant : le support exécutif dispose d'un certain nombre de files de tâches prêtes, typiquement associées aux différentes ressources (tels que des cœurs de calcul).
-À chaque fois qu'un thread devient inactif, celui ci va aller <<voler>> du travail dans une file de tâches prêtes.
+À chaque fois qu'un thread devient inactif, celui-ci va aller <<voler>> du travail dans une file de tâches prêtes.
 S'il réussit à récupérer du travail (une tâche), il va l'exécuter.
 Une fois sa tâche terminée, il va déterminer s'il y a des nouvelles tâches prêtes suite à la complétion de son travail, et les introduire dans une des files de tâches prêtes.
 Il redevient ensuite inactif, et va de nouveau essayer de voler du travail.
@@ -93,10 +93,10 @@ Il y a quelques principes simples qui sont généralement utilisés, tels que co
 Il n'y a en fait pas besoin de faire un choix radical !
 
 Les applications peuvent avoir plusieurs sources d'irrégularités : d'une part cela peut tout simplement venir de la structure de l'application elle-même, mais encore du jeu de données en entrée de l'application, ou bien même des caractéristiques de l'architecture sur laquelle s'exécute l'application.
-Cette dernière source d'irrégularités peut être particulièrement présente sur les architectures hétérogènes ou NUMA, étant donné que sur celles ci les conditions d'accès à la mémoire peuvent être difficilement prévisibles.
+Cette dernière source d'irrégularités peut être particulièrement présente sur les architectures hétérogènes ou NUMA, étant donné que sur celles-ci les conditions d'accès à la mémoire peuvent être difficilement prévisibles.
 
-Cela veut donc dire que même pour des applications a première vue régulières, une technique de base \emph{online} telle que le vol de travail peut être envisagée.
-En revanche il est important que cette approche soit complétée par des techniques a priori \emph{offline}, afin de rassembler un maximum d'information sur les tâches exécutées, pour au final améliorer la prise de décision.
+Cela veut donc dire que même pour des applications à première vue régulières, une technique de base \emph{online} telle que le vol de travail peut être envisagée.
+En revanche il est important que cette approche soit complétée par des techniques a priori \emph{offline}, afin de rassembler un maximum d'informations sur les tâches exécutées, pour au final améliorer la prise de décision.
 De nombreux travaux utilisent une première approche \emph{offline} pour faire une première répartition de la charge de travail, et ajustent ensuite l'équilibrage au fur et à mesure de l'exécution de l'application.
 C'est le cas par exemple des travaux d'Agullo et al.~\cite{Agullo2016} sur la factorisation de Cholesky dans un contexte hétérogène : ils ont montré qu'un apport minimum d'informations obtenues \emph{offline} à propos des noyaux de Cholesky permet d'améliorer grandement les performances de l'application à travers des supports exécutifs \emph{online}.
 

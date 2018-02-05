@@ -107,8 +107,8 @@ Au final les actions effectuées pour la création d'une tâche sont équivalent
 
 \subsubsection{Gestion}
 
-Une fois que le programmeur a défini sa tâche et l'a soumise au support exécutif, celui ci doit créer et maintenir une structure de données représentant cette tâche.
-Celle ci peut être plus ou moins grande en fonction des informations associées à la tâche.
+Une fois que le programmeur a défini sa tâche et l'a soumise au support exécutif, celui-ci doit créer et maintenir une structure de données représentant cette tâche.
+Celle-ci peut être plus ou moins grande en fonction des informations associées à la tâche.
 
 Le support exécutif va utiliser ces informations au cours de l'exécution du programme pour déterminer quelles tâches sont prêtes pour l'exécution.
 En pratique cela signifie que ces structures de données vont être placées dans des conteneurs tels que des files ou des piles, et qu'un certain nombre d'opérations seront effectuées dessus (ajout, suppression, parcours).
@@ -118,7 +118,7 @@ En conséquence le coût du maintien des informations à propos d'une tâche ent
 
 \subsubsection{Exécution}
 
-Cette étape est l'un des points où la gestion par tâche dispose d'un gros avantage par rapport à la création individuelle de thread par le programmeur.
+Cette étape est l'un des points où la gestion par tâche dispose d'un gros avantage par rapport à la création individuelle de threads par le programmeur.
 Au début de l'exécution de l'application, un certain nombre de cœurs physiques sont utilisables par le support exécutif (cela peut être déduit implicitement par le support exécutif, ou spécifié explicitement par le programmeur).
 Lors de son initialisation, le support exécutif va \textbf{créer et attacher} un thread logique par cœur physique, virtualisant ainsi la gestion des cœurs physiques.
 
@@ -131,14 +131,14 @@ Les threads sont donc les même tout au long de l'exécution de l'application, c
 \subsection{Moyens de synchronisation}
 
 Lorsqu'on parle de programmation parallèle, il faut bien évidemment parler de synchronisation.
-Les différentes tâches définies par l'utilisateur vont être exécutées en parallèle sur la machine, mais dans beaucoup de cas certaines tâches doivent attendre la complétion d'une ou plusieurs tâches avant de pouvoir commencer à être exécutée.
+Les différentes tâches définies par l'utilisateur vont être exécutées en parallèle sur la machine, mais dans beaucoup de cas certaines tâches doivent attendre la complétion d'une ou plusieurs tâches avant de pouvoir commencer à être exécutées.
 
-Il y a deux grand types de synchronisations pour la programmation à base de tâche~: la synchronisation explicite, et les dépendances de données.
+Il y a deux grands types de synchronisations pour la programmation à base de tâches~: la synchronisation explicite, et les dépendances de données.
 
 \subsubsection{Synchronisation explicite}
 
 Le programmeur peut ajouter un point de synchronisation explicite dans le code.
-Lorsque le thread exécutant la tâche atteint ce point de synchronisation, il se bloque et attend que l'ensemble des tâches qu'il a créé ait été exécuté avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
+Lorsque le thread exécutant la tâche atteint ce point de synchronisation, il se bloque et attend que l'ensemble des tâches qu'il a créées ait été exécuté avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
 
 \begin{lstlisting}[caption=Synchronisation dans le thread courant (OpenMP),label=lst:context:task-wait]
 void foo() {
@@ -158,7 +158,7 @@ void foo() {
 Le programmeur spécifie des dépendances de données, avec des modes, pour chacune des tâches.
 Dans l'exemple du listing~\ref{lst:context:task-dep}, la tâche |write_A| possède une dépendance en \emph{écriture} sur la variable |a|, et la tâche |read_A| possède une dépendance en \emph{lecture}.
 
-Étant donné qu'il y a une lecture et une écriture, le principe de cohérence séquentielle impose que les opérations soit ordonnées dans l'ordre où elles ont été créées (ici la tâche en lecture devrait avoir lieu \textbf{après} la tâche en écriture).
+Étant donné qu'il y a une lecture et une écriture, le principe de cohérence séquentielle impose que les opérations soient ordonnées dans l'ordre où elles ont été créées (ici la tâche en lecture devrait avoir lieu \textbf{après} la tâche en écriture).
 
 Si on regarde le reste du programme, la tâche |write_B| dispose d'une dépendance en écriture sur |b| et la tâche |read_AB| souhaite lire |a| et |b|.
 
@@ -256,7 +256,7 @@ int Fib(int n) {
 \subsubsection{OpenMP}
 
 OpenMP~\cite{openmp45} est un modèle de programmation supportant le C/C++ et Fortran.
-Il s'utilise à travers des directives de compilation ainsi qu'une API, et propose lui aussi les constructions classiques : boucles, tâche, et autres éléments facilitant la programmation parallèle.
+Il s'utilise à travers des directives de compilation ainsi qu'une API, et propose lui aussi les constructions classiques : boucles, tâches, et autres éléments facilitant la programmation parallèle.
 
 Originellement OpenMP ne proposait que du parallélisme de boucle, le concept de tâches n'a été introduit que plus tard avec OpenMP~3.0, et le concept de dépendances de données entre tâches a été introduit encore plus tard avec la version~4.0.
 
@@ -293,7 +293,7 @@ Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le n
 \end{figure}
 
 La figure~\ref{fig:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
-Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quelque soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
+Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quel que soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
 
 \begin{todo}
   @Thierry : revoir la courbe, en particulier quels runtimes affichés ?
@@ -303,9 +303,9 @@ Comme on peut le voir, les parties extrèmes de la courbe se comportent de mani�
   Ou faire un paragraphe de blabla rapide sur ompss et libkomp, en disant qu'on en parlera plus tard
 \end{todo}
 
-Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important. Cela est illustré sur la figure~\ref{fig:context:granularity} : avec OmpSs le grain optimal se situe dans un intervalle de tailles de blocs assez restreint (entre environ 250 et 350), alors qu'avec clang ou libkomp une taille de bloc entre 150 et 350 permet d'obtenir des performances sensiblement équivalente.
+Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important. Cela est illustré sur la figure~\ref{fig:context:granularity} : avec OmpSs le grain optimal se situe dans un intervalle de tailles de blocs assez restreint (entre environ 250 et 350), alors qu'avec clang ou libkomp une taille de bloc entre 150 et 350 permet d'obtenir des performances sensiblement équivalentes.
 
-La courbe tracée avec libkomp inclu nos travaux sur l'affinité, et cela permet d'illustrer que même si cela permet d'influer sur les performances maximales, cela n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k}, ou le maximum de performance est obtenu pour tout les supports exécutif aux environs de 300.
+La courbe tracée avec libkomp inclut nos travaux sur l'affinité, et permet d'illustrer que même si l'affinité permet d'influer sur les performances maximales, elle n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k}, ou le maximum de performance est obtenu pour tous les supports exécutifs aux environs de 300.
 
 
 \begin{figure}[ht]

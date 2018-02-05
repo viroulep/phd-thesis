@@ -130,10 +130,10 @@ int main()
 
 
 La version 4.0 d'OpenMP~\cite{openmp40} pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
-Le mode d'accès peut être soit |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
-Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou si il faut d'abord attendre la complétion d'une ou plusieurs autres tâches, ce qui permet de s'affranchir d'une synchronisation par |taskwait| dans énormément de cas.
+Le mode d'accès peut être |in|, |out|, ou |inout| selon que la variable correspondante soit respectivement lue comme entrée, écrite en sortie, ou à la fois lue et écrite par la tâche en question.
+Cette information peut ensuite être traitée par le support exécutif pour décider si une tâche est prête à être exécutée ou s'il faut d'abord attendre la complétion d'une ou plusieurs autres tâches, ce qui permet de s'affranchir d'une synchronisation par |taskwait| dans énormément de cas.
 
-Le listing~\ref{lst:context:openmp:taskdep} donne un exemple de tâches avec dépendance, où la variable |foo| est initialisée puis affichée.
+Le listing~\ref{lst:context:openmp:taskdep} donne un exemple de tâches avec dépendances, où la variable |foo| est initialisée puis affichée.
 
 \begin{lstlisting}[language=c++,caption=Exemple de tâches avec dépendances,label=lst:context:openmp:taskdep]
 #include <stdio.h>
@@ -155,15 +155,15 @@ int main()
 }
 \end{lstlisting}
 
-La dernière extension aux tâches a vu le jour dans OpenMP~4.5, qui introduit la notion de \emph{priorité} sur les tâches, permettant d'aider le support exécutif à choisir quelle tâches prête exécuter en priorité.
+La dernière extension aux tâches a vu le jour dans OpenMP~4.5, qui introduit la notion de \emph{priorité} sur les tâches, permettant d'aider le support exécutif à choisir quelle tâche prête exécuter en priorité.
 
 \subsection{Vectorisation}
 
 Nous avons vu dans la section~\ref{sec:context:numa:simd} que les processeurs disposent d'instructions vectorielles - \emph{SIMD} - depuis le début des années 2000.
-Avec la multiplications des architectures et de la taille des registres, beaucoup de nouvelles instructions spécifiques à certaines tailles de registre sont apparues.
+Avec la multiplication des architectures et de la taille des registres, beaucoup de nouvelles instructions spécifiques à certaines tailles de registre sont apparues.
 
 Si la vectorisation automatique n'est pas possible, il est coûteux pour le programmeur de modifier son code en fonction des architectures.
-OpenMP~4.0 tente de résoudre se problème par l'introduction d'une construction |simd|, qui permet au programmeur d'indiquer quelles parties de son code peuvent être vectorisées et avec quelles contraintes (longeur maximale, alignement, quelles sont les variables d'itérations, ...).
+OpenMP~4.0 tente de résoudre ce problème par l'introduction d'une construction |simd|, qui permet au programmeur d'indiquer quelles parties de son code peuvent être vectorisées et avec quelles contraintes (longueur maximale, alignement, quelles sont les variables d'itérations, ...).
 On peut voir ça comme une façon portable d'indiquer au compilateur comment vectoriser un code applicatif complexe.
 
 Le listing~\ref{lst:context:openmp:simd}, donné comme exemple par~\cite{HPCToday} illustre la parallélisation et la vectorisation d'une opération complexe sur un tableau.
@@ -173,7 +173,7 @@ En revanche le programmeur peut identifier que pour une itération donnée, deux
 L'utilisation de la clause |safelen| permet d'indiquer cela au compilateur.
 
 
-\begin{lstlisting}[language=c++,caption=Vectorisation d'une opération complexes sur des tableaux,label=lst:context:openmp:simd]
+\begin{lstlisting}[language=c++,caption=Vectorisation d'une opération complexe sur des tableaux,label=lst:context:openmp:simd]
 #define N 1000000
 float x[N][N], y[N][N];
 #pragma omp parallel
@@ -216,7 +216,7 @@ int main()
 \end{lstlisting}
 
 
-Si la norme indique le support de plusieurs accélérateurs, ils doivent cependant être tous du même type, et la transformation du code C/C++/Fortran du bloc est laissé au compilateur implémentant la norme.
+Si la norme indique le support de plusieurs accélérateurs, ils doivent cependant être tous du même type, et la transformation du code C/C++/Fortran du bloc est laissée au compilateur implémentant la norme.
 Dans le cas d'utilisation d'appels de fonctions, le programmeur doit indiquer qu'elles disposeront d'une définition pour l'\emph{hôte} et l'\emph{accélérateur} via une construction |declare target|.
 
 Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adoptée telle quelle par les programmeurs d'architectures hétérogènes.
@@ -225,15 +225,15 @@ Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adopté
 
 La version~4.0 d'OpenMP voit aussi l'ajout d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
 
-Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer, et permet d'indiquer au support exécutif quelles ressources physiques lui sont disponible.
+Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer, et permet d'indiquer au support exécutif quelles ressources physiques lui sont disponibles.
 Le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|.
-Elle peut être une liste précise d'indice de cœurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
+Elle peut être une liste précise d'indices de cœurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
 
-Il n'y a pas de dépendances entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.
+Il n'y a pas de dépendance entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.
 
 Le second ajout est la possibilité de spécifier la manière dont sont affectés les threads aux \emph{places}, à l'aide de la variable d'environnement |OMP_PROC_BIND|.
 
-À travers cette option il est possible de demander à ce que les threads soit groupés proches les uns des autres sur les \emph{places} (\emph{close}), ou au contraire le plus éloigné possible (\emph{spread}).
+À travers cette option il est possible de demander à ce que les threads soient groupés proches les uns des autres sur les \emph{places} (\emph{close}), ou au contraire les plus éloignés possible (\emph{spread}).
 S'il est possible d'expérimenter avec ces valeurs, il faut absolument éviter de désactiver le placement fixe des threads (valeur \emph{false}) : cela permettrait au système d'exploitation de migrer les threads d'une région parallèle sur les différentes places, ce qui pourrait entraîner une perte de la localité des données, et donc une dégradation des performances.
 Une bonne valeur par défaut dans un contexte NUMA est de positionner |OMP_PROC_BIND| à \emph{true}, afin de fixer les threads sur les cœurs.
 Il suffit ensuite d'utiliser l'expressivité des \emph{places} pour spécifier exactement quels cœurs utiliser.
