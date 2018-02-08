@@ -13,9 +13,9 @@
 \end{figure}
 
 L'objectif de ce chapitre est de donner un aperçu des travaux existants dans le contexte de cette thèse.
-Comme on peut le voir sur la figure~\ref{fig:rw:application-os}, un certain nombres d'acteurs sont impliqués dans l'exécution d'une application.
+Comme on peut le voir sur la figure~\ref{fig:rw:application-os}, un certain nombre d'acteurs sont impliqués dans l'exécution d'une application.
 
-Les parties application, système d'exploitation, et matériel ont été traitées dans le chapitre précédent~; ce chapitre ce concentrera dans un premier temps sur une partie précise des supports exécutifs, en abordant les différentes techniques d'ordonnancement présentes dans l'état de l'art pour cibler spécifiquement les machines NUMA, puis nous regarderons en détails certains supports exécutifs existant, et enfin nous ferons un point sur les compilateurs OpenMP.
+Les parties application, système d'exploitation, et matériel ont été traitées dans le chapitre précédent~; ce chapitre se concentrera dans un premier temps sur une partie précise des supports exécutifs, en abordant les différentes techniques d'ordonnancement présentes dans l'état de l'art pour cibler spécifiquement les machines NUMA, puis nous regarderons en détails certains supports exécutifs existants, et enfin nous ferons un point sur les compilateurs OpenMP.
 
 
 
@@ -49,9 +49,9 @@ Les parties application, système d'exploitation, et matériel ont été traité
 
 \section*{Conclusion}
 
-Cette section a décrit l'ensemble des techniques et outils qu'ils nous semblent important de connaître afin de cerner le cadre de cette thèse.
+Cette section a décrit l'ensemble des techniques et outils qu'il nous semble important de connaître afin de cerner le cadre de cette thèse.
 Un nombre important des articles évoqués concerne le support exécutif.
-Nous avons effectués un certains
+Nous avons effectués plusieurs extensions et modifications de deux supports exécutifs~: XKaapi et libOMP. Les détails sont présentés dans le chapitre~\ref{chap:contrib:openmp}.
 
 Avant de rentrer dans ces détails, nous allons en premier lieu nous intéresser aux machines et applications que nous allons utiliser, et en particulier voir comment nous pouvons les caractériser pour identifier les informations et paramètres les plus pertinents à prendre en compte lors de l'ordonnancement.
 Le chapitre~\ref{chap:contrib:characterization} présente dans un premier temps \outil~- \emph{\textbf{C}h\textbf{ar}acterization \textbf{To}ol for \textbf{N}UMA Architecture}, ainsi qu'une mise en application sur nos machines d'expérimentation (en section~\ref{sec:contribs:machines}), et sur une étude de cas d'application (en section~\ref{sec:contribs:apps:cholesky}).

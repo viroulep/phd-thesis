@@ -1,9 +1,9 @@
 \section{Compilateurs et interopérabilité}\label{sec:rw:compilers}
 
 Comme nous avons pu le voir dans la figure~\ref{fig:rw:application-os}, il faut bien faire la distinction entre support exécutif et compilateur.
-Nous avons vu que les supports exécutifs sont cruciaux pour l'exécution d'application parallèle, néanmoins pour faire la transition entre les applications et eux il faut passer par une étape de compilation.
+Nous avons vu que les supports exécutifs sont cruciaux pour l'exécution d'applications parallèles, néanmoins pour faire la transition entre les applications et eux il faut passer par une étape de compilation.
 
-Peut importe le modèle de programmation le principe reste le même~: le code source va contenir des directives (|#pragma|) ou des appels de fonctions décrits par le modèle de programmation. Le code source va ensuite être transformé en un binaire contenant un ensemble d'appels au support exécutif (l'\emph{Abstract Binary Interface} ou \emph{ABI}).
+Peu importe le modèle de programmation le principe reste le même~: le code source va contenir des directives (|#pragma|) ou des appels de fonctions décrits par le modèle de programmation. Le code source va ensuite être transformé en un binaire contenant un ensemble d'appels au support exécutif (l'\emph{Abstract Binary Interface} ou \emph{ABI}).
 
 L'ABI est spécifique au support exécutif, a priori un compilateur est donc fortement couplé avec un support exécutif, bien qu'en pratique il existe des compatibilités que nous aborderons dans la section~\ref{sec:rw:compilers:compat}.
 
@@ -17,16 +17,16 @@ Dans le cas spécifique d'OpenMP, nous allons nous intéresser à trois compilat
 il est probablement le compilateur le plus populaire pour Linux.
 Il est open source, très utilisé, et donc amélioré en permanence~; ses développeurs ont toujours été très réactifs aux changements du standard OpenMP, et il implémente la dernière version du standard (OpenMP~4.5) depuis la version ~6.1.
 
-En terme de support exécutif, GCC génère du code spécifiquement pour l'ABI de libGOMP.
+Pour ce qui est du support exécutif, GCC génère du code spécifiquement pour l'ABI de libGOMP.
 
 
 
 \paragraph{ICC~:}
-C'est le compilateur propriétaire d'Intel~; étant donné que les développeurs d'Intel ont été très pro actifs pour l'ajout du support d'OpenMP dans Clang, le compilateur supporte lui aussi la dernière version du standard (ainsi que quelques fonctionnalités de la version~5.0, la prochaine mouture du standard) depuis ICC~17.
+C'est le compilateur propriétaire d'Intel~; étant donné que les développeurs d'Intel ont été très proactifs pour l'ajout du support d'OpenMP dans Clang, le compilateur supporte lui aussi la dernière version du standard (ainsi que quelques fonctionnalités de la version~5.0, la prochaine mouture du standard) depuis ICC~17.
 
 Il génère du code spécifiquement pour l'ABI de son propre support exécutif open source (libIOMP~\footnote{https://www.openmprtl.org/}), qui correspond également à l'ABI utilisée par Clang.
 
-ICC est généralement privilégié pour sa capacité à générer du code performant pour les architectures Intel, que ce soit pour des optimisations de vectorisation ou pour l'utilisation d'accélérateur tel que le Xeon Phi (KNL).
+ICC est généralement privilégié pour sa capacité à générer du code performant pour les architectures Intel, que ce soit pour des optimisations de vectorisation ou pour l'utilisation d'accélérateurs tel que le Xeon Phi (KNL).
 
 
 
@@ -49,9 +49,9 @@ Nous avons également vu qu'un compilateur génère du code spécifiquement pour
 Pour un programmeur, le moyen le plus pratique de comparer les performances de différents supports exécutifs (pour un modèle de programmation donné), ce serait en fait de compiler le programme avec un compilateur donné, puis de pouvoir changer le support exécutif juste avant l'exécution (via un ajustement du |LD_PRELOAD| ou du |LD_LIBRARY_PATH|).
 
 C'est aussi de l'intérêt des développeurs des supports exécutifs de les rendre le plus accessible possible.
-Il existe donc en fait plusieurs couches de compatibilités, que nous allons décrire ci-après.
+Il existe donc en fait plusieurs couches de compatibilité, que nous allons décrire ci-après.
 
-Vis à vis des compilateurs décrits dans la section précédente, la compatibilité est quasi totale~: Clang et ICC génère du code pour la même ABI, et libOMP implémente une couche de compatibilité entre l'ABI de libGOMP et libOMP.
+Vis à vis des compilateurs décrits dans la section précédente, la compatibilité est quasi totale~: Clang et ICC génèrent du code pour la même ABI, et libOMP implémente une couche de compatibilité entre l'ABI de libGOMP et libOMP.
 S'il est impossible d'utiliser libGOMP pour exécuter du code compilé par ICC ou Clang, toutes les autres substitutions sont possibles.
 
 S'agissant des autres supports exécutifs~: OmpSs dispose de son propre compilateur OpenMP source à source, \emph{Mercurium}, pour cibler \emph{Nanos++}. StarPU dispose également d'un compilateur OpenMP source à source, \emph{KStar}, basé sur le frontend de Clang.
