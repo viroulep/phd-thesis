@@ -1,0 +1,359 @@
+\documentclass{Styles/llncs}
+%\documentclass[12pt,letterpaper]{article}
+\usepackage{times}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subfig}
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{boxedminipage}
+\usepackage{xspace}
+\usepackage{listings}
+\usepackage{listingsutf8}
+\usepackage{verbatim}
+\usepackage{parcolumns}
+\usepackage{color}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+%Prevents floating item to "jump" between sections
+\usepackage[section]{placeins}
+\usepackage{booktabs}
+\usepackage{tkz-graph}
+\usepackage{setspace}
+\newcommand{\arevoir}[1]{#1}
+
+\newcommand{\kaapi}{\textsc{\mbox{Xkaapi}}\xspace}
+
+\newcommand{\libXKOMP}{\textsc{libKOMP}\xspace}
+
+\usepackage{xcolor}
+\usepackage{todonotes}
+\usepackage[color,leftbars]{changebar}
+
+\newcommand{\TG}[1]{{\color{red}\bfseries TG: #1}}
+\newcommand{\PV}[1]{{\color{purple}\bfseries PV: #1}}
+
+
+\newcommand{\cfsect}[1]{(\textit{cf.} section~\ref{#1})}
+\newcommand{\cfsectpage}[1]{(\textit{cf.} section~\ref{#1}, page~\pageref{#1})}
+\providecommand{\figureref}[1]{\figname~\ref{#1}}
+\providecommand{\cftab}[1]{(\textit{cf.} tableau~\ref{#1})}
+\newcommand{\cmd}[1]{{\upshape\texttt{\symbol{"5C}#1}}}
+
+\newenvironment{remarque}
+{\description \item[Remarque:] \ \slshape}
+{\enddescription}
+
+\makeatletter
+\newbox\sf@box
+\newenvironment{SubFloat}[2][]%
+  {\def\sf@one{#1}%
+   \def\sf@two{#2}%
+   \setbox\sf@box\hbox
+     \bgroup}%
+  { \egroup
+   \ifx\@empty\sf@two\@empty\relax
+     \def\sf@two{\@empty}
+   \fi
+   \ifx\@empty\sf@one\@empty\relax
+     \subfloat[\sf@two]{\box\sf@box}%
+   \else
+     \subfloat[\sf@one][\sf@two]{\box\sf@box}%
+   \fi}
+\makeatother
+\renewcommand\floatpagefraction{.9}
+\renewcommand\topfraction{.9}
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+\renewcommand{\ttdefault}{pcr}
+\lstset{
+	tabsize=4,
+%	frame=single,
+	breaklines=true,
+	basicstyle=\ttfamily,
+	frame=tb,
+	framerule=0.2pt,
+%	frameround={tttt},
+	showstringspaces=false,
+	language=c,
+%	linewidth=0.95\textwidth,
+	keywordstyle=\color{black}\bfseries,
+%	keywordstyle=\color{blue},
+	commentstyle=\color{OliveGreen},
+	stringstyle=\color{red}\itshape,
+	inputencoding=utf8/latin1,
+	numbers=left,
+	numberstyle=\tiny,
+	numbersep=5pt,
+% OMP define
+emph={\#,pragma, taskwait, omp, task, depend}, emphstyle=\color{RoyalBlue}\bfseries,
+emph={[2]in,inout,out,cw}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={[3]tied,untied,shared}, emphstyle={[3]\color{Gray}\bfseries},
+emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
+emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
+    %moredelim=**[is][\only<3>{\color{red}}]{@}{@},
+}
+\lstdefinestyle{smaller}{basicstyle=\scriptsize\ttfamily}
+\lstMakeShortInline|
+
+\newcommand{\benchs}{KASTORS }
+\newcommand{\tool}{CarToN\xspace}
+
+\sloppy
+
+\begin{document}
+
+\title{Analysis and improvements of runtime strategies on NUMA architectures for dataflow applications}
+\author{
+  Philippe Virouleau \and François Broquedis \and Thierry Gautier \and Fabrice Rastello
+}
+\institute{
+   Inria,
+   Univ. Grenoble Alpes,  CNRS, Grenoble Institute of Technology, LIG, Grenoble, France
+   LIP, ENS de Lyon, France\\
+   \email{firstname.lastname@inria.fr}\\
+   \email{thierry.gautier@inrialpes.fr}\\
+}
+\date{}
+\maketitle
+
+\begin{abstract}
+  Dataflow programming models enable the programmer to pass significant information to the underlying runtime system.
+  Using such an approach allows both the compiler and the runtime system to know exactly which data are read or written by a given task, and how these data will be used through the program lifetime.
+  Data placement and task scheduling strategies have a significant impact on performances when considering NUMA architectures.  
+  Most widely used dataflow runtimes use workstealing to schedule tasks-based programs, and several strategies exist to improve their execution on NUMA architectures.
+
+  In this paper we propose an approach to fully characterize the behavior of critical parts of an application over a given architecture, that can then be used to simulate the overall performance of an application given a selection of runtime workstealing strategies.
+  We first propose a tool, \tool, that can be used to make a comprehensive analysis of the critical parts of an application on various NUMA architectures, as well as the architecture themselves.
+  We then propose a runtime simulator for NUMA architectures, that can use the data provided by \tool in its model to predict the overall application performance.
+  We study several models and workstealing strategies for the simulator, and compare them to similar strategies that have been implemented in actual runtime systems.
+\smallskip
+  \noindent\textbf{Keywords:}
+  \emph{
+    task dependencies, benchmark, runtime systems, NUMA, CarToN, scheduling, work-stealing, dataflow, simulation
+  }
+\end{abstract}
+
+
+\section{Introduction}
+
+%While non-uniform memory access (NUMA) architectures stand today as one of the most popular design to build large-scale shared memory machines, exploiting them at their full potential remains challenging.
+%On such architectures, the memory is split into several NUMA nodes and
+%both bandwidth and latency depend on which processor accesses specific data :
+%accessing memory allocated locally is most of the time faster than accessing data allocated to remotely-located NUMA nodes.
+%Controlling data locality over the application lifetime is one of the key steps to
+%achieving both good performance and scalability on these architectures.
+
+%Task-based parallel programming environments like OpenMP have become very popular when it comes to program shared memory machines with hundreds of cores. Indeed, they offer ways of expressing massive fine-grain parallelism with a relatively low overhead. Most of them also come with facilities to dynamically perform load balancing of tasks over the processors. Even if such characteristics fill the need of generating more and more parallelism out of parallel applications, standard parallel programming environments still not explicitly address the problem of data locality on NUMA systems.
+
+%The runtime system plays a central role in the execution of a task-based parallel application.
+%For example, it is responsible for assigning ready tasks to the target platforms' processors. 
+%It is also in charge of performing load balancing when a processor idles.
+%Both these decisions should take the architecture topology into account in order to avoid NUMA-related performance penalties on the overall application performance.
+
+%The recent addition of data dependencies to the OpenMP tasking model provides the
+%runtime system with very precise information about which part of an application accesses which variables. 
+%Thanks to these dependencies, the runtime system knows which memory areas are read or written by which task. As shown in this paper, the task scheduler can rely on this information when assigning tasks to processors to implement NUMA-aware strategies.
+
+%This paper describes several of these strategies we implemented inside the \kaapi~\cite{kaapi} runtime system.
+%We identified three major steps in the task scheduler workflow that may have an impact on parallel applications on NUMA systems : the data distribution, the assignment of ready tasks to the processors and the way the task scheduler browses the architecture topology to perform load balancing.
+%This paper describes and evaluates them, showing how they impact the application performance on a 192-core NUMA machine.
+%We also compare them to state-of-the-art task scheduling strategies taken from related works and implemented within \kaapi.
+
+%The layout of this paper falls into six sections as follows.
+%In Section~\ref{sec:background}, we first give some background on NUMA architectures
+%and the task programming model with data dependencies.
+%We  then describe in Section~\ref{sec:contributions} the ideas, strategies and implementation details that we used to improve the runtime performances
+%for these applications. Section~\ref{sec:performances-evaluation} is devoted to the presentation performances evaluation.
+%We eventually present some related works in Section~\ref{sec:related-work}
+%before concluding.
+
+
+\section{NUMA architectures design and exploitation}
+\label{sec:background}
+\subsection{Hardware background}
+\label{sec:hardware}
+Most of nowadays parallel shared memory architectures are built according to a NUMA design where the memory is physically split into several banks attached to processors.
+Many vendors assemble these banks in a hierarchical way, thus building shared memory machines embedding several hundreds of cores.
+Exploiting such architectures at their full potential requires a fine control of the execution of a parallel application, as accessing local memory is most of the time faster than accessing memory stored in a memory bank attached to a remote processor.
+
+The machine we experimented on is an SGI UV2000 platform made of 24 NUMA nodes.
+Each NUMA node holds an 8-core Intel Xeon E5-4640 CPU for a total of 192 cores.
+We refer to this machine as Intel192 in the paper. 
+%\begin{figure}
+%\begin{center}
+%\begin{tikzpicture}[scale=0.6]
+%\tikzset{VertexStyle/.append style = {minimum size = 30pt, inner sep = 0pt}}
+%
+%\Vertex[x=0, y=0, L=$n_{14,15}$]{n0}
+%\Vertex[x=0, y=2, L=$n_{22,23}$]{n4}
+%\Vertex[x=0, y=4, L=$n_{8,9}$]{n8}
+%\Vertex[x=0, y=6, L=$n_{12,13}$]{n12}
+%\Vertex[x=2, y=0, L=$n_{10,11}$]{n1}
+%\Vertex[x=2, y=2, L=$n_{6,7}$]{n5}
+%\Vertex[x=2, y=4, L=$n_{0,1}$]{n9}
+%\Vertex[x=2, y=6, L=$n_{16,17}$]{n13}
+%
+%\Vertex[x=4, y=0, L=$n_{20,21}$]{n2}
+%\Vertex[x=4, y=2, L=$n_{4,5}$]{n6}
+%\Vertex[x=4, y=4, L=$n_{2,3}$]{n10}
+%\Vertex[x=4, y=6, L=$n_{10,11}$]{n14}
+%\Vertex[x=6, y=0, L=$n_{12,13}$]{n3}
+%\Vertex[x=6, y=2, L=$n_{8,9}$]{n7}
+%\Vertex[x=6, y=4, L=$n_{18,19}$]{n11}
+%\Vertex[x=6, y=6, L=$n_{14,15}$]{n15}
+%
+%\Edge(n0)(n5)
+%\Edge(n4)(n5)
+%\Edge(n1)(n5)
+%
+%\Edge(n13)(n9)
+%\Edge(n12)(n9)
+%\Edge(n8)(n9)
+%
+%\Edge(n15)(n10)
+%\Edge(n14)(n10)
+%\Edge(n11)(n10)
+%
+%\Edge(n3)(n6)
+%\Edge(n2)(n6)
+%\Edge(n7)(n6)
+%
+%\Edge(n9)(n5)
+%\Edge(n9)(n10)
+%\Edge(n5)(n10)
+%\Edge(n9)(n6)
+%\Edge(n5)(n6)
+%\Edge(n10)(n6)
+%
+%\end{tikzpicture}
+%\end{center}
+%\caption{Memory topology of the Intel192 SGI UV2000 machine. \TG{Je supprimerai la figure.}}
+%\label{fig:idchire}
+%\end{figure}
+The memory topology is organized by pairs of NUMA nodes connected together through Intel QuickPath Interconnect.
+These pairs can communicate together through a proprietary fabric called NUMALink6 with up to two hops.
+%, represented by the edges of the graph.In other words, taking node $n_0$ as example :
+%\begin{itemize}
+%\item node $n_0$ communicates with node $n_1$ through Intel QPI ;
+%\item node $n_0$ is one hop away from node $n_4$ \emph{(e.g. communications between node $n_0$ et node $n_4$ cross one NUMALink6 memory controller)};
+%\item node $n_0$ is two hops away from node $n_{20}$ \emph{(e.g. communications between node $n_0$ et node $n_{20}$ cross two NUMALink6 memory controllers)};
+%\end{itemize}
+
+Table \ref{tab:idchire} shows the distances advertised by the hwloc library~\cite{DBLP:conf/pdp/BroquedisCMFGMTN10}
+that represents the communication time for different distances normalized to the time of a local communication.
+Distances named \textit{local} and \textit{peer} form a pair of NUMA nodes (through Intel QPI),
+other nodes are either one hop away or two hops away (through NUMALink6).
+%node $n_0$ to any other node of the Intel192 machine, whether the node is a peer (node $n_1$ in this case), is located one hop away (nodes $n_2$ to $n_9$, $n_{12}$, $n_{13}$, $n_{16}$ and $n_{17}$) or is located two hops away (nodes $n_{10}$, $n_{11}$, $n_{14}$, $n_{15}$ and $n_{18}$ to $n_{23}$). These factors, which have been correlated with experimental values on both bandwidth and latency by Pilla et al.~\cite{pilla:tel-00981136}, show how much impact the architecture topology may have on a parallel application performance.
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\begin{table}
+\caption{NUMA distances from node 0 advertised by the hwloc library on Intel192.}
+\begin{center}
+\begin{tabular}{C{3cm} C{2cm} C{2cm} C{2cm} C{2cm}}
+    \toprule[0.15em]
+		\emph{NUMA nodes location} & \emph{local} & \emph{peer} & \emph{one hop away} & \emph{two hops away} \\
+    \midrule[0.1em]
+	hwloc distances & 1.0 & 5.0 & 6.5 & 7.9 \\
+    \bottomrule[0.15em]
+\end{tabular}
+\end{center}
+\label{tab:idchire}
+\end{table}
+
+\subsection{Software background}
+
+To exploit  large-scale shared memory architectures, the application programmer needs:
+\begin{enumerate}
+\item to express massive fine grain parallelism to get the most out of the numerous processing units of the platform ;
+\item to control the execution of the application, especially the way computations and data are distributed over the platform, to prevent the NUMA design to have a negative impact on the overall application performance.
+\end{enumerate}
+
+Task-based parallel programming environments provide ways of expressing fine grain parallelism that can be dynamically assigned to processors at runtime.
+OpenMP~\cite{openmp40}, the de-facto standard for shared-memory parallel programming, supports task parallelism with dependencies since revision 4.0.
+
+\subsubsection{A glimpse at OpenMP tasking}
+
+An OpenMP \emph{task} can be seen as an independent \emph{unit of work} an OpenMP thread can execute.
+Tasks can be created by an OpenMP thread and executed by any thread of the same parallel region. 
+As managing tasks at runtime is way cheaper than creating and synchronizing threads, the application programmer can take the parallelization of its application further, as he can now consider portions of code that were too fine grain to be parallelized using only threads.
+The synchronization of OpenMP 3.0 tasks is performed thanks to the |taskwait| keyword that waits for the completion of all the tasks generated from the current OpenMP parallel region.
+On one hand, the application programmer is responsible for creating and synchronizing OpenMP tasks explicitly. 
+On the other hand, the runtime system is in charge of correctly assigning tasks to threads during the application execution.
+
+OpenMP 4.0 pushes the concept of task further introducing the |depend| keyword to specify the access mode of each shared variable a task will access during its execution. 
+Access modes can be set to either |in|, |out| or |inout| whether the corresponding variable is respectively read as input, written as output or both read and written by the considered task. 
+This information is then processed by the underlying runtime system to decide whether a task is ready for execution or should first wait for the completion of other ones.
+
+\subsubsection{KASTORS Benchmark suite}
+Listing ~\ref{lulst} shows the implementation of a Cholesky factorization 
+implemented with OpenMP task dependencies. 
+This factorization algorithm comes from the PLASMA library and is very similar to the one implemented in the KASTORS benchmark suite~\cite{virouleau:hal-01081974}.
+Task dependencies support comes with several benefits. First, task
+dependencies involve decentralized, selective synchronization operations
+that should scale better than the broad-range taskwait-based approaches.
+In some situations, this way of programming unlocks more valid execution
+scenarios than explicitly synchronized tasks, which provides the runtime
+system with many more valid task schedules to choose from. For example, in the Cholesky factorization,
+many instances of  the |dtrsm|, |dsyrk| and |dgem| BLAS computations can legally
+run concurrently when executing the version with task dependencies.
+Secondly, information about task dependencies also enables the runtime system
+to optimize further, such as improving tasks and data placement.
+
+\begin{figure}[tbp]
+\hrule
+\begin{minipage}[t]{.43\textwidth}
+\begin{lstlisting}[frame=none,style=smaller,showlines=true]{lst:LU-deps1}
+for (size_t k=0; k < NB; ++k) {
+#pragma omp task shared(A) \
+  depend(inout: A[k][k]) 
+  dpotrf(NB,&A[k][k]);
+
+  for (int m=k; m < NB; ++m) 
+#pragma omp task shared(A)\
+  depend(in: A[k][k]) \
+  depend(inout: A[m][k]) 
+    dtrsm(NB,&A[k][k],&A[m][k]);
+
+\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}[t]{.485\textwidth}
+\begin{lstlisting}[frame=none,style=smaller,firstnumber=12]{lst:LU-deps2}
+  for (int m=k; m < NB; ++m) {
+#pragma omp task shared(A)\
+  depend(in: A[m][k]) \
+  depend(inout: A[m][m]) 
+   dsyrk(NB,&A[m][k], &A[m][m]);
+
+    for (int n=k; n < m; ++n)
+#pragma omp task shared(A)\
+  depend(in: A[m][k],A[n][k])\
+  depend(inout: A[m][n]) 
+     dgemm(NB,
+       &A[m][k],&A[n][k],&A[m][n]);
+  }
+ }
+\end{lstlisting}
+\end{minipage}
+\hrule
+\caption{Cholesky factorization with OpenMP-4.0 task dependencies} \label{lulst}
+\end{figure}
+
+
+
+\section*{Acknowledgments}
+
+This work is integrated and supported by the ELCI  project, a French FSN ("Fond pour la Société Numérique")
+project that associates academic and industrial partners to design and provide software environment for very high performance
+computing.
+  \small \bibliographystyle{Styles/iplain}
+%\nocite{*}
+  \bibliography{Bib/paper}
+
+\end{document}
