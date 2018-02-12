@@ -1,19 +1,19 @@
 \section{Présentation et caractéristiques des machines}\label{sec:contribs:machines}
 
-Nous présentons dans cette sections deux machines NUMA de générations différentes et au caractéristiques assez différentes.
+Nous présentons dans cette section deux machines NUMA de générations et de caractéristiques différentes.
 La première, \emph{idchire}, est basée sur des processeurs Intel Sandy Bridge, et possède un nombre important de nœuds NUMA.
-La seconde, \emph{brunch}, est basé sur des processeurs Intel plus récents de la génération Broadwell, et dispose d'un nombre assez faible de nœud NUMA.
+La seconde, \emph{brunch}, est basée sur des processeurs Intel plus récents de la génération Broadwell, et dispose d'un nombre assez faible de nœuds NUMA.
 
 \subsection{idchire}\label{sec:contribs:machines:idchire}
 
 
 Cette machine est équipée de 24 processeurs Intel(R) Xeon(R) CPU E5-4640 (Sandy Bridge), cadencés à 2.4 GHz.
-Chacun de ce processeurs est associé à 31 Go de RAM pour former un nœud NUMA, ils disposent de 8 cœurs physiques partageant 20 Mo de cache L3 (20-ways associatif).
-Chacun des cœur à accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2 (8-ways associatif).
+Chacun de ces processeurs est associé à 31 Go de RAM pour former un nœud NUMA, et dispose de 8 cœurs physiques partageant 20 Mo de cache L3 (20-ways associatif).
+Chacun des cœurs a accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2 (8-ways associatif).
 Les latences et bandes passantes relatives à chacun des niveaux de cache sont présentées dans le tableau~\ref{tab:synthese-processeurs}.
 
 La machine entière dispose donc de 192 cœurs physiques, et de 744 Go de RAM.
-Les processeurs Sandy Bridge disposent de l'extension vectorielle AVX, permettant d'effectuer 4 additions et 4 multiplication de nombres flottant à double précision en un cycle, portant le pic de performance théorique de la machine à 3.6 TFLOPs.
+Les processeurs Sandy Bridge disposent de l'extension vectorielle AVX, permettant d'effectuer 4 additions et 4 multiplications de nombres flottant à double précision en un cycle, portant le pic de performance théorique de la machine à 3.6 TFLOPs.
 
 \subsubsection{Topologie}
 
@@ -50,8 +50,12 @@ Néanmoins cette simple <<carte>> ne suffit pas à caractériser complètement l
 \subsubsection{Mesure des liens}\label{sec:contribs:machines:idchire:liens}
 
 En dehors de l'accès aux caches locaux, il y a 4 liens à quantifier, identifiés sur la Figure~\ref{fig:contribs:machines:idchire:topo-liens}.
-Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques que nous avons exécuté via \outil~: pour un nœud NUMA source donné (ici 0), nous avons alloué et initialisé deux tableaux de 200 Mo. Le premier sur le nœud source, et le second sur le nœud local. Nous avons ensuite effectué une copie du tableau source vers le tableau local (via |memcpy|) et mesuré le temps de l'opération.
-Pour chaque type de nœud source (même nœud, distant sur le même groupe, distant via un rebond, distant via deux rebonds), nous avons effectués de une à huit copies simultanées.
+Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques que nous avons exécutés via \outil~: pour un nœud NUMA source donné (ici 0), nous avons alloué et initialisé deux tableaux de 200 Mo. Le premier sur le nœud source, et le second sur le nœud local. Nous avons ensuite effectué une copie du tableau source vers le tableau local (via |memcpy|) et mesuré le temps de l'opération.
+Pour chaque type de nœud source (même nœud, distant sur le même groupe, distant via un rebond, distant via deux rebonds), nous avons effectué de une à huit copies simultanées.
+
+\begin{todo}
+  scenario yaml en annexe
+\end{todo}
 
 
 La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante point à point, en fonction de nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
@@ -76,12 +80,12 @@ La bande passante maximale en sortie de nœud est donc de 7.5 Go/s, et commence 
 
 Cette machine est équipée de 4 processeurs Intel(R) Xeon(R) CPU E7-8890 v4 (Broadwell), cadencés à 2.2 GHz.
 
-Chacun de ce processeurs est associé à 378 Go de RAM pour former un nœud NUMA, ils disposent de 24 cœurs physiques partageant 60 Mo de cache L3 (20-ways associatifs).
-Chacun des cœur à accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2.
+Chacun de ces processeurs est associé à 378 Go de RAM pour former un nœud NUMA, ils disposent de 24 cœurs physiques partageant 60 Mo de cache L3 (20-ways associatifs).
+Chacun des cœurs a accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2.
 Les latences et bandes passantes relatives à chacun des niveaux de cache sont présentées dans le tableau~\ref{tab:synthese-processeurs}.
 
 La machine entière dispose donc de 96 cœurs physiques, et de 1.5 To de RAM.
-Les processeurs Broadwell disposent d'instructions FMA~\footnote{\emph{Fused Multiply-Add}, permettant d'effectuer une addition et une multiplication en une étape}, permettant d'effectuer 8 additions et multiplications de nombres flottant à double précision en un cycle, portant le pic de performance théorique de la machine à 3.3 TFLOPs.
+Les processeurs Broadwell disposent d'instructions FMA~\footnote{\emph{Fused Multiply-Add}, permettant d'effectuer une addition et une multiplication en une étape}, permettant d'effectuer 8 additions et multiplications de nombres flottants à double précision en un cycle, portant le pic de performance théorique de la machine à 3.3 TFLOPs.
 
 
 \subsubsection{Topologie}
@@ -92,7 +96,7 @@ Les processeurs Broadwell disposent d'instructions FMA~\footnote{\emph{Fused Mul
   \caption{Topologie schématique complète de brunch}\label{fig:contribs:machines:brunch:topo-liens}
 \end{figure}
 
-L'interconnexion des nœuds NUMA est effectué à travers l'Intel \emph{Quick Path Interconnect} (QPI).
+L'interconnexion des nœuds NUMA est effectuée à travers l'Intel \emph{Quick Path Interconnect} (QPI).
 Contrairement à idchire, la topologie de la machine est relativement plate~: les nœuds sont directement connectés les uns aux autres, et seule la notion d'accès distant ou local permet de distinguer une hiérarchie.
 La topologie complète de la machine est représentée sur la figure~\ref{fig:contribs:machines:brunch:topo-liens}
 
@@ -113,13 +117,13 @@ Bien qu'une diagonale se dégage clairement, la différence entre accès local e
 
 \subsubsection{Mesure des liens}
 
-De même que pour idchire, nous avons effectué des observations complémentaires pour caractériser plus précisément les liens locaux et distant, afin de déterminer leur saturation.
+De même que pour idchire, nous avons effectué des observations complémentaires pour caractériser plus précisément les liens locaux et distants, afin de déterminer leur saturation.
 Les résultats de ces expériences ont été rassemblés sur la figure~\ref{fig:contribs:machines:brunch:saturation}.
 Bien que la bande passante soit bien plus importante que sur idchire, les liens arrivent à saturation bien plus vite~: à peine 20\% de charge du nœud permet de saturer la bande passante.
 
 \bigskip
 \bigskip
 
-Ces résultats sur les capacités physique des machines vont avoir un impact important dans la section suivante~: nous allons faire une étude de cas d'une application - la factorisation de Cholesky, et nous allons en étudier individuellement les parties critiques.
+Ces résultats sur les capacités physiques des machines vont avoir un impact important dans la section suivante~: nous allons faire une étude de cas d'une application - la factorisation de Cholesky, et nous allons en étudier individuellement les parties critiques.
 Certaines de ces parties critiques peuvent utiliser un large ensemble de données, en pleine charge de la machine les performances seront donc limitées par les résultats que nous venons de décrire.
 

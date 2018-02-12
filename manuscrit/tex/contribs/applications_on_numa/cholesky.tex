@@ -17,7 +17,7 @@ Où $A$ est une matrice symétrique définie positive de nombre réels, et $L$ e
 Pour paralléliser la résolution de cette équation, on va découper la matrice $A$ par bloc, et appliquer un algorithme de Cholesky par bloc.
 On peut donc caractériser une factorisation de Cholesky par sa taille de bloc et sa largeur en nombre de blocs.
 
-L'algorithme de résolution par bloc repose sur quatre algorithmes basiques d'algèbre linéaire tirés des \emph{BLAS} - \emph{Basic Linear Algebra Subprograms} - décrit ci-dessous~:
+L'algorithme de résolution par bloc repose sur quatre algorithmes basiques d'algèbre linéaire tirés des \emph{BLAS} - \emph{Basic Linear Algebra Subprograms} - décrits ci-dessous~:
 
 
 \paragraph{\potrfcolor{POTRF(A)}}
@@ -96,7 +96,7 @@ Les \gemm sont donc très largement majoritaires dans l'algorithme quand la larg
 
 \subsection{Observations préliminaires et limites}\label{sec:contribs:apps:cholesky:observations}
 
-La figure~\ref{fig:context:granularity} a montré qu'on pouvait observé l'impact de certains paramètres, tels que la taille de bloc ou le support exécutif, sur les performances globales.
+La figure~\ref{fig:context:granularity} a montré qu'on pouvait observer l'impact de certains paramètres, tels que la taille de bloc ou le support exécutif, sur les performances globales.
 
 Certains supports exécutifs permettent d'aller plus loin via un système de traces, permettant d'observer certaines caractéristiques de tâches particulières.
 
@@ -138,9 +138,9 @@ Nous allons donc aborder d'une part les types de scénarios exécutés via \outi
 
 \subsubsection{Description des scénario}\label{sec:contribs:apps:cholesky:scenario}
 
-Afin d'étudier le comportement de chaque noyau impliqué dans Cholesky, nous avons définie des scénerios où ils sont exécutés avec un contrôle sur les conditions d'exécution.
+Afin d'étudier le comportement de chaque noyau impliqué dans Cholesky, nous avons défini des scénarios où ils sont exécutés avec un contrôle sur les conditions d'exécution.
 
-Pour un noyaux donné (parmi \potrf, \trsm, \syrk, \gemm), le scénario de base est le suivant :
+Pour un noyau donné (parmi \potrf, \trsm, \syrk, \gemm), le scénario de base est le suivant :
 \begin{itemize}
   \item Allocation et initialisation des données sur un nœud précis.
   \item Exécution d'un certain nombre de répétitions du noyau choisi (par défaut 50), soit sur un cœur du même nœud, soit sur un cœur distant, pour une taille de bloc donnée.
@@ -151,9 +151,9 @@ Pour évaluer le comportement des noyaux en fonction de la charge de la machine,
 
 Il y a donc plusieurs paramètres que l'on peut faire varier pour changer les conditions d'exécution~:
 \begin{itemize}
-  \item Le nombre de noyaux s'exécutant simultanément
-  \item L'utilisation de données distantes ou locales
-  \item La taille du bloc sur lequel appliquer le noyau
+  \item Le nombre de noyaux s'exécutant simultanément~;
+  \item L'utilisation de données distantes ou locales~;
+  \item La taille du bloc sur lequel appliquer le noyau.
 \end{itemize}
 
 Les trois sections suivantes décrivent l'impact des changements de ces paramètres, et illustrent certaines caractéristiques des machines utilisées qui donnent des opportunités pour de possibles améliorations du support exécutif.
@@ -166,13 +166,13 @@ Les trois sections suivantes décrivent l'impact des changements de ces paramèt
   \caption{Performances des noyaux (B=256) avec données locales sur idchire}\label{fig:contribs:apps:cholesky:perf-256-local}
 \end{figure}
 
-Afin d'évaluer l'impact de la charge de la machine, nous avons lancé des scénarios avec un nombre variable d'exécution concurrentes de chacun des noyaux. La figure~\ref{fig:contribs:apps:cholesky:perf-256-local} montre la performance moyenne (en GFlops) de chaque noyau, en fonction du nombre de cœurs exécutant des noyaux en concurrence.
+Afin d'évaluer l'impact de la charge de la machine, nous avons lancé des scénarios avec un nombre variable d'exécutions concurrentes de chacun des noyaux. La figure~\ref{fig:contribs:apps:cholesky:perf-256-local} montre la performance moyenne (en GFlops) de chaque noyau, en fonction du nombre de cœurs exécutant des noyaux en concurrence.
 Par exemple pour déterminer le point d'abscisse 150 sur la figure pour un \gemm, nous avons exécuté 50 répétitions de \gemm sur chacun des 150 premiers cœurs de la machine idchire, de manière indépendante et concurrente.
 La performance moyenne pour ce point est obtenue en faisant la moyenne des performances sur l'ensemble des exécutions.
 Pour ce cas la taille de bloc a été fixée à 256, avec les données allouées et initialisées localement.
 
 Pour une taille de bloc de 256, la quantité maximale de données utilisée par l'un des noyaux (\gemm) est de 256*256*8*3 = 1.5 Mo. Avec un nœud de 8 cœurs exécutant 8 exécutions concurrentes, la quantité totale de données utilisée serait au pire de 12.58 Mo, soit environ 50\% des 20Mo de cache L3 disponible.
-On pourrait donc s'attendre à ce que la performance moyenne des noyaux ne soit impactés que par des effets locaux aux nœuds.
+On pourrait donc s'attendre à ce que la performance moyenne des noyaux ne soit impactée que par des effets locaux aux nœuds.
 
 Néanmoins les courbes montrent clairement une dégradation des performances de chaque noyaux lorsque la charge de la machine augmente.
 Ce comportement a également été observé pour d'autres tailles de blocs. Sur brunch le comportement a été également observé, avec une dégradation moindre néanmoins.
@@ -203,10 +203,10 @@ Nous avons donc déroulé des scénarios avec des noyaux utilisant des données 
   \caption{Performances GEMM, POTRF (B=512) avec données distantes sur brunch}\label{fig:contribs:apps:cholesky:perf-512-remote-brunch}
 \end{figure}
 
-Les figures~\ref{fig:contribs:apps:cholesky:perf-512-remote-idchire} et~\ref{fig:contribs:apps:cholesky:perf-512-remote-brunch} illustrent les performances de deux noyaux, \gemm et \potrf, effectués en concurrence sur des blocs de 512, en fonction du type d'accès, sur idchire et brunch, respectivement.
+Les figures~\ref{fig:contribs:apps:cholesky:perf-512-remote-idchire} et~\ref{fig:contribs:apps:cholesky:perf-512-remote-brunch} illustrent les performances de deux noyaux, \gemm et \potrf, exécutés en concurrence sur des blocs de 512, en fonction du type d'accès, sur idchire et brunch, respectivement.
 
 Avec une telle taille de bloc, l'ensemble des données pour tous les \potrf tient dans le cache L3, mais ce n'est pas le cas pour \gemm.
-Pour les \potrf la dégradation de performances est moindre : les données tiennent dans le cache L3, il y a donc un coup pour rapatrier les données, mais une fois les données dans le cache L3 il n'y a plus besoin de faire d'accès distants.
+Pour les \potrf la dégradation de performances est moindre : les données tiennent dans le cache L3, il y a donc un coût pour rapatrier les données, mais une fois les données dans le cache L3 il n'y a plus besoin de faire d'accès distants.
 
 Pour les \gemm, une utilisation de seulement quelques cœurs ne montre pas une différence de performances flagrante, en revanche le lien en sortie de nœud arrive assez vite à saturation (voir section~\ref{sec:contribs:machines:idchire:liens}), ce qui entraine une dégradation massive de performances.
 À la fois pour idchire et brunch, on peut observer l'impact de la bande passante sur les performances : les courbes sont en dent de scie avec une période égale à la taille des nœuds sur chaque machine (8 sur idchire, 24 sur brunch).
@@ -221,15 +221,15 @@ En revanche ce phénomène devient évident lorsque l'on affiche la moyenne du t
   \caption{Distribution des performances de chaque noyau (Bloc = 512), en fonction du nombre total d'exécutions concurrentes, sur brunch}\label{fig:contribs:apps:cholesky:distrib-load-512}
 \end{figure}
 
-Le premier panneau montre la distribution des \gemm et des \potrf pour une exécution sur 24 cœurs concurrents situés sur le même nœuds.
-Cette distribution montre un unique pic bien définie pour chaque noyau (environ 13 GFlops pour \potrf, et 16.5 pour \gemm).
+Le premier panneau montre la distribution des \gemm et des \potrf pour une exécution sur 24 cœurs concurrents situés sur le même nœud.
+Cette distribution montre un unique pic bien défini pour chaque noyau (environ 13 GFlops pour \potrf, et 16.5 pour \gemm).
 En revanche le passage à 26 cœurs (avec donc 2 cœurs situés seuls sur un autre nœud), montre une distribution avec deux pics~: un pic important correspondant au 24 premiers cœurs, et un second pic plus petit, montrant des performances beaucoup plus grandes, pour les 2 cœurs situé sur l'autre nœud.
 Les autres panneaux montrent l'évolution de ces pics pour arriver au panneau 48, où les deux nœuds sont complètement utilisés.
 
 %Note : Ici il y a aussi deux pics sur le panneau 48. Cela doit venir de la manière dont j'ai initialisé les accès distants : le premier nœud utilise des données du deuxième nœud, qui utilise des données du troisième nœud. Donc en pratique les liens du deuxième nœuds sont plus utilisés que ceux du premier : il doit donc un peu peiner à fournir les données nécessaires au premier nœud, ce qui expliquerait pourquoi il y a deux groupes de perf.
 
 
-L'impact de la localité des données est majeure dans le cas où le jeu de données manipulé par l'ensemble des cœurs ne tient pas dans le cache L3.
+L'impact de la localité des données est majeur dans le cas où le jeu de données manipulé par l'ensemble des cœurs ne tient pas dans le cache L3.
 Étant donné que la plus grande proportion des noyaux de Cholesky manipule 2 ou 3 blocs, la dégradation de performance devrait être importante lorsque la taille de bloc dépasse environ 320.
 
 % Note : à la fois sur brunch et idchire, chaque cœur peut utiliser environ 2.5Mo de cache L3

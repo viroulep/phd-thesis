@@ -1,21 +1,24 @@
 \section{Exécution précise de noyaux}\label{sec:contribs:outil}
 
+\begin{todo}
+  phrase d'intro
+\end{todo}
+
 \subsection{Besoins pour un outil spécifique: \outil}
 
 Il est en général assez facile d'étudier le comportement global d'une application, et d'observer les variations de ce comportement lorsqu'on change certains détails dans l'exécution, comme par exemple via l'utilisation de \emph{numactl}.
 
-En revanche, si l'on connait bien son application, on a envie de pouvoir étudier le comportement précis de certaines parties critiques de l'application afin de pouvoir identifier ce qui cause le comportement global.
+En revanche, si l'on connait bien son application, on a envie de pouvoir étudier le comportement précis de certaines de ses parties critiques afin de pouvoir identifier ce qui cause son comportement global.
 
-La suite naturelle de cette identification est de déterminer s'il y a des améliorations possibles pour ce comportement local, et comment l'améliorer en pratique.
+La suite naturelle de cette identification est de déterminer s'il existe des améliorations possibles pour ce comportement local, et comment l'améliorer en pratique.
 
 Dans le cas d'une application à base de flots de données, chaque partie de l'application est bien identifiée, et correspond à un nœud dans le graphe de tâches.
 Toutes les données manipulées par une partie de l'application sont facilement identifiées également, puisqu'il s'agit des connexions entre les nœuds du graphe de tâches.
 
-Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend à la fois du placement de son exécution, ainsi que du placement de ces données. On a donc envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données.
-
+Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend à la fois du placement de son exécution, ainsi que du placement de ces données. On a donc envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données qu'elle accède.
 Une fois cela fait, cela permettra d'identifier des potentielles variations de comportement, et ajuster les heuristiques d'ordonnancement pour prendre en compte ces variations.
 
-C'est à ce besoin que répond \outil : permettre à l'utilisateur de définir ce qu'il exécute et où, et garantir cette exécution, avec un certain nombre de variables observables.
+C'est à ce besoin que répond \outil : une fois que l'utilisateur a isolé les parties critiques de son application, \outil lui permet de définir lesquelles il souhaite exécuter et où, et lui garantir cette exécution, avec un certain nombre de variables observables.
 
 Dans la suite de ce chapitre, on appellera l'ensemble des paramètres décrivant cette expérience un \emph{scenario}.
 
@@ -25,22 +28,22 @@ Ce qu'on appelle ici un \emph{scenario} n'est ni plus ni moins que la descriptio
 Par exemple on pourrait vouloir "observer les performances en gigaflops d'une multiplication de matrices carrées sur le cœur 0 d'une machine".
 C'est un scenario simple, et l'exemple que l'on prendra pour illustrer les points un peu plus formel qui vont suivre.
 
-En pratique un scenario est défini de la manière suivante :
+En pratique un scenario est défini par les éléments suivants :
 \begin{itemize}
- \item Un ensemble de données et variables
- \item Une liste d'actions à effectuer
- \item Un ensemble de caractéristiques à observer
+ \item Un ensemble de données et variables~;
+ \item Une liste d'actions à effectuer~;
+ \item Un ensemble de caractéristiques à observer.
 \end{itemize}
 
-Cette définition très générique permet beaucoup de flexibilité, et les sections suivantes précisent les différentes caractéristiques de ces points, ainsi que des exemples concrêt d'utilisation.
+Cette définition très générique permet beaucoup de flexibilité, et les sections suivantes précisent les différentes caractéristiques de ces points, ainsi que des exemples concrêts d'utilisation.
 
 Il est important que le format de description d'un scenario soit humainement lisible, et ne conduise pas à une recompilation systématique du programme. C'est donc une description en YAML qui a été choisie.
 
 \subsubsection{Données et variables}
 
-Elles sont indispensables car c'est la dessus que vont se baser les actions du scenario.
+Elles sont indispensables car c'est là-dessus que vont se baser les actions du scenario.
 
-L'utilisateur doit fournir les noms et type des variables utilisées en paramètres des différents noyaux, elles peuvent être réutilisées par différents noyaux, mais dans tous les cas l'utilisateur est le seul responsable de leur gestion.
+L'utilisateur doit fournir les noms et types des variables utilisées en paramètre des différents noyaux, elles peuvent être réutilisées par différents noyaux, mais dans tous les cas l'utilisateur est le seul responsable de leur gestion.
 
 En pratique ces variables peuvent soit être des constantes, ou bien être initialisées par une action dans le scénario.
 
@@ -72,11 +75,11 @@ Chaque action peut avoir les caractéristiques suivantes :
   \item kernel: chaine de caractères avec le nom de l'action, correspondant à un noyau connu du programme.
   \item params: liste de variables à passer à l'action, leur nom doit correspondre à des données déclarées dans la section précédente.
   \item repeat: nombre entier indiquant le nombre de fois que cette action doit être répétée.
-  \item sync: booléen indiquant s'il faut synchroniser le démarrage de cette action avec celui des autres actions présentes dans les file d'attente des autres cœurs.
+  \item sync: booléen indiquant s'il faut synchroniser le démarrage de cette action avec celui des autres actions présentes dans les files d'attente des autres cœurs.
 \end{itemize}
 
-Si on continue dans l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice, le lancement du dgemm une fois que ces matrices sont initialisées.
-Afin d'avoir une mesure plus précise du comportement du noyau, on peut indiquer une répétition du noyau, ici on choisi 50 pour l'exemple.
+Si on continue à décrire l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice, le lancement du dgemm une fois que ces matrices sont initialisées.
+Afin d'avoir une mesure plus précise du comportement du noyau, on peut indiquer une répétition du noyau, ici on choisit 50 pour l'exemple.
 
 Voici en pratique à quoi ressemblerait un tel scenario :
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions,label=lst:tool:actions-example]
@@ -128,7 +131,7 @@ L'outil propose un certain nombre de caractéristiques observables :
   \item des compteurs de performances à travers PAPI
 \end{itemize}
 
-En continuant sur notre exemple, voici à quoi ressemblerait la section du scénario si nous souhaitions observer la performance de la multiplication de matrice en Gflops, le nombre de cycles passé dans l'action, ainsi que le nombre de cache miss au niveau 3 généré par l'action.
+En continuant sur notre exemple, voici à quoi ressemblerait la section du scénario si nous souhaitions observer la performance de la multiplication de matrice en Gflops, le nombre de cycles passés dans l'action, ainsi que le nombre de \emph{cache miss} de niveau 3 générés par l'action.
 
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'observateurs,label=lst:tool:watchers-example]
 watchers:
@@ -143,7 +146,7 @@ watchers:
 
 \subsection{Design de l'outil}
 
-Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'archicture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches.
+Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'architecture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches.
 
 Le flot d'exécution est le suivant :
 
@@ -152,11 +155,11 @@ L'outil charge le scenario fourni par l'utilisateur, créer les différentes don
 
 \paragraph{Déroulement des actions}
 Pour chacun des cœurs utilisés, un thread est créé et attaché à ce cœur. De plus, une file d'actions (FIFO) est créée pour ce thread.
-L'ensemble des actions sont poussées dans les tâches correspondantes dans l'ordre du fichier.
+L'ensemble des actions sont poussées dans les files correspondantes dans l'ordre du fichier.
 
-Dès que les threads sont créés ils commencent à exécuter les actions prêtes ; avant et après chaque actions l'ensemble des observateurs pour cette actions sont appelés afin de les collecter pour cette action.
+Les threads exécutent chacun les actions présentes dans leur file, et vont déclencher les mesures de chaque paramètre observé avant et après chaque action.
 
-Lorsque la dernière action du scenario est terminée, l'ensemble des données des observateurs est affiché à l'utilisateur sur la sortie standard.
+Lorsque la dernière action du scenario est terminée, l'ensemble des paramètres observés est affiché à l'utilisateur sur la sortie standard.
 
 \subsection{Application et exemples de scenario}
 
