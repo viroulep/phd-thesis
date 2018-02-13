@@ -37,7 +37,7 @@ On appelle cette quantité une \emph{ligne de cache}, et un exemple de taille st
 Lorsqu'une instruction demande le chargement d'une valeur située en mémoire, le contrôleur du cache reçoit la requête du processeur, détermine la ligne de cache correspondante à partir de l'adresse demandée, et effectue l'une des deux opérations suivantes :
 \begin{description}
   \item [Cache hit :] si la ligne correspondante est déjà présente dans le cache, la donnée est directement retournée au cœur.
-  \item [Cache miss :] si la ligne n'est pas présente, le contrôleur de cache va charger la valeur depuis la mémoire centrale vers le cache, et retourner la valeur au cœur.
+  \item [Cache miss :] si la ligne n'est pas présente, le contrôleur de cache va charger la valeur depuis la mémoire centrale ou un autre niveau de cache, et retourner la valeur au cœur.
 \end{description}
 
 %(je vire ça vu qu'on ne parle de niveaux de cache que plus tard) Si le cœur a accès à plusieurs niveaux de cache, la requête est transférée au niveau supérieur, et seul le dernier niveau effectue la requête à la mémoire centrale.
@@ -142,7 +142,7 @@ Un certain nombre d'alternatives ont donc été imaginées, et sont décrites ci
   \item Random : cette politique choisit une ligne à remplacer au hasard. Sa simplicité la rend facile à implémenter en pratique, il a notamment été utilisée dans les processeurs ARM Cortex-R~\cite{ARM-Cortex-R}.
   \item First-In First-Out : comme son nom l'indique, la ligne remplacée est la plus ancienne qui est rentrée dans le cache parmi celles présentes.
   \item Least Recently Used (LRU) : dans cette politique, chaque ligne dispose de plusieurs bits représentant la date de la dernière utilisation de cette ligne. La ligne remplacée est celle ayant été utilisée il y a le plus longtemps.
-  \item Pseudo-LRU : cette politique offre une version dégradée permettant de gérer des caches de grande taille,w.
+  \item Pseudo-LRU : cette politique offre une version dégradée permettant de gérer des caches de grande taille.
 Lorsque l'associativité du cache dépasse un certain seuil, le coût d'implémentation de LRU devient trop important~\cite{Kedzierski2010}, l'alternative proposée par les politiques pseudo-LRU est donc de remplacer une ligne parmi celles utilisées il y a le plus longtemps.
 Cela permet de limiter le nombre de bits nécessaire pour tracer les potentielles lignes à remplacer.
   \item Autres politiques adaptatives : dans le cas spécifique du cache de dernier niveau (LLC), certains fabricants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
