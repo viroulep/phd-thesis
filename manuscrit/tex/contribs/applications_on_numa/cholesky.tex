@@ -22,19 +22,19 @@ L'algorithme de résolution par bloc repose sur quatre algorithmes basiques d'al
 
 \paragraph{\potrfcolor{POTRF(A)}}
 
-Ce noyau effectue la factorisation de Cholesky de base sur une matrice $A$.
+Ce noyau effectue la factorisation de Cholesky de base sur une matrice symétrique définie positive $A$.
 
 \paragraph{\trsmcolor{TRSM(A, B)}}
 
-Ce noyau effectue l'opération suivante~: $A*X = B$, où $A$ est une matrice triangulaire, et $B$ une matrice générique. $B$ est écrasée par la matrice solution $X$.
+Ce noyau résoud l'équation suivante~: $A*X = B$, où $A$ est une matrice triangulaire, et $B$ une matrice générique. $B$ est écrasée par la matrice solution $X$.
 
 \paragraph{\syrkcolor{SYRK(A, C)}}
 
-Ce noyau effectue l'opération suivante~: $C = A*A' + C$, où $A$ est une matrice générique, et $C$ est une matrice symétrique.
+Ce noyau effectue l'opération suivante~: $C := A*A^t + C$, où $A$ est une matrice générique, et $C$ est une matrice symétrique.
 
 \paragraph{\gemmcolor{GEMM(A, B, C)}}
 
-Ce noyau effectue une multiplication de matrices génériques, définie de la manière suivante~: $C = A*B + C$, où $A$, $B$, et $C$ sont des matrices génériques.
+Ce noyau effectue une multiplication de matrices génériques, définie de la manière suivante~: $C := A*B + C$, où $A$, $B$, et $C$ sont des matrices génériques.
 
 \begin{figure}[h]
   \centering
@@ -77,7 +77,7 @@ Le chemin critique de l'application (en considérant un coût de 1 par tâche) e
   \caption{DAG d'un Cholesky de largeur 5}\label{fig:contribs:apps:cholesky:dag-5}
 \end{figure}
 
-Le nombre de tâches créées pour une largeur $k$, ainsi que le nombre d'opérations arithmétiques (ou \emph{flops}) en fonction de la taille de bloc $N$, sont résumés dans la table~\ref{tab:contribs:apps:cholesky:kernels-info}.
+Le nombre de tâches créées pour une largeur $k$, ainsi que le nombre d'opérations arithmétiques flottantes (ou \emph{flops}) en fonction de la taille de bloc $N$, sont résumés dans la table~\ref{tab:contribs:apps:cholesky:kernels-info}.
 
 \begin{table}[h]
 \def\arraystretch{1.5}
@@ -92,7 +92,11 @@ Le nombre de tâches créées pour une largeur $k$, ainsi que le nombre d'opéra
 \caption{Nombre et complexité des différents noyaux}\label{tab:contribs:apps:cholesky:kernels-info}
 \end{table}
 
-Les \gemm sont donc très largement majoritaires dans l'algorithme quand la largeur de la matrice augmente, et sont également les plus intensifs en terme d'opérations.
+\begin{todo}
+  Colonne intensité opérationnelle %(#flops/#bytes)
+\end{todo}
+
+Les \gemm sont donc très largement majoritaires dans l'algorithme quand la largeur de la matrice augmente.
 
 \subsection{Observations préliminaires et limites}\label{sec:contribs:apps:cholesky:observations}
 
@@ -122,7 +126,7 @@ On constate deux types de répartitions~:
 \begin{itemize}
   \item Une distribution relativement restreinte des cycles de chaque noyau, typiquement observée pour 16 cœurs.
     La distribution peut avoir plusieurs pics~: pour \gemm sur 16 cœurs par exemple.
-    Cela pourrait être expliqué par le nombre de cas possible pour le placement des blocs de données manipulés par le noyau~: avec 16 cœurs il y a 2 nœuds impliqués, et donc 4 cas pour la position des blocs (3 locaux, 2 locaux, 1 local, 3 distants), ce qui pourrait correspondre aux 4 niveaux de performances observés.
+    Cela pourrait être expliqué par le nombre de cas possibles pour le placement des blocs de données manipulés par le noyau~: avec 16 cœurs il y a 2 nœuds impliqués, et donc 4 cas pour la position des blocs (3 locaux, 2 locaux, 1 local, 3 distants), ce qui pourrait correspondre aux 4 niveaux de performances observés.
   \item Une distribution relativement large, typiquement observée pour un grand nombre de cœur. Pour un \gemm sur 192 cœurs, le nombre de cycles nécessaire pour l'exécution peut varier du simple au double !
 \end{itemize}
 
@@ -138,16 +142,16 @@ Nous allons donc aborder d'une part les types de scénarios exécutés via \outi
 
 \subsubsection{Description des scénario}\label{sec:contribs:apps:cholesky:scenario}
 
-Afin d'étudier le comportement de chaque noyau impliqué dans Cholesky, nous avons défini des scénarios où ils sont exécutés avec un contrôle sur les conditions d'exécution.
+Afin d'étudier le comportement de chaque noyau impliqué dans Cholesky, nous avons défini des scénarios au cours desquels les noyaux sont exécutés avec un contrôle sur les conditions d'exécution.
 
 Pour un noyau donné (parmi \potrf, \trsm, \syrk, \gemm), le scénario de base est le suivant :
 \begin{itemize}
-  \item Allocation et initialisation des données sur un nœud précis.
-  \item Exécution d'un certain nombre de répétitions du noyau choisi (par défaut 50), soit sur un cœur du même nœud, soit sur un cœur distant, pour une taille de bloc donnée.
+  \item Allocation et initialisation des données sur un nœud précis pour une taille de bloc donnée.
+  \item Exécution d'un certain nombre de répétitions du noyau choisi (par défaut 50) sur ces données, en plaçant le thread de calcul soit sur un cœur du même nœud que les données, soit sur un cœur distant.
   \item Observation de la performance en FLOPS.
 \end{itemize}
 
-Pour évaluer le comportement des noyaux en fonction de la charge de la machine, nous avons créé des scénarios exécutant plusieurs scenarios de base, de manière indépendante, et où le démarrage de l'exécution des noyaux est synchronisé.
+Pour évaluer le comportement des noyaux en fonction de la charge de la machine, nous avons créé des scénarios exécutant plusieurs scénarios de base de manière complètement indépendante (sur le calcul et les données utilisées), et où le démarrage de l'exécution des noyaux est synchronisé.
 
 Il y a donc plusieurs paramètres que l'on peut faire varier pour changer les conditions d'exécution~:
 \begin{itemize}
@@ -171,11 +175,11 @@ Par exemple pour déterminer le point d'abscisse 150 sur la figure pour un \gemm
 La performance moyenne pour ce point est obtenue en faisant la moyenne des performances sur l'ensemble des exécutions.
 Pour ce cas la taille de bloc a été fixée à 256, avec les données allouées et initialisées localement.
 
-Pour une taille de bloc de 256, la quantité maximale de données utilisée par l'un des noyaux (\gemm) est de 256*256*8*3 = 1.5 Mo. Avec un nœud de 8 cœurs exécutant 8 exécutions concurrentes, la quantité totale de données utilisée serait au pire de 12.58 Mo, soit environ 50\% des 20Mo de cache L3 disponible.
+Pour une taille de bloc de 256, la quantité maximale de données utilisée par l'un des noyaux (\gemm) est de 256*256*8*3 = 1.5 Mo. La taille du cache L2 étant de 256 Ko, le jeu de données ne tient pas dans ce cache. Mais avec un nœud de 8 cœurs exécutant 8 exécutions concurrentes, la quantité totale de données utilisée serait au pire de 12.58 Mo, soit environ 50\% des 20Mo de cache L3 disponible.
 On pourrait donc s'attendre à ce que la performance moyenne des noyaux ne soit impactée que par des effets locaux aux nœuds.
 
 Néanmoins les courbes montrent clairement une dégradation des performances de chaque noyaux lorsque la charge de la machine augmente.
-Ce comportement a également été observé pour d'autres tailles de blocs. Sur brunch le comportement a été également observé, avec une dégradation moindre néanmoins.
+Ce comportement a également été observé pour d'autres tailles de blocs. Sur brunch le comportement a été également observé, avec néanmoins une dégradation moindre.
 
 \begin{todo}
   ici l'explication est toujours pas évidente : certes le nombre de messages broadcasté dépend de la quantité de données utilisées (cf lien en commentaire), mais la source principale de comm c'est les miss au L3.
@@ -191,16 +195,17 @@ Ce comportement a également été observé pour d'autres tailles de blocs. Sur 
 
 La section~\ref{sec:contribs:machines} a montré des différences significatives dans les temps d'accès à la mémoire locale et distante.
 Nous avons donc déroulé des scénarios avec des noyaux utilisant des données distantes ou des données locales afin de pouvoir les comparer, et éventuellement déceler des comportements typiques.
+Lorsque les données sont dites <<locales>>, l'ensemble des données est allouée sur le nœud local. Lorsque les données sont dites <<distantes>>, l'ensemble des données est alloué sur le nœud suivant dans la hiérarchie de la machine.
 
 \begin{figure}[t!]
   \centering
   \includegraphics[width=0.95\textwidth]{kernel_512_remote_idchire}
-  \caption{Performances GEMM, POTRF (B=512) avec données distantes sur idchire}\label{fig:contribs:apps:cholesky:perf-512-remote-idchire}
+  \caption{Performances GEMM, POTRF (B=512) avec données distantes sur \emph{idchire}}\label{fig:contribs:apps:cholesky:perf-512-remote-idchire}
 \end{figure}
 \begin{figure}[h!]
   \centering
   \includegraphics[width=0.95\textwidth]{kernel_512_remote_brunch}
-  \caption{Performances GEMM, POTRF (B=512) avec données distantes sur brunch}\label{fig:contribs:apps:cholesky:perf-512-remote-brunch}
+  \caption{Performances GEMM, POTRF (B=512) avec données distantes sur \emph{brunch}}\label{fig:contribs:apps:cholesky:perf-512-remote-brunch}
 \end{figure}
 
 Les figures~\ref{fig:contribs:apps:cholesky:perf-512-remote-idchire} et~\ref{fig:contribs:apps:cholesky:perf-512-remote-brunch} illustrent les performances de deux noyaux, \gemm et \potrf, exécutés en concurrence sur des blocs de 512, en fonction du type d'accès, sur idchire et brunch, respectivement.
@@ -248,6 +253,8 @@ La figure~\ref{fig:contribs:apps:cholesky:perf-multiple-bs-idchire} montre la pe
 
 La taille de bloc n'a pas d'impact significatif sur le phénomène observé précédemment de dégradation des performances.
 Elle a bien un impact sur le niveau de performance globale de chaque noyau (qui dépend de l'implémentation des BLAS), mais le comportement général de chaque noyau reste le même.
+
+Cette conclusion est similaire lors d'un placement distant des données.
 
 
 \subsubsection{Impact de la bibliothèque BLAS}

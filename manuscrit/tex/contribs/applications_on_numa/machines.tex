@@ -50,7 +50,7 @@ Néanmoins cette simple <<carte>> ne suffit pas à caractériser complètement l
 \subsubsection{Mesure des liens}\label{sec:contribs:machines:idchire:liens}
 
 En dehors de l'accès aux caches locaux, il y a 4 liens à quantifier, identifiés sur la Figure~\ref{fig:contribs:machines:idchire:topo-liens}.
-Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques que nous avons exécutés via \outil~: pour un nœud NUMA source donné (ici 0), nous avons alloué et initialisé deux tableaux de 200 Mo. Le premier sur le nœud source, et le second sur le nœud local. Nous avons ensuite effectué une copie du tableau source vers le tableau local (via |memcpy|) et mesuré le temps de l'opération.
+Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques que nous avons exécutés via \outil~: pour un nœud NUMA source donné (ici 0), nous avons alloué et initialisé deux tableaux de 200 Mo. Le premier sur le nœud source, et le second sur le nœud cible. Nous avons ensuite effectué une copie du tableau source vers le tableau cible (via |memcpy|) et mesuré le temps de l'opération.
 Pour chaque type de nœud source (même nœud, distant sur le même groupe, distant via un rebond, distant via deux rebonds), nous avons effectué de une à huit copies simultanées.
 
 \begin{todo}
@@ -58,9 +58,11 @@ Pour chaque type de nœud source (même nœud, distant sur le même groupe, dist
 \end{todo}
 
 
-La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante point à point, en fonction de nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
+La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante point à point, en fonction du nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
+Pour chacune des courbes les threads effectuant les copies sont placés sur le nœud 0, et les données du tableau source sont placées soit sur le nœud local (nœud 0), le nœud du même groupe (nœud 1), un nœud situé à une distance 1 (nœud 2), et un nœud situé à une distance 2 (nœud 10).
+
 On constate que la bande passante maximum du lien local atteint 12.2 Go/s, et qu'il commence à saturer lorsque plus de la moitié des cœurs sont utilisés.
-Le lien groupe plafonne à 5.6 Go/s, le lien distant 1 plafonne à 5.1 Go/s, et le lien distant 2 à 4.8 Go/s.
+Le lien groupe plafonne à 5.6 Go/s, le lien à distance 1 plafonne à 5.1 Go/s, et le lien à distance 2 à 4.8 Go/s.
 On peut également noter que les communications point à point sont symétriques.
 
 \begin{figure}[ht]
@@ -71,9 +73,9 @@ On peut également noter que les communications point à point sont symétriques
 
 Pour terminer la caractérisation de ces liens, nous avons finalement mesuré la bande passante maximale que l'on peut obtenir en <<sortie>> d'un nœud, en saturant les différents liens.
 La figure~\ref{fig:contribs:machines:idchire:saturation-output} montre la bande passante cumulée lors d'une copie du nœud 0 vers un nœud distant, en fonction du nombre de threads effectuant une copie.
-La bande passante maximale en sortie de nœud est donc de 7.5 Go/s, et commence à saturer aux alentours d'une vingtaine de copies distantes.
+Les threads sont placés consécutivement sur les cœurs des nœuds 1, 2, 3, 4, et 10~; le lien local n'est donc pas utilisé, et seul les liens groupe, distant 1, et distant 2 sont utilisés.
 
-% TODO : si possible faire le lien saturation en sortie aussi, à voir si c'est pertinent de l'inclure
+La bande passante maximale en sortie de nœud est donc de 7.5 Go/s, et commence à saturer aux alentours d'une vingtaine de copies distantes.
 
 
 \subsection{brunch}\label{sec:contribs:machines:brunch}

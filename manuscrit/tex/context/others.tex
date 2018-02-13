@@ -293,15 +293,9 @@ Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le n
 \end{figure}
 
 La figure~\ref{fig:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
+Une description détaillée de ces supports exécutif sera faite dans la section~\ref{sec:contribs:perf_eval:portage_libkomp} pour libKOMP, et dans la section~\ref{sec:rw:other-runtimes} pour les autres.
+
 Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quel que soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
-
-\begin{todo}
-  @Thierry : revoir la courbe, en particulier quels runtimes affichés ?
-
-  Ici c'est la première fois qu'on parle d'ompss et libkomp, on peut ne parler que des trucs standards et ressortir dans une section éval de perf.
-
-  Ou faire un paragraphe de blabla rapide sur ompss et libkomp, en disant qu'on en parlera plus tard
-\end{todo}
 
 Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important. Cela est illustré sur la figure~\ref{fig:context:granularity} : avec OmpSs le grain optimal se situe dans un intervalle de tailles de blocs assez restreint (entre environ 250 et 350), alors qu'avec clang ou libkomp une taille de bloc entre 150 et 350 permet d'obtenir des performances sensiblement équivalentes.
 

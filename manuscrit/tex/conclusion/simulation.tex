@@ -1,14 +1,14 @@
 \chapter{Vers une amélioration possible du support exécutif à travers la simulation}\label{chap:simulation}
 \chaptertoc
 
-Le chapitre~\ref{chap:contrib:characterization} a montré qu'il était possible de caractériser précisément à la fois les machines et les parties critiques d'application.
+Le chapitre~\ref{chap:contrib:characterization} a montré qu'il était possible de caractériser précisément à la fois les machines et les parties critiques d'application vis à vis de ces machines.
 Cela a pu confirmer et chiffrer l'importance de la localité des données sur les architectures NUMA.
 Le chapitre~\ref{chap:contrib:openmp} a montré comment il était possible d'étendre un modèle de programmation et les supports exécutifs pour mieux prendre en compte la localité des données, et globalement améliorer l'ordonnancement de l'application.
 
 À partir de là, certaines questions peuvent se poser~:
 \begin{itemize}
   \item Compte tenu des caractéristiques de l'application et des machines, peut on faire mieux ? Et si oui~:
-  \item Quelle marge reste-t'il à gagner par rapport à aux ordonnancements théorique connus ?
+  \item Quelle marge reste-t'il à gagner par rapport aux ordonnancements théoriques connus ?
   \item Quelles caractéristiques faudrait il prendre en compte ?
 \end{itemize}
 
@@ -19,7 +19,9 @@ Ce chapitre est organisé de la façon suivante~: la section~\ref{sec:simulation
 La section~\ref{sec:simulation:modeles} fait un point sur les différents modèles envisagés, et la section~\ref{sec:simulation:resultats} montre des résultats préliminaires obtenus avec ces modèles, en apportant des premières pistes de réponses aux questions posées.
 Enfin la section~\ref{sec:simulation:next} décrit quels améliorations du simulateur seraient possible pour améliorer son réalisme.
 
+\begin{todo}
 TODO rajouter introduction section Julien si possible
+\end{todo}
 
 
 \section{Fonctionnement du simulateur}\label{sec:simulation:archi}
@@ -59,10 +61,10 @@ Un modèle fourni des informations cruciales~: il défini la topologie de la mac
 \section{Modèles envisagés}\label{sec:simulation:modeles}
 
 Nous avons choisi de commencer à étudier l'application qui nous a servi de cas d'étude pour le chapitre~\ref{chap:contrib:characterization}~: Cholesky.
-Les données récoltés à l'aide de \outil nous ont permises de comprendre précisément le comportement de chacun des quatre noyaux impliqués dans la factorisation de Cholesky.
+Les données récoltées à l'aide de \outil nous ont permises de comprendre précisément le comportement de chacun des quatre noyaux impliqués dans la factorisation de Cholesky.
 Nous avons donc implémenté un Cholesky similaire dans le simulateur, et défini plusieurs modèles afin d'évaluer le simulateur et éventuellement les bornes de l'application en terme de performances.
 
-Comme les données récoltées sur les noyaux inclus la totalité des actions des tâches (lecture, calcul, et écriture), nous avons donc dans un premier utilisé un modèle simplifié, où la quantité de données en lecture et écriture est ignorée, mais ou la partie \emph{COMPUTE} inclue ces accès, et dépend du placement du bloc de données sur la machine simulée.
+Comme les données récoltées sur les noyaux incluent la totalité des actions des tâches (lecture, calcul, et écriture), nous avons donc dans un premier temps utilisé un modèle simplifié, où la quantité de données en lecture et écriture est ignorée, mais ou la partie \emph{COMPUTE} inclue ces accès, et dépend du placement du bloc de données sur la machine simulée.
 
 \begin{table}[t!]
 \def\arraystretch{1.5}
@@ -71,20 +73,20 @@ Comme les données récoltées sur les noyaux inclus la totalité des actions de
   \multirow{2}{*}{Noyau} & \multirow{2}{*}{\makecell{Nombre d'exécution concurrentes\\(threads)}} & \multicolumn{2}{c|}{Performance (GFLOPS)} \\ \cline{3-4}
     & & Données locales & Données distantes \\ \hline
   \multirow{2}{*}{\potrf}
-    & 1 & 11.66 & 11.66 \\ \cline{2-4}
+    & 1 & 11.48 & 11.66 \\ \cline{2-4}
     & 192 & 9.30 & 8.81 \\ \cline{2-4}
   \hline
   \multirow{2}{*}{\gemm}
-    & 1 & 16.92 & 16.92 \\ \cline{2-4}
+    & 1 & 16.92 & 17.10 \\ \cline{2-4}
     & 192 & 14.45 & 12.82 \\ \cline{2-4}
   \hline
 \end{tabular}
 \caption{Tableau illustrant les performances (en GFLOPS) de certains noyaux sur des matrices de taille 512, sur idchire}\label{tab:simu:perf-kernels-idchire}
 \end{table}
 
-Afin de pouvoir illustrer les différents modèle que nous avons testé, le tableau~\ref{tab:simu:perf-kernels-idchire} regroupe quelques exemples de performance de référence pour certains noyaux, pour une taille de matrice de 512, en fonction de la charge de la machine (comme décrit dans la section~\ref{sec:contribs:apps:cholesky:scenario}) et du type d'accès.
+Afin de pouvoir illustrer les différents modèle que nous avons testés, le tableau~\ref{tab:simu:perf-kernels-idchire} regroupe quelques exemples de performance pour certains noyaux, pour une taille de matrice de 512, en fonction de la charge de la machine (comme décrit dans la section~\ref{sec:contribs:apps:cholesky:scenario}) et du type d'accès.
 
-Cet extrait de performances permet de montrer que si la localité des données n'a pas d'impact pour un unique thread, en pleine charge la différence de performance est significative.
+Cet extrait de performances permet de montrer que si la localité des données n'a pas d'impact positif pour un unique thread, en pleine charge la différence de performance est significative.
 
 Nous avons donc dégagé plusieurs modèles, décrit ci-dessous.
 
@@ -96,7 +98,7 @@ Nous avons donc considéré seulement les performances maximales de chacun des n
 
 \paragraph{Modèle "Affinity"~:} l'objectif de ce modèle est d'essayer de simuler au plus près le comportement des noyaux.
 La simulation étant lancée sur un nombre de cœurs connus, nous avons chargé les performances de référence des noyaux correspondant à la charge de la machine simulée.
-Lors de la simulation nous déterminons si les accès de la tâche sont locaux ou distant, et le coût de la tâche correspondante est utilisé.
+Lors de la simulation nous déterminons si les accès en écriture de la tâche sont locaux ou distant, et le coût de la tâche correspondante est utilisé.
 
 
 
@@ -153,7 +155,7 @@ Ces figures sont bien sur issues de simulation~; que valent elles en comparaison
 \end{figure}
 
 
-La figure~\ref{fig:simu:modeles-vs-runtime:idchire} compare les modèles \emph{Minimum} (avec vol aléatoire) et \emph{Affinity} (avec vol hiérarchique) aux supports exécutifs libOMP et libKOMP. libGOMP a été omis pour ne pas surcharger la figure, et parce que son comportement suit celui de libOMP.
+La figure~\ref{fig:simu:modeles-vs-runtime:idchire} compare les modèles \emph{Minimum} (avec vol aléatoire) et \emph{Affinity} (avec vol hiérarchique) aux supports exécutifs libOMP (qui utilise un vol aléatoire) et libKOMP (qui utilise un vol hiérarchique et l'affinité). libGOMP a été omis pour ne pas surcharger la figure, et parce que son comportement suit celui de libOMP.
 Comme on peut le constater, les performances des deux supports exécutifs sont effectivement supérieures au minimum simulé. En revanche les performances simulées de l'affinité semblent faibles compte tenu des performances réelles.
 
 Cette différence pourrait sembler étonnante, mais pourrait être en partie expliquée par le fait que les performances de référence ont été obtenues lorsque les données étaient soit \textit{toutes} locales ou \textit{toutes} distantes.
@@ -182,6 +184,9 @@ Comme on a pu le constater sur les expériences réelles, la simulation ne montr
 
 En revanche les performances des deux supports exécutifs sont assez loin de celles a priori atteignables !
 Le nombre de tâches dans une telle configuration peut vite limiter le parallélisme exposé, ce qui va donc entrainer une augmentation importante du nombre de requêtes de vol émises par les threads inactifs.
+\begin{todo}
+  implémenter un compteur de requêtes de vol
+\end{todo}
 
 Ces requêtes ne sont pas modélisées dans le simulateur, et peuvent générer du trafic sur les bus mémoires~: donc non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent dégrader les performances des threads actifs.
 Cela peut expliquer en grande partie la différence entre la simulation et la réalité, et pourrait être une piste d'amélioration du modèle.
@@ -203,12 +208,12 @@ GRAPHE : courbes Julien sur Cholesky sélectionnés
 
 \section{Discussions et améliorations possibles}\label{sec:simulation:next}
 
-Nos travaux sur la simulation sont très récent et encore en cours de développement.
+Nos travaux sur la simulation sont très récents et encore en cours de développement.
 Afin de généraliser la portée du simulateur et améliorer sa précision, nous évoquons ici les différentes pistes en cours d'étude.
 
 \subsection{Modélisation du cache L3}
 
-La version actuelle du simulateur inclue un cache par cœur de taille infinie.
+La version actuelle du simulateur inclu un cache par cœur de taille infinie.
 Ce cache est modélisé comme une liste de blocs, dans une \emph{version} particulière.
 À chaque écriture du bloc, la version du bloc est incrémentée.
 Si une tâche effectue une lecture de ce bloc et que sa version correspond à la version du cache, alors la lecture ne coûte rien, sinon le cout de lecture est demandé au modèle.
@@ -219,7 +224,7 @@ L'une des améliorations nécessaires pour augmenter la précision du modèle se
 
 \subsection{Modélisation de la bande passante}
 
-Le chapitre~\ref{chap:contrib:characterization} nous a permis d'étudier en détail le comportement de nos deux machines d'expériences.
+Le chapitre~\ref{chap:contrib:characterization} nous a permis d'étudier en détail le comportement de nos deux machines expérimentales.
 Les figures~\ref{fig:contribs:machines:idchire:saturation} et~\ref{fig:contribs:machines:idchire:saturation-output} permettent de conclure par exemple que la bande passante d'idchire se comporte d'une manière assez proche d'un modèle \emph{roofline}, où elle augmente linéairement avant d'atteindre un <<plafond>>.
 
 L'objectif serait donc d'introduire un coût d'accès aux blocs mémoires suivant ce modèle.

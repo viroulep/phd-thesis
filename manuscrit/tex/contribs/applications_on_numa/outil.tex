@@ -22,7 +22,7 @@ Dans la suite de ce chapitre, on appellera l'ensemble des paramètres décrivant
 
 \subsection{Description d'un scenario}
 
-Ce qu'on appelle ici un \emph{scenario} n'est ni plus ni moins que la description d'une expérience.
+Ce que l'on appelle ici un \emph{scenario} n'est ni plus ni moins que la description d'une expérience.
 Par exemple on pourrait vouloir "observer les performances en gigaflops d'une multiplication de matrices carrées sur le cœur 0 d'une machine".
 C'est un scenario simple, et l'exemple que l'on prendra pour illustrer les points un peu plus formel qui vont suivre.
 
@@ -35,7 +35,7 @@ En pratique un scenario est défini par les éléments suivants :
 
 Cette définition très générique permet beaucoup de flexibilité, et les sections suivantes précisent les différentes caractéristiques de ces points, ainsi que des exemples concrêts d'utilisation.
 
-Il est important que le format de description d'un scenario soit humainement lisible, et ne conduise pas à une recompilation systématique du programme. C'est donc une description en YAML qui a été choisie.
+Il est important que le format de description d'un scenario soit humainement lisible, et ne conduise pas à une recompilation systématique du programme. C'est donc une description en YAML~\cite{YAML} qui a été choisie.
 
 \subsubsection{Données et variables}
 
@@ -45,7 +45,7 @@ L'utilisateur doit fournir les noms et types des variables utilisées en paramè
 
 En pratique ces variables peuvent soit être des constantes, ou bien être initialisées par une action dans le scénario.
 
-Pour revenir à l'exemple du scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un cœur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille de bloc, |block_size|.
+Pour revenir à l'exemple du scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un cœur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille pour les bloc de données manipulés (qui correspond donc à la largeur de la matrice), |block_size|.
 
 Voici concrêtement à quoi ressemblerait la déclaration de ces données :
 
@@ -64,7 +64,7 @@ data:
 
 \subsubsection{Actions}
 
-C'est là où on décrit effectivement les noyaux exécutés au cours du scénario.
+C'est là où l'on décrit effectivement les noyaux exécutés au cours du scénario.
 L'utilisateur indique une série d'actions à exécuter, et avec quels paramètres.
 
 Chaque action peut avoir les caractéristiques suivantes :
@@ -117,7 +117,50 @@ actions:
     repeat: 50
 \end{lstlisting}
 
-Simplement exécuter ces actions ne nous donnera pas grand chose, il faut donc définir un ensemble de paramètres à observer.
+Ici les trois initialisations et le calcul ont lieu sur le même cœur, et sont déroulés dans l'ordre de création, il n'y a donc pas lieu d'utiliser une synchronisation.
+En revanche dans le cas où l'on souhaiterait par exemple observer l'exécution de deux |dgemm| qui s'exécuteraient en même, il faudrait synchroniser leur démarrage.
+
+En supposant que |a|, |b|, |a1|, |b1| ont déjà été initialisés, voilà à quoi ressembleraient les dernières initialisations de |c| et |c1| (dont il n'est pas nécessaire de synchroniser le démarrage), suivi de la création (synchronisée) de deux |dgemm|~:
+\begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions synchronisées,label=lst:tool:actions-example-sync]
+actions:
+  # On suppose les autres paramètres
+  # des dgemms déjà initialisés
+  - kernel: init_blas_bloc
+    sync: false
+    params: 
+    - c
+    - block_size
+    core: 0
+    repeat: 1
+  - kernel: init_blas_bloc
+    sync: false
+    params: 
+    - c1
+    - block_size
+    core: 1
+    repeat: 1
+  - kernel: dgemm
+    sync: true
+    params: 
+    - a
+    - b
+    - c
+    - block_size
+    core: 0
+    repeat: 50
+  - kernel: dgemm
+    sync: true
+    params: 
+    - a1
+    - b1
+    - c1
+    - block_size
+    core: 1
+    repeat: 50
+\end{lstlisting}
+
+
+Simplement exécuter ces actions ne nous donnera pas grand chose, il faut donc définir un ensemble de caractéristiques à observer.
 
 \subsubsection{Observateurs}
 
@@ -125,7 +168,8 @@ L'outil propose un certain nombre de caractéristiques observables :
 
 \begin{itemize}
   \item le temps passé dans l'action (en millisecondes).
-  \item pour les noyaux d'algèbre linéaire, la performance de l'action en Gflops.
+  \item la performance de l'action en Gflops.
+    % Note : valable que pour les noyaux d'algère linéaire parce qu'il faut le nombre de flops de l'action.
   \item des compteurs de performances à travers PAPI
 \end{itemize}
 
@@ -134,22 +178,24 @@ En continuant sur notre exemple, voici à quoi ressemblerait la section du scén
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'observateurs,label=lst:tool:watchers-example]
 watchers:
   flops_dgemm:
-    # Le nombre de flops depend de la taille de bloc,
-    # il faut donc la donner en parametre
+    # Le nombre de flops dépend de la taille de bloc,
+    # il faut donc la donner en paramètre
     - block_size
   papi:
     - PAPI_TOT_CYC
     - PAPI_L3_TCM
 \end{lstlisting}
 
+L'ensemble des compteurs à observer étant passé tel quel à PAPI, il est donc de la responsabilité de l'utilisateur de fournir un ensemble de compteurs compatibles entre eux.
+
 \subsection{Design de l'outil}
 
-Afin de garantir un minimum de "bruit" lors des expériences, il fallait que l'architecture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches.
+Afin de minimiser le "bruit" lors des expériences, il fallait que l'architecture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches et à la synchronisation.
 
 Le flot d'exécution est le suivant :
 
-\paragraph{Lecture et analyse du scenario}
-L'outil charge le scenario fourni par l'utilisateur, créer les différentes données, et analyse les actions pour déterminer l'ensemble des cœurs physiques qui seront utilisés au cours des actions.
+\paragraph{Lecture et analyse statique du scénario}
+L'outil charge le scénario fourni par l'utilisateur, crée les différentes données, et analyse les actions pour déterminer l'ensemble des cœurs physiques qui seront utilisés au cours des actions.
 
 \paragraph{Déroulement des actions}
 Pour chacun des cœurs utilisés, un thread est créé et attaché à ce cœur. De plus, une file d'actions (FIFO) est créée pour ce thread.
@@ -157,9 +203,9 @@ L'ensemble des actions sont poussées dans les files correspondantes dans l'ordr
 
 Les threads exécutent chacun les actions présentes dans leur file, et vont déclencher les mesures de chaque paramètre observé avant et après chaque action.
 
-Lorsque la dernière action du scenario est terminée, l'ensemble des paramètres observés est affiché à l'utilisateur sur la sortie standard.
+Lorsque la dernière action du scénario est terminée, l'ensemble des paramètres observés est affiché à l'utilisateur sur la sortie standard.
 
-\subsection{Application et exemples de scenario}
+\subsection{Application et exemples de scénarios}
 
 \outil nous a servi dans deux types de contexte~: pour la caractérisation des machines sur lesquelles nous avons effectuées nos expériences, et pour l'étude détaillées des parties critiques des applications que nous avons utilisées.
 

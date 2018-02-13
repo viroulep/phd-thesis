@@ -49,7 +49,7 @@ Si un processeur essaie de faire un accès sur une ligne invalidée, elle sera r
   \item Le dépassement de la capacité du cache : il est assez commun que l'ensemble des données manipulées par le programme ne tienne pas dans le cache.
 Lorsqu'une requête est effectuée sur une ligne, qu'elle n'est pas présente dans le cache, et que le cache est plein, le contrôleur choisira une ligne à évincer du cache pour faire de la place à la nouvelle ligne.
 Le choix de la ligne à évincer est un sujet très étudié, et le prochain paragraphe revient sur les politiques d'éviction communément utilisées.
-  \item Le conflit d'adresse : dans certains modèle de caches, certaines lignes correspondant à des adresses mémoires doivent être stockées dans le même emplacement du cache.
+  \item Le conflit d'adresse : dans la quasi totalité des modèles de caches, certaines lignes correspondant à des adresses mémoires doivent être stockées dans le même emplacement du cache.
     Si elles sont requises alternativement pendant l'exécution du programme, elles se sortiront mutuellement du cache.
     Ce problème dépend directement de l'\emph{associativité} du cache, qui est traitée dans le paragraphe suivant.
 \end{itemize}
@@ -149,7 +149,7 @@ Cela permet de limiter le nombre de bits nécessaire pour tracer les potentielle
     \emph{Dynamic Re-Referency Interval Prediction} en est un exemple, qui a été présenté parmi d'autres par Jaleel et al.~\cite{Jaleel2010}.
 \end{itemize}
 
-La politique pseudo-LRU semble être la plus utilisée par les fabricants de processeurs tous niveaux de cache confondus. Al-Zoubi et al.~\cite{Al-Zoubi2004} proposent une évaluation complète et détaillée de l'impact des politiques d'éviction en fonction de l'associativité du cache, justifiant le choix des constructeurs.
+Dans les processeurs Intel, des variantes de la politique pseudo-LRU semble être la plus utilisée pour les caches de faibles associativités, et donc typiquement les caches de niveaux L1 et L2~\cite{Abel2014,IntelXeonPhi2014}. Al-Zoubi et al.~\cite{Al-Zoubi2004} proposent une évaluation complète et détaillée de l'impact des politiques d'éviction en fonction de l'associativité du cache, justifiant le choix des constructeurs.
 
 
 
@@ -271,7 +271,7 @@ La figure montre 2 nœuds NUMA sur un même groupe, la machine possède en tout 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{group}
-  \caption{Schéma d'un groupe de deux nœuds sur idchire}\label{fig:context:group-idchire}
+  \caption{Schéma d'un groupe de deux nœuds sur \emph{idchire}}\label{fig:context:group-idchire}
 \end{figure}
 
 
