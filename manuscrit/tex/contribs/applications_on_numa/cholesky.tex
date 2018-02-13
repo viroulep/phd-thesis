@@ -151,6 +151,8 @@ Pour un noyau donné (parmi \potrf, \trsm, \syrk, \gemm), le scénario de base e
   \item Observation de la performance en FLOPS.
 \end{itemize}
 
+Ce scénario de base est donné en entier dans l'annexe~\ref{chap:annexe:tool:dgemm-base}, pour l'exécution d'un \gemm local de taille 256.
+
 Pour évaluer le comportement des noyaux en fonction de la charge de la machine, nous avons créé des scénarios exécutant plusieurs scénarios de base de manière complètement indépendante (sur le calcul et les données utilisées), et où le démarrage de l'exécution des noyaux est synchronisé.
 
 Il y a donc plusieurs paramètres que l'on peut faire varier pour changer les conditions d'exécution~:
@@ -161,6 +163,12 @@ Il y a donc plusieurs paramètres que l'on peut faire varier pour changer les co
 \end{itemize}
 
 Les trois sections suivantes décrivent l'impact des changements de ces paramètres, et illustrent certaines caractéristiques des machines utilisées qui donnent des opportunités pour de possibles améliorations du support exécutif.
+
+\begin{todo}
+  les scénarios ne sont pas complètement paramétré, beaucoup sont générés pas des scripts.
+
+faire référence à l'annexe~\ref{chap:annexe:tool:dgemm} ou c'est juste trop long ?
+\end{todo}
 
 \subsubsection{Exécutions concurrentes}
 

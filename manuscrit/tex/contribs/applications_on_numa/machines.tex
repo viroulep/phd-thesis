@@ -53,10 +53,7 @@ En dehors de l'accès aux caches locaux, il y a 4 liens à quantifier, identifi�
 Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques que nous avons exécutés via \outil~: pour un nœud NUMA source donné (ici 0), nous avons alloué et initialisé deux tableaux de 200 Mo. Le premier sur le nœud source, et le second sur le nœud cible. Nous avons ensuite effectué une copie du tableau source vers le tableau cible (via |memcpy|) et mesuré le temps de l'opération.
 Pour chaque type de nœud source (même nœud, distant sur le même groupe, distant via un rebond, distant via deux rebonds), nous avons effectué de une à huit copies simultanées.
 
-\begin{todo}
-  scenario yaml en annexe
-\end{todo}
-
+L'annexe~\ref{chap:annexe:tool:bp} donne un exemple de scénario avec celui utilisé pour la saturation du lien entre le nœud 0 et le nœud 1, avec 8 copies simultanées.
 
 La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante point à point, en fonction du nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
 Pour chacune des courbes les threads effectuant les copies sont placés sur le nœud 0, et les données du tableau source sont placées soit sur le nœud local (nœud 0), le nœud du même groupe (nœud 1), un nœud situé à une distance 1 (nœud 2), et un nœud situé à une distance 2 (nœud 10).
