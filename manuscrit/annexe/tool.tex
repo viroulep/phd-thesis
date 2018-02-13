@@ -4,8 +4,792 @@
 %\qauthor{Test}
 %\end{savequote}
 
-\chapter{Scenario YAML}\label{chap:annexe:tool}
+\chapter{Scenarios YAML}\label{chap:annexe:tool}
 \mtcaddchapter
 \chaptertoc
 
 du texte
+\section{Bande passante point à point}
+
+\begin{lstlisting}[language=yaml,caption=Scénario de calcul de la bande passante entre les Nœud X et Y,label=lst:annexe:tool:bp, basicstyle=\small]
+---
+scenarii:
+  params: {}
+  data:
+    a:
+      type: double*
+      value: 0
+    b:
+      type: double*
+      value: 0
+    n_elems:
+      type: int
+      value: 25000000
+    random:
+      type: bool
+      value: false
+  actions:
+  - kernel: init_array
+    core: 0
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - a
+    - n_elems
+    - random
+# Les noyaux suivants font office de barriere
+  - kernel: dummy
+    core: 0
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 8
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 16
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 24
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 32
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 40
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 48
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 56
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 64
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 72
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 80
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 88
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 96
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 104
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 112
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 120
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 128
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 136
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 144
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 152
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 160
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 168
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 176
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 184
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+  - kernel: dummy
+    core: 1
+    repeat: 1
+    sync: true
+    flush: false
+    params: []
+# Fin barriere
+  - kernel: init_array
+    core: 1
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 1
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 8
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 8
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 16
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 16
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 24
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 24
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 32
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 32
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 40
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 40
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 48
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 48
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 56
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 56
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 64
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 64
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 72
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 72
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 80
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 80
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 88
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 88
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 96
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 96
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 104
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 104
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 112
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 112
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 120
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 120
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 128
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 128
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 136
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 136
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 144
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 144
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 152
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 152
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 160
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 160
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 168
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 168
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 176
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 176
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  - kernel: init_array
+    core: 184
+    repeat: 1
+    sync: false
+    flush: false
+    params:
+    - b
+    - n_elems
+    - random
+  - kernel: copy
+    core: 184
+    repeat: 50
+    sync: false
+    flush: false
+    params:
+    - a
+    - b
+    - n_elems
+# [..] barriere
+  name: bandwidth_200000000_0
+  watchers:
+    time:
+    - toto
+    size:
+    - n_elems
+\end{lstlisting}
+
+\section{gemm sur 3 cœurs}
+
+\begin{lstlisting}[language=yaml,caption=Scénario de calcul de 3 gemm indépendants,label=lst:annexe:tool:dgemm, basicstyle=\small]
+---
+scenarii:
+  params: {}
+  data:
+    bs:
+      type: int
+      value: 256
+    a0:
+      type: double*
+      value: 0
+    b0:
+      type: double*
+      value: 0
+    c0:
+      type: double*
+      value: 0
+    a1:
+      type: double*
+      value: 0
+    b1:
+      type: double*
+      value: 0
+    c1:
+      type: double*
+      value: 0
+    a2:
+      type: double*
+      value: 0
+    b2:
+      type: double*
+      value: 0
+    c2:
+      type: double*
+      value: 0
+  actions:
+  - kernel: init_blas_bloc
+    core: 0
+    repeat: 1
+    sync: false
+    params:
+    - a0
+    - bs
+  - kernel: init_blas_bloc
+    core: 0
+    repeat: 1
+    sync: false
+    params:
+    - b0
+    - bs
+  - kernel: init_blas_bloc
+    core: 0
+    repeat: 1
+    sync: false
+    params:
+    - c0
+    - bs
+  - kernel: init_blas_bloc
+    core: 1
+    repeat: 1
+    sync: false
+    params:
+    - a1
+    - bs
+  - kernel: init_blas_bloc
+    core: 1
+    repeat: 1
+    sync: false
+    params:
+    - b1
+    - bs
+  - kernel: init_blas_bloc
+    core: 1
+    repeat: 1
+    sync: false
+    params:
+    - c1
+    - bs
+  - kernel: init_blas_bloc
+    core: 2
+    repeat: 1
+    sync: false
+    params:
+    - a2
+    - bs
+  - kernel: init_blas_bloc
+    core: 2
+    repeat: 1
+    sync: false
+    params:
+    - b2
+    - bs
+  - kernel: init_blas_bloc
+    core: 2
+    repeat: 1
+    sync: false
+    params:
+    - c2
+    - bs
+  - kernel: dgemm
+    core: 0
+    repeat: '50'
+    sync: true
+    params:
+    - a0
+    - b0
+    - c0
+    - bs
+  - kernel: dgemm
+    core: 1
+    repeat: '50'
+    sync: true
+    params:
+    - a1
+    - b1
+    - c1
+    - bs
+  - kernel: dgemm
+    core: 2
+    repeat: '50'
+    sync: true
+    params:
+    - a2
+    - b2
+    - c2
+    - bs
+  name: dgemm_256_local_3
+  watchers:
+    flops_dgemm:
+    - bs
+    time:
+    - time
+    papi:
+    - PAPI_L3_TCM
+    - PAPI_L3_DCR
+    - PAPI_L3_DCW
+\end{lstlisting}

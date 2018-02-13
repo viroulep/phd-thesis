@@ -247,14 +247,22 @@ La figure~\ref{fig:contribs:apps:cholesky:perf-multiple-bs-idchire} montre la pe
 \end{figure}
 
 La taille de bloc n'a pas d'impact significatif sur le phénomène observé précédemment de dégradation des performances.
-Elle a bien un impact sur le niveau de performance globale de chaque noyau, mais le comportement général de chaque noyau reste le même.
+Elle a bien un impact sur le niveau de performance globale de chaque noyau (qui dépend de l'implémentation des BLAS), mais le comportement général de chaque noyau reste le même.
 
 
 \subsubsection{Impact de la bibliothèque BLAS}
 
-\begin{todo}
-GRAPHE : 4.3.5, dgemm/dsyrk/dtrsm faire : étude de comportement sur des paramètres représentatifs (obj : montrer l'impact des blas)
-OpenBLAS, MKL, ATLAS
-matter for top perf, not for overall behavior
-\end{todo}
+Pour comparer l'impact potentiel de la bibliothèque implémentant les BLAS, nous avons configuré \outil pour qu'il utilise soit OpenBLAS (2.19), Intel MKL (11.3), ou ATLAS (3.10.3).
+La figure~\ref{fig:contribs:apps:cholesky:perf-blas} montre la performance des \gemm et \potrf sur \emph{brunch}, pour une taille de bloc de 256 avec des données locales, en fonction de la bibliothèque BLAS utilisée.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.98\textwidth]{comparaison_atlas_openblas_mkl_256_local}
+  \caption{Comparaison des bibliothèques BLAS sur \emph{brunch}, données locales, taille de bloc = 256}\label{fig:contribs:apps:cholesky:perf-blas}
+\end{figure}
+
+Bien qu'on puisse constater une différence de performance brute, il y a dans tous les cas une baisse (relativement faible) des performances avec l'augmentation du nombre d'exécution concurrentes, bien qu'elles soient toutes indépendantes.
+Pour rappel sur \emph{brunch} chaque nœud dispose de 24 cœurs, et pour les \gemm on peut deviner une baisse sur ces 24 premiers cœurs, qui d'autant plus flagrante que la performance est grande.
+Cela pourrait tout simplement s'expliquer par le fait qu'on atteint la limite de bande passante cumulée disponible sur le nœud local.
+
+Pour les autres cas, l'impact de la bibliothèque semble concerner principalement le pic de performance de chaque noyau, sans différence majeure sur l'allure générale des courbes.
