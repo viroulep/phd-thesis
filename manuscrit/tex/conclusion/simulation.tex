@@ -184,12 +184,19 @@ Comme on a pu le constater sur les expériences réelles, la simulation ne montr
 
 En revanche les performances des deux supports exécutifs sont assez loin de celles a priori atteignables !
 Le nombre de tâches dans une telle configuration peut vite limiter le parallélisme exposé, ce qui va donc entrainer une augmentation importante du nombre de requêtes de vol émises par les threads inactifs.
-\begin{todo}
-  implémenter un compteur de requêtes de vol
-\end{todo}
 
-Ces requêtes ne sont pas modélisées dans le simulateur, et peuvent générer du trafic sur les bus mémoires~: donc non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent dégrader les performances des threads actifs.
-Cela peut expliquer en grande partie la différence entre la simulation et la réalité, et pourrait être une piste d'amélioration du modèle.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{simu_steal_visits_idchire}
+  \caption{Comparaison de l'évolution du nombre de requêtes de vol par tâche dans le simulateur, en fonction de la taille de matrice}\label{fig:simu:steals_per_task:idchire}
+\end{figure}
+
+Ce problème est illustré sur la figure~\ref{fig:simu:steals_per_task:idchire}, où l'on voit l'évolution du nombre de requêtes de vol divisé par le nombre de tâches à exécuter.
+Pour un cas exposant un fort parallélisme, une taille de matrice de 32768 avec une taille de bloc de 512 et donc plus de 45000 tâches, on peut constater que le nombre de requêtes par tâche reste raisonnable.
+En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater que l'évolution du nombre de requêtes de vol par tâche est exponentielle, et qu'il décole un peu après 50 threads, ce qui coïncide avec l'apparition du plateau sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
+
+Les requêtes de vol ne sont pas modélisées dans le simulateur, et peuvent générer du trafic sur les bus mémoires~: donc non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent dégrader les performances des threads actifs.
+Cela explique en grande partie la différence entre la simulation et la réalité, et pourrait être une piste d'amélioration du modèle.
 
 
 \section{Application d'un ordonnancement théorique}\label{sec:simulation:theorie}
