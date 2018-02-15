@@ -20,6 +20,11 @@
 %    - What we implemented
 %    - What remains
 
+Ce chapitre regroupe les différentes contributions que nous avons faites spécifiquement dans le contexte d'OpenMP.
+Cela inclu tout d'abord une suite de benchmarks, KASTORS, regroupant un ensemble de programmes implémentés à l'aide des tâches avec dépendances d'OpenMP, et décrite dans la section~\ref{sec:openmp:kastors}.
+Nous décrivons ensuite des extensions dédiées à l'amélioration de la localité des données dans la section~\ref{sec:openmp:langage}.
+La section~\ref{sec:openmp:runtime} aborde les modifications faites au niveau du support exécutif pour qu'il puisse avoir une vision hiérarchique de la machine, et qu'il puisse exploiter les informations fournies par les extensions du langage OpenMP proposées.
+Enfin toutes ces propositions sont évaluées dans la section~\ref{sec:contribs:perf_eval}.
 
 \input{tex/contribs/openmp/kastors}
 \input{tex/contribs/openmp/affinity_clause}

@@ -18,14 +18,14 @@ Néanmoins la structure de libOMP nous a semblé être une base favorable pour i
 Le support exécutif libOMP fonctionne, pour les tâches, par vol de travail.
 Chaque threads dispose d'une file de tâches, et les stratégies d'ordonnancement pour le placement et la sélection des files sont les suivantes, respectivement~: les tâches prêtes sont placées dans la file du thread courant~; lorsqu'un thread a besoin de voler du travail, il sélectionne aléatoirement une file de tâche d'un autre thread, s'il réussit un vol il reviendra voler cette victime la prochaine fois qu'il aura besoin de voler du travail.
 
-Dans un premier temps, nous avons donc commencé par ajouter un ensemble de structures de données~: pour chaque nœud NUMA utilisés dans la \emph{team} OpenMP courante, nous avons ajouté une file de tâches, permettant ainsi d'exposer un second niveau de hiérarchie dans l'ordonnancement.
+Dans un premier temps, nous avons donc commencé par ajouter un ensemble de structures de données~: pour chaque nœud NUMA utilisé dans la \emph{team} OpenMP courante, nous avons ajouté une file de tâches, permettant ainsi d'exposer un second niveau de hiérarchie dans l'ordonnancement.
 Nous avons également ajouté une file de tâche privée par thread et par nœud, afin de pouvoir implémenter facilement la notion d'affinité stricte.
 
 Dans un second temps, nous avons modifié les fonctions de placement des tâches prêtes et de sélection d'une victime à voler.
-Nous avons directement implémenté la combinaison de stratégies qui avait le mieux marché parmi celles présentées dans la section~\ref{sec:contrib:ws:heuristics}, à savoir~:
+Nous avons directement implémenté la combinaison de stratégies qui obtenait le meilleur niveau de performances parmi celles présentées dans la section~\ref{sec:contrib:ws:heuristics}, à savoir~:
 \begin{itemize}
-  \item pour l'affinité entre une tâche et une donnée, le placement de la tâche est effectuée selon la stratégie \emph{pNumaWLoc}, définie dans la section~\ref{sec:openmp:runtime:push}.
-  \item la sélection d'une file de tâche à voler se fait hiérarchiquement, dans l'ordre indiqué par la stratégie \emph{sNumaProc}, définis dans la section~\ref{sec:openmp:runtime:select}.
+  \item pour l'affinité entre une tâche et une donnée, le placement de la tâche est effectué selon la stratégie \emph{pNumaWLoc}, définie dans la section~\ref{sec:openmp:runtime:push}.
+  \item la sélection d'une file de tâche à voler se fait hiérarchiquement, dans l'ordre indiqué par la stratégie \emph{sNumaProc}, défini dans la section~\ref{sec:openmp:runtime:select}.
 \end{itemize}
 
 Dans la suite des expériences, nous ferons référence à ce support exécutif étendu en l'appelant \emph{libKOMP}.
@@ -34,12 +34,12 @@ Dans la suite des expériences, nous ferons référence à ce support exécutif 
 
 Les logiciels utilisés pour nos expériences peuvent être divisé en trois catégories~:
 \begin{itemize}
-  \item Les applications utilisées
+  \item Les applications
   \item Les supports exécutifs
   \item Les bibliothèques externes
 \end{itemize}
 
-Les applications et les supports exécutifs utilisées ont pu subire quelques modifications afin d'incorporer les modifications d'OpenMP proposées.
+Certaines applications et supports exécutifs utilisés ont dû subir quelques modifications afin d'incorporer les modifications d'OpenMP proposées.
 Ces changements sont décrits ci-dessous.
 Nous n'avons effectué aucune modification aux bibliothèques externes, mais il est important de faire un point dessus, étant donné qu'une partie des performances peut en dépendre.
 
@@ -54,7 +54,7 @@ Dans le cas des applications de type stencil, nous avons ajouté une affinité v
 \subsubsection{Supports exécutifs}
 
 
-Nous avons pris comme base de comparaison les supports exécutifs fournis avec les compilateurs existant au moment de nos propositions.
+Nous avons pris comme base de comparaison les supports exécutifs fournis avec les compilateurs existants au moment de nos propositions.
 
 \paragraph{GCC/libGOMP :} nous avons utilisé la version 7.2.0 comme référence, sans y apporter de modification.
 
@@ -66,14 +66,14 @@ Nous avons pris comme base de comparaison les supports exécutifs fournis avec l
 Pour les expériences effectuées dans la section~\ref{sec:contribs:perf_eval:resultats}, nous avons utilisé la bibliothèque OpenBLAS~2.19 pour fournir les noyaux de calculs de base.
 
 
-\paragraph{hwloc :} cette bibliothèque fournie les informations sur la hiérarchie de la machine, ainsi que des fonctions d'allocation de mémoire selon différentes politique (voir section~\ref{sec:context:os:lib}). Nous avons utilisé la version 1.11.0.
+\paragraph{hwloc :} cette bibliothèque fournit les informations sur la hiérarchie de la machine, ainsi que des fonctions d'allocation de mémoire selon différentes politiques (voir section~\ref{sec:context:os:lib}). Nous avons utilisé la version 1.11.0.
 
-\paragraph{numactl :} nous avons utilisé \emph{numactl} pour certaines courbes de référence. \emph{numactl} est fourni par libNUMA ; nous avons utilisé la version par défaut fourni par le fabricant de la machine.
+\paragraph{numactl :} nous avons utilisé \emph{numactl} pour certaines courbes de référence. \emph{numactl} est fournie par libNUMA ; nous avons utilisé la version par défaut fourni par le fabricant de la machine.
 
 
 \subsection{Résultats}\label{sec:contribs:perf_eval:resultats}
 
-Les résultats obtenus sont illustrés ci-dessous, dans trois sections abordant des points important~: la distribution des données, la prise en compte de la localité des données lors de l'exécution, et la possibilité de restreindre le vol de travail.
+Les résultats obtenus sont illustrés ci-dessous, dans trois sections abordant des points importants~: la distribution des données, la prise en compte de la localité des données lors de l'exécution, et la possibilité de restreindre le vol de travail.
 
 \subsubsection{Impact de la distribution des données}
 
@@ -98,7 +98,7 @@ Les deux autres distributions, \emph{Cyclique} et \emph{Aléatoire} corresponden
 
 La première chose à remarquer est que l'initialisation séquentielle de base (ou l'initialisation sur un nœud unique) propose sans surprise des performances désastreuses.
 
-L'initialisation parallèle sans contrôle se distingue par sa variabilité~: les barres d'erreurs illustrent cette variabilité, due à l'ordre dans lesquels les threads viennent voler les tâches d'initialisatio.
+L'initialisation parallèle sans contrôle se distingue par sa variabilité~: les barres d'erreurs illustrent cette variabilité, due à l'ordre dans lesquels les threads viennent voler les tâches d'initialisation.
 
 Au final l'utilisation de \emph{numactl} permet de contrebalancer les effets de l'initialisation séquentielle et d'atteindre des performances raisonnables.
 
@@ -121,7 +121,7 @@ Nous avons étudié l'impact de l'affinité sous plusieurs angles~:
   \caption{Comparaison des supports exécutifs sur QR et Cholesky sur idchire, en fonction de la taille de matrice}\label{fig:contribs:perf_eval:eval-qr-cholesky}
 \end{figure}
 
-Pour avoir un aperçu général  que nous avons évaluées sur les factorisations QR et Cholesky, avec des tailles de matrice variant entre 16384 et 65536, en utilisant la meilleure taille de bloc que nous avons pu trouver pour chaque taille de matrice.
+Pour avoir un aperçu général des stratégies que nous avons évaluées sur les factorisations QR et Cholesky, avec des tailles de matrice variant entre 16384 et 65536, en utilisant la meilleure taille de bloc que nous avons pu trouver pour chaque taille de matrice.
 
 \begin{figure}[h!]
   \centering
@@ -132,7 +132,7 @@ Pour avoir un aperçu général  que nous avons évaluées sur les factorisation
 La figure~\ref{fig:contribs:perf_eval:eval-qr-cholesky} montre les résultats obtenus sur idchire, et la figure~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montre les résultats obtenus sur brunch.
 
 
-Les machines brunch et idchire ont toutes les deux un facteur NUMA différent~: le coût d'accès à la mémoire distante par rapport à la mémoire locale est beaucoup plus important sur idchire que sur brunch.
+Les machines brunch et idchire ont un facteur NUMA différent~: le coût d'accès à la mémoire distante par rapport à la mémoire locale est beaucoup plus important sur idchire que sur brunch.
 Malgré cela, l'impact de l'affinité est bien visible sur les deux machines, même s'il est proportionnellement plus important sur idchire.
 
 On peut observer que pour les faibles tailles de matrices, l'intérêt de l'affinité semble limité.
@@ -154,7 +154,7 @@ La figure~\ref{fig:contribs:perf_eval:eval-cholesky-idchire} illustre l'évoluti
 
 Comme pour les expériences précédentes, les tailles de blocs correspondantes sont 256 pour la taille 8192, et 512 pour la taille 32768.
 Les deux tailles de matrice choisies représentent les deux situations décrites précédemment~: dans un cas les données des noyaux de Cholesky tiennent dans le cache L3, dans l'autre non.
-Dans le cas d'une petite taille de bloc on peut constater que la courbe de libKOMP se situe entre libOMP et libGOMP, ne donnant donc aucun résultat concluant, voir même étant coûteux par rapport à un simple vol de travail aléatoire comme dans libOMP !
+Dans le cas d'une petite taille de bloc on peut constater que la courbe de libKOMP se situe entre libOMP et libGOMP, ne donnant donc aucun résultat concluant, voire même étant coûteux par rapport à un simple vol de travail aléatoire comme dans libOMP !
 Pour une grosse taille de bloc en revanche c'est clair et net~: après avoir suivi le même départ, les courbes divergent. Les supports exécutif libOMP et libGOMP affichent les même performances, tandis que l'affinité offre un net gain.
 
 \begin{figure}[t!]
@@ -168,17 +168,15 @@ Pour une grosse taille de bloc en revanche c'est clair et net~: après avoir sui
   \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur brunch}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
 \end{figure}
 
-Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montre les résultats des factorisations QR et Cholesky (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
-Comparer les mêmes instances sur les deux machines donne des résultats intéressant~: leurs caractéristiques ne changent pas l'allure général des courbes, en revanche le faible facteur NUMA de brunch fait bien sentir que l'affinité n'est rentable que lorsque la machine est chargée à partir d'un seuil élevé (environ 75\%).
+Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montrent les résultats des factorisations QR et Cholesky (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
+Comparer les mêmes instances sur les deux machines donne des résultats intéressants~: leurs caractéristiques ne changent pas l'allure général des courbes, en revanche le faible facteur NUMA de brunch fait bien sentir que l'affinité n'est rentable que lorsque la machine est chargée à partir d'un seuil élevé (environ 75\%).
 Alors que sur idchire la différence se voit dès une trentaine de cœur (qui correspond d'ailleurs à 4 nœuds NUMA).
 
 En faisant ces expériences nous avons constaté un comportement assez atypique de QR avec l'affinité~: il y a 3 petits pics de performances à 32, 64, et 128 cœurs (soit 4, 8, et 16 nœud NUMA) !
-Nous n'avons pas pu faire une étude aussi approfondie de QR que de Cholesky, mais ici on peut penser que la distribution des données est responsable de ces pics. La distribution utilisée est cyclique, et sur un nombre de nœud NUMA en puissance de 2 cela doit fournir des propriétés favorables à l'application.
+Nous n'avons pas pu faire une étude aussi approfondie de QR que de Cholesky, il est donc dur d'expliquer ce comportement qui doit être dû à certaines caractéristiques de l'application.
 
-\begin{todo}
-  Je dois bien avouer que j'ai pas de chiffres pour argumenter mon hypothèse sur les 3 pics...
-  Ça veut surtout dire qu'il doit y avoir une distribution de données bien mieux en fonction du nombre de nœud NUMA utilisée !
-\end{todo}
+%mais ici on peut penser que la distribution des données est responsable de ces pics. La distribution utilisée est cyclique, et sur un nombre de nœud NUMA en puissance de 2 cela doit fournir des propriétés favorables à l'application.
+
 
 
 \subsubsection{Affinité stricte}

@@ -1,5 +1,7 @@
 \section{Amélioration de l'expressivité du langage}\label{sec:openmp:langage}
 
+Nous avons proposé plusieurs extensions au langage et à l'API d'OpenMP, dont le but général est de faciliter le travail du support exécutif pour maintenir la proximité entre une tâche et ses données au cours de l'exécution du programme.
+
 \subsection{Description du besoin}
 
 Dans un contexte où l'on souhaite améliorer le contrôle sur les tâches et leurs données, OpenMP~4.0 ne propose pas grand chose d'efficace.
@@ -8,27 +10,37 @@ Les fonctionnalités les plus proche que nous pourrions utiliser sont les |OMP_P
 En dehors d'OpenMP, les programmeurs utilisent généralement des bibliothèques ou outils externes dans le but de contrôler le placement des données~\cite{Pousa2009, Broquedis2010a}.
 Ces approches peuvent être soit inefficaces (comme dans le cas de \emph{numactl}), ou relativement intrusive (dans le cas de l'utilisation d'une bibliothèque externe).
 
-OpenMP pourrait donc bénéficier de deux type de constructions dont les utilisateurs auraient besoin : d'une part un moyen de contrôler la distribution initiale des données manipulées par les tâches, et d'autres part un moyen d'associer les tâches à ces données (ou mieux, à n'importe quel partie de la machine).
+Nous avons donc introduit deux types de constructions dans OpenMP~: d'une part un moyen de contrôler la distribution initiale des données manipulées par les tâches, et d'autres part un moyen d'associer les tâches à ces données (ou mieux, à n'importe quelle partie de la machine).
 
 \subsection{Contrôle de la distribution des données}\label{sec:openmp:langage:init}
 
-De la même manière que le programmeur exprime son applications à base de tâches, on va supposer ici aussi qu'il initialise les données de son application à l'aide de tâches, qu'il est raisonnable de supposer indépendantes, dans une région parallèle séparée.
+Utiliser une initialisation séquentielle des données de son application peut avoir des conséquences dramatiques sur les performances, tout spécialement lorsque l'on cible des machines NUMA.
+Les données se retrouvent dans ce cas sur un unique nœud, dont le bus mémoire va être complètement saturé lorsque les cœurs de tous les autres nœuds vont avoir besoin des données.
 
-Dans la plupart des applications que nous avons utilisé nous avons constaté que l'initialisation des données suivait l'un des deux schémas suivant :
+On va donc supposer ici que, de la même manière que le programmeur exprime le parallélisme de son application à base de tâches, il initialise également les données de son application à l'aide de tâches (qu'il est raisonnable de supposer indépendantes) dans une région parallèle séparée.
+
+Dans la plupart des applications que nous avons utilisées nous avons constaté que l'initialisation des données suivait l'un des deux schémas suivant :
 \begin{itemize}
     \item Allocation d'un bloc mémoire couvrant la totalité des besoins de l'application, puis initialisation par blocs en fonction des accès lors des calculs.
   \item Allocation et initialisation de chacun des blocs au fur et à mesure des besoins ou de la construction des structures de données de l'application.
 \end{itemize}
 
-Dans les deux cas l'initialisation des données devant être groupées ensemble a lieu dans une même tâche, il suffit alors de pouvoir gérer la distribution de ces tâches avant l'exécution pour effectivement distribuer les données (en se basant sur le principe du \emph{first-touch}, décrit dans la section~\ref{sec:context:os}).
+Dans les deux cas l'initialisation des données devant être groupées ensemble a lieu dans une même tâche.
+Les solutions de l'état de l'art consistent à allouer, ou migrer, les données initialisées par ces tâches.
+Plutôt que d'utiliser une technique similaire, nous allons nous baser sur le principe portable du \emph{first-touch}, décrit dans la section~\ref{sec:context:os}.
 
-Nous avons donc mis en place une clause s'appliquant sur une région parallèle, pouvant spécifier une distribution par défaut des tâches sur la topologie de l'architecture :
+Nous proposons ici de distribuer les tâches d'initialisations selon une stratégie choisie par l'utilisateur.
+Gérer le placement des tâches est plus efficace et moins couteux que de migrer des données, et permet en fait d'arriver au même résultat~: en distribuant les tâches d'initialisations, on distribue les tâches effectuant le \emph{first-touch} des données, ce qui a pour effet de distribuer physiquement ces données.
+Par rapport à \emph{numactl} cela présente également l'avantage de garder ensemble les données s'étendant sur plusieurs pages.
+
+
+Pour pouvoir indiquer au support exécutif quelles tâches marquer comme "tâches d'initialisation" et comment gérer leur placement sur la topologie, nous avons mis en place une clause s'appliquant sur une région parallèle~:
 
 \begin{lstlisting}
 init(random | cyclic | cyclicnuma)
 \end{lstlisting}
 
-Elle indique à l'ordonnanceur de tâche que pour la région parallèle courante les tâches prêtes devraient être distribuées sur la machine en suivant une stratégie :
+Elle indique à l'ordonnanceur de tâches que pour la région parallèle courante les tâches prêtes devraient être distribuées sur la machine en suivant une stratégie :
 
 \begin{description}
   \item [random :]
@@ -40,12 +52,15 @@ Elle indique à l'ordonnanceur de tâche que pour la région parallèle courante
 \end{description}
 
 
-Bien qu'ayant certaines restriction, cet ajout permet au programmeur de spécifier une distribution de données avec une modification minimale du code.
+Bien qu'ayant certaines restriction, cet ajout permet au programmeur de spécifier une distribution de données avec une modification minimale du code, et plus efficacement qu'avec les solutions existantes.
+
 Comme les restrictions initiales peuvent être trop fortes pour certaines applications, il est aussi possible pour les cas particuliers de spécifier une clause affinité stricte (définie dans la section suivante) sur les tâches d'initialisation.
+
+
 
 \subsection{Ajout d'une clause affinité}\label{sec:openmp:langage:affinity}
 
-Cette partie détaille la proposition d'introduction du mot clé |affinity| dans le langage OpenMP, et a été présenté lors du Workshop International sur OpenMP (IWOMP) en 2016~\cite{Virouleau2016b}.
+Cette partie détaille la proposition d'introduction du mot clé |affinity| dans le langage OpenMP, et a été présentée lors du Workshop International sur OpenMP (IWOMP) en 2016~\cite{Virouleau2016b}.
 Comme constaté dans le chapitre~\ref{chap:contrib:characterization} et souvent mentionné dans la littérature, un point clé pour obtenir de bonnes performances sur des architectures NUMA est de garantir la proximité entre une tâche et ses ressources.
 
 L'objectif de cette clause est donc de permettre à l'utilisateur de pouvoir spécifier un lien privilégié - une \emph{affinité} - entre une tâche et un élément de l'architecture.
@@ -77,13 +92,11 @@ Dans tous les cas l'expression |expr| est un entier naturel, mais en fonction du
 
 \begin{description}
   \item [thread :]
-    |expr| est interprétée comme un id de thread. On définie ici la notion d'id de thread comme l'indice du thread au sein des |OMP_PLACES| pour la \textit{team} OpenMP courante.
-    Voici quelques exemples d'utilisation, en prenant comme valeur |OMP_PLACES="{2},{5},{8},{9}"| :
+    |expr| est interprétée comme un id de thread. On définit ici la notion d'id de thread comme l'indice du thread au sein des |OMP_PLACES| pour la \textit{team} OpenMP courante.
+    Voici une illustration, en prenant une exécution sur quatre threads avec comme valeur |OMP_PLACES="{2},{5},{8},{9}"| :
     \begin{itemize}
-      \item Le thread d'id |0| désigne celui s'exécutant sur le cœur |2|.
-      \item Pour accéder au thread s'exécutant sur le cœur |8|, il faut utiliser l'id de thread |2|.
-      \item Dans cet exemple, les id de thread peuvent varier entre |0| et |3| inclus.
-      \item Il n'est pas possible de spécifier une affinité avec le thread situé sur le cœur |0| par exemple, puisqu'il n'est pas dans la \emph{team}.
+      \item Les quatre \emph{threads} qui constituent la \emph{team} vont être ici placés sur quatre \emph{cœurs} de la machine d'indice |2|, |5|, |8|, et |9|.
+      \item Les \emph{threads} étant toujours indicés à partir de |0| dans une \emph{team}, la correspondance entre thread et cœur sera donc la suivante~: le thread d'indice |0| sera donc placé sur le cœur |2|, le thread d'indice |1| sera placé sur le cœur |5|, et ainsi de suite.
     \end{itemize}
   \item [node :]
     |expr| est interprétée comme un id de nœud NUMA. Comme pour le cas précédent, la notion d'id est définie relativement aux places de la \textit{team} OpenMP courante.
@@ -101,14 +114,14 @@ Dans ce but nous avons également ajouté quelques fonctions à l'API d'OpenMP, 
 
 \begin{lstlisting}
 // Retourne le nombre de nœuds NUMA dans la team
-omp_get_num_nodes(void);
+int omp_get_num_nodes(void);
 
 // Retourne le nœud NUMA sur lequel
 // la tâches est actuellement exécutée
-omp_get_node_num(void);
+int omp_get_node_num(void);
 
 // Retourne le nœud NUMA sur lequel la donnée a été allouée
-omp_get_node_from_data(void *ptr);
+int omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
 Ces fonctions retournant des informations spécifiques à une \emph{team} OpenMP, elles ne peuvent être appelées qu'au sein d'une région parallèle.
@@ -116,8 +129,8 @@ Sur les machines sans support NUMA, nous considérons que tous les threads sont 
 
 Nous avons également rendu accessible l'ajout d'affinité sur une tâche à une fonction de l'API :
 \begin{lstlisting}
-omp_set_task_affinity( 
-     omp_affinitykind_t k, uintptr_t ptr, int strict);
+void omp_set_task_affinity(omp_affinitykind_t k,
+                           uintptr_t ptr, int strict);
 \end{lstlisting}
 Cette fonction aura un impact sur la prochaine tâche créée dans la région.
 Les paramètres de la fonction correspondent aux paramètres de la clause :
