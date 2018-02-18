@@ -12,7 +12,7 @@ Par exemple des secteurs comme l'aéronautique, les applications militaires, ou 
 Les prévisions météorologiques à destination du grand public sont faites à l'aide d'applications simulant les interactions entre les différents éléments de l'atmosphère.
 Il en va de même pour tout ce qui se rapporte à l'étude de la propagation des ondes sismiques dans le sol, ou de la prévision de l'impact d'un séisme sur un bassin de population.
 
-Toutes ces simulations sont au final exécutées sur des supercalculateurs, et il n'y a pas de limite au nombre de ressources qu'elles peuvent utiliser : que ce soit pour améliorer la précision de la simulation, ou augmenter la taille de l'ensemble simulé, elles pourront toujours bénéficier d'un plus grand nombre de ressources.
+Toutes ces simulations sont au final exécutées sur des supercalculateurs, et il n'y a pas de limite, a priori, au nombre de ressources qu'elles peuvent utiliser : que ce soit pour améliorer la précision de la simulation, ou augmenter la taille de l'ensemble simulé, elles pourront toujours bénéficier d'un plus grand nombre de ressources.
 Avoir plus de ressources peut également permettre d'exécuter un plus grand nombre de simulations simultanément, voire de les coupler entre elles.
 
 Si les supercalculateurs peuvent proposer plusieurs milliers de cœurs, ils sont en fait composés d'un grand nombre de nœuds de calcul avec un nombre de cœurs beaucoup plus faible.
@@ -22,28 +22,35 @@ La très grande majorité des nœuds de calcul intègrent plusieurs processeurs 
 Contrairement aux processeurs du siècle dernier pour lesquels un changement de génération s'accompagnait d'une augmentation de leur fréquence de fonctionnement, l'évolution des processeurs contemporains se traduit aujourd'hui par la multiplication du nombres de cœurs de calcul qu'ils embarquent.
 Pour illustrer ce phénomène il suffit de regarder par exemple la gamme de produits proposés par Intel : la première génération de Pentium 4 - Willamette - lancée par Intel en 2000 était constituée d'un unique cœur cadencé à 1.5GHz. 6 ans plus tard, la dernière génération de Pentium 4 - Cedar Mill - était également consituée d'un seul cœur, mais cette fois cadencé à 3.6 GHz. 10 ans plus tard en 2016, les processeurs de la génération Skylake d'Intel i7 ne dépassent pas les 3.4GHz de fréquence, mais tous ont 4 cœurs physiques au lieu d'un seul.
 
-Avec ce changement de design, les modalités d'accès à la mémoire ont été repensées pour éviter les goulots d'étranglement se formant lors des accès concurrents de plusieurs cœurs au même bus mémoire. Le moyen qui a été trouvé pour éviter trop de contention sur le bus mémoire fut de diviser la mémoire en plusieurs blocs physiques différents, avec chacun leur contrôleur.
+Avec ce changement de design, les modalités d'accès à la mémoire ont été repensées pour éviter les goulots d'étranglement se formant lors des accès concurrents de plusieurs cœurs au même bus mémoire.
+
+Pour éviter trop de contention sur le bus mémoire, la mémoire est divisée en plusieurs bancs physiques différents, avec chacun leur contrôleur.
+Sur chacun de ces bancs, les processeurs disposent d'un cache partagé commun en plus des caches privés à chaque processeur.
 La conséquence directe de ce changement est que le temps d'accès à la mémoire est devenu non uniforme : il dépend directement de quel processeur essaye d'accéder à quelle partie de la mémoire.
-On appelle ce genre d'architectures NUMA (pour \emph{Non Uniform Memory Access}) et elles sont aujourd'hui la brique de base pour créer des supercalculateurs.
+On appelle ces architectures NUMA (pour \emph{Non Uniform Memory Access}) et elles sont aujourd'hui la brique de base pour créer des supercalculateurs.
 
-L'amélioration des performances générales d'un supercalculateur passe donc directement par l'optimisation de l'exploitation des machines NUMA.
-Plusieurs techniques de programmation permettent de cibler ce genre d'architectures.
-On peut notamment citer des techniques statiques à base de boucles parallèles.
-En pratique cela marche particulièrement bien pour les applications où toutes les itérations des boucles sont régulières et où leur temps d'exécution est prévisible.
-Néanmoins il existe beaucoup de situations où ce n'est pas le cas.
-Un exemple typique est celui des applications de parcours de graphes, qui sont généralement irrégulières.
-Mais même dans le cas d'une application où le travail peut sembler régulier, comme par exemple une multiplication de matrices, l'ajout d'une variabilité dans le temps des accès mémoires rend le temps d'exécution difficile à prévoir, et peut entrainer un déséquilibre de charge.
+Plusieurs modèles de programmation permettent de cibler ce genre d'architectures.
+Les boucles parallèles et les tâches avec dépendances sont deux types de constructions très utilisées, et elles sont présentes dans la majorité des modèles de programmation.
 
+Les boucles parallèles sont particulièrement adaptées aux applications régulières où les temps d'exécution de chaque itération est facilement prévisible.
+Les tâches avec dépendances permettent d'exprimer un parallélisme à grain fin, et sont particulièrement adaptées dans le cas d'applications dont certains calculs peuvent être imprévisibles et entrainer un déséquilibre de charge.
 
-Les techniques d'ordonnancement dynamiques peuvent garantir une utilisation plus efficace des ressources.
-L'une des plus communes est l'ordonnancement par vol de travail : l'application est exprimée comme un graphe de flot de données, chaque sous-partie - tâche - consommant et produisant des données.
-Un programme dédié - le support exécutif - a la charge d'exécuter ce graphe : à chaque fois qu'un processeur devient inactif, il va récupérer une tâche disponible pour l'exécuter.
-Pour que cela soit efficace, il faut pouvoir exprimer un maximum de parallélisme : plus il y a de parallélisme, mieux on est capable d'équilibrer la charge au cours de l'exécution.
+Cela peut être expliqué par la manière donc sont ordonnancées ces deux types d'applications par le support exécutif~: dans le cas de boucle parallèle, les itérations à exécuter sont généralement découpées équitablement entre les cœurs de calcul.
+Dans le cas des tâches avec dépendances, l'une des techniques les plus communes est l'ordonnancement par vol de travail~: l'application est exprimée comme un graphe de flot de données, chaque sous-partie - tâche - consommant et produisant des données. 
+À chaque fois qu'un processeur devient inactif, il va récupérer --- \emph{voler} --- une tâche disponible pour l'exécuter.
+Pour minimiser les périodes d'inactivités des processeurs, il faudrait donc qu'il y ait toujours des tâches disponibles à être exécuter.
+Pour que le vol de travail soit efficace, il faut donc pouvoir exprimer un maximum de parallélisme : plus il y a de parallélisme, plus il y a de tâches, mieux on est capable d'équilibrer la charge au cours de l'exécution.
 
-Les modèles de programmation standards ont su s'adapter : par exemple OpenMP, qui est le standard \emph{de-facto} pour ce genre d'architectures, ne proposait au départ que du parallélisme de boucles. Les dernières versions proposent de la programmation par tâche avec dépendances de données.
-En revanche ces modèles de programmation présentent toujours un manque lorsqu'il s'agit d'exploiter efficacement les machines NUMA.
-Le programmeur doit donc faire de gros efforts pour effectuer des optimisations spécifiques peu portables, par exemple via des bibliothèques externes pour contrôler précisément le placement des données.
-Les outils standards et non intrusifs permettent simplement de distribuer les pages de la mémoire sur les différentes parties physiques : cela a pour avantage d'améliorer l'uniformité des temps d'accès à la mémoire, mais pas d'améliorer le temps d'accès moyen, rendant donc les processeurs uniformément mauvais vis à vis de l'accès à la mémoire.
+Même dans le cas d'une application où le travail peut sembler régulier et où une parallélisation par boucles parallèles semblerait convenir, le côté NUMA des architectures ajoute une variabilité dans le temps des accès mémoires, ce qui rend le temps d'exécution difficile à prévoir et peut entrainer du même coup un déséquilibre de charge.
+L'utilisation des tâches avec dépendances semblent donc tout à fait appropriée lorsque l'on cible des architectures NUMA.
+
+OpenMP est le standard \emph{de-facto} pour les architectures à mémoire partagée, qui a récemment évolué pour supporter les tâches avec dépendance en plus des boucles parallèles.
+C'est le modèle que nous avons utilisé comme support pour nos idées, sachant qu'elles pourraient être transposées dans les autres modèles de programmation puisqu'ils utilisent des concepts similaires.
+Les modèles de programmation existant présentent un manque lorsqu'il s'agit d'exploiter efficacement les machines NUMA.
+Le programmeur doit faire de gros efforts pour effectuer des optimisations spécifiques peu portables, par exemple via des bibliothèques externes pour contrôler précisément le placement des données.
+Les outils standards et non intrusifs permettent simplement de distribuer les pages de la mémoire sur les différentes parties physiques~: ce n'est pas suffisant, cela permet de diviser et répartir les données et donc de diminuer la contention sur les bus mémoire, mais cela ne permet malheureusement pas aux données dépassant la taille d'une page de rester groupées proches les une des autres, ce qui est un point clé pour avoir une bonne localité des données.
+La localité des données est essentielle pour les performances, mais lorsqu'il faut équilibrer la charge et donc déplacer des tâches, elle est difficile (voire impossible) à conserver.
+La bonne exploitation des machines NUMA repose donc sur deux objectifs incompatibles~: l'équilibrage de charge et la localité des données.
 
 Cette thèse est axée sur l'amélioration des standards et techniques pour l'exploitation des machines NUMA, et cela passe par plusieurs étapes : tout d'abord fournir au programmeur les moyens de comprendre et analyser le comportement des parties critiques de son application.
 Ensuite lui permettre de fournir plus d'information au support exécutif, principalement en lui permettant d'exprimer une \emph{affinité} entre ses tâches et les ressources de la machine.
