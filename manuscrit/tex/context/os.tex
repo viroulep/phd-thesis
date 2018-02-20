@@ -7,28 +7,22 @@ La section suivante détaille donc la manière dont Linux gère la mémoire d'un
 \subsection{Gestion de la mémoire}
 
 La compréhension de la gestion de l'allocation de la mémoire par le système d'exploitation est un point critique lorsque l'on traite les machines NUMA.
-Le système d'exploitation gère la mémoire par petits fragments, appelés \emph{pages}.
+Le système d'exploitation gère une mémoire \emph{paginée}.
 Lors de l'allocation d'un tableau par exemple, si sa taille dépasse celle d'une \emph{page}, l'espace mémoire alloué consistera donc de plusieurs pages.
-
-
-Par défaut, lorsque l'allocateur mémoire demande au système la réservation d'un espace mémoire constitué de plusieurs \emph{pages} (lors d'un appel à |malloc| par exemple), le système retarde l'allocation effective de ces \emph{pages} jusqu'au moment du premier accès - \emph{first-touch}.
-C'est ce premier accès qui va déterminer l'allocation physique de la page~: elle sera allouée sur le nœud local du processeur effectuant le \emph{first-touch}.
-
-L'allocateur par défaut de la libc fait de la réutilisation de \emph{pages}. Cela veut dire qu'après plusieurs allocations/libérations successives d'espace mémoire, vous n'obtenez pas forcément des nouvelles \emph{pages}.
-L'objectif derrière cela est de réduire le coût général d'une allocation, puisque l'allocation et la libération physique de nouvelles \emph{pages} est couteux, et que réutiliser des \emph{pages} supprime ce coût.
-En revanche le corollaire de ce constat est que le contrôle de l'allocation physique par \emph{first-touch} n'est possible que lors de la première allocation des \emph{pages}.
-Ce problème est limité à la durée de vie du programme, s'il est susceptible d'apparaître, il est alors possible d'utiliser des librairies externes pour l'allocation de données, comme décrit dans la section suivante.
+Lorsqu'un allocateur utilise une primitive d'allocation de pages telle que \emph{mmap}, elles sont allouées selon une politique d'allocation physique des pages.
+La politique par défaut dans Linux est d'allouer physiquement la page lors du premier accès - \emph{first-touch}, sur le nœud NUMA du cœur effectuant ce premier accès.
+Dans ces conditions, le contrôle de l'allocation physique n'est possible que lors de la première allocation des \emph{pages}.
+Cette contrainte est limitée à la durée de vie du programme, mais il est aussi possible d'utiliser des librairies externes pour gérer plus finement l'allocation de données, comme décrit dans la section suivante.
 
 Enfin, un dernier détail mérite de l'attention, il s'agit de la taille des \emph{pages} manipulées par le système.
 En effet celle-ci est configurable, et deux options sont généralement possibles~: soit des \emph{pages} de 4 Kilo octets, soit des - \emph{huge} - \emph{pages} de 2 Mega octets.
-L'impact de cette taille peut être important dans le cas d'un bloc de données s'étendant sur plusieurs \emph{pages}~: plusieurs requêtes de \emph{pages} de petite taille seront plus sensibles à la \emph{latence} de la mémoire, alors qu'une requête d'une page de grande taille équivalente sera plus sensible à la \emph{bande passante}.
 
 \subsection{Prise en compte des architectures NUMA et bibliothèques externes}\label{sec:context:os:lib}
 
-Avec l'arrivée du support des machines NUMA dans le système d'exploitation, plusieurs fonctionnalités fondamentales sont apparues et parmi elles on retrouve~: la capacité d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
+Avec l'arrivée du support des machines NUMA dans le système d'exploitation Linux, plusieurs fonctionnalités fondamentales sont apparues et parmi elles on retrouve~: la capacité d'obtenir des informations à propos de la machine, telles que le numéro de nœud d'un cœur donné, ou le numéro de nœud d'une adresse mémoire donnée.
 On trouve aussi la possibilité de contrôler le placement d'un thread sur un ensemble de cœurs physiques à l'aide d'un masque d'affinité, ce qui permet par exemple de garantir la proximité physique de deux threads vis à vis d'un nœud, ou tout simplement de garantir qu'un thread sera exécuté par un cœur précis.
 
-Plusieurs outils se sont basés sur ces briques de base pour proposer des fonctionnalités plus avancées, parmi eux \emph{numactl} et \emph{hwloc}~:
+Plusieurs outils se sont basés sur ces briques de base pour proposer des fonctionnalités plus avancées, comme par exemple~:
 
 \begin{description}
   \item [numactl~\cite{numactl} :] cet outil s'utilise avant l'utilisation d'un exécutable sur la ligne de commande. Il permet~: de contrôler l'ensemble des cœurs (ou nœuds) sur lesquels les threads peuvent être placés au cours de l'exécution du programme ;
@@ -36,6 +30,7 @@ Plusieurs outils se sont basés sur ces briques de base pour proposer des foncti
     et encore de modifier la politique d'allocation des \emph{pages} du système, en permettant par exemple de distribuer les \emph{pages} successives allouées de manière cyclique sur un ensemble de nœuds.
   \item [hwloc~\cite{Broquedis2010} :] cet outil permet, entre autres, d'obtenir des informations précises sur le matériel et la topologie de la machine. Il expose les facteurs NUMA théoriques fournis par le matériel, et permet de visualiser les différents nœuds et groupes de nœuds.
   Il propose également des fonctions d'allocation plus fiables que |malloc|, garantissant l'allocation de nouvelles \emph{pages}, et proposant différentes politiques d'allocation (incluant le \emph{first-touch}).
+\item [MaMi~\cite{Broquedis2009} :] cet allocateur est implémenté au sein de ForestGOMP, décrit en détails dans la section~\ref{sec:rw:numa:thread-data}. Il permet l'allocation et la migration de \emph{pages}, soit explicitement via des appels dédiés, soit implicitement en marquant des pages à migrer au \emph{next-touch}~: elles seront alors migrées sur le nœud du prochain cœur qui y accède.
 \end{description}
 
 

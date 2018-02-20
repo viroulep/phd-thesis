@@ -7,7 +7,7 @@ L'évolution de son utilisation a amené le comité de standardisation d'OpenMP 
 La version 4.0 d'OpenMP étend les tâches pour ajouter les dépendances de données, et introduit le support pour du matériel de plus en plus utilisé : les accélérateurs.
 On y voit aussi l'apparition de mécanismes permettant de contrôler le placement des threads, des directives SIMD, ou encore des instructions atomiques.
 La version actuelle d'OpenMP est la version 4.5, qui ajoute certaines fonctionnalités aux constructions existantes, et introduit le concept de \emph{taskloop} : des boucles dont les groupes d'itérations forment des tâches indépendantes.
-La version en cours de préparation est OpenMP~5.0 ; parmi diverses améliorations, elle devrait notamment ajouter le support d'une interface utilisable par des outils de visualisation de traces d'exécution et de debugging interactif souhaitant se greffer au plus proche d'OpenMP.
+La version en cours de préparation est OpenMP~5.0 ; parmi diverses améliorations, elle devrait notamment ajouter le support d'une interface utilisable par des outils de visualisation de traces d'exécution et de debugging interactif souhaitant se greffer au plus proche d'OpenMP, ainsi que le support des réductions sur les tâches.
 
 Les sections suivantes décrivent les différentes fonctionnalités d'OpenMP, dans l'ordre chronologique où elles sont apparues.
 
@@ -101,32 +101,54 @@ Comme la création de tâches à l'exécution du programme est beaucoup plus éc
 Dans la version 3.0 d'OpenMP la synchronisation des tâches est effectuée grâce au mot clé |taskwait|, qui indique au support exécutif d'attendre la complétion des tâches générées jusqu'à ce point dans la région parallèle, avant de reprendre l'exécution.
 Le développeur de l'application est responsable de la création et de la synchronisation explicite des tâches, mais c'est le support exécutif qui est en charge de l'affectation des tâches aux threads pendant l'exécution du programme.
 
-Le listing~\ref{lst:context:openmp:taskwait} illustre ce concept avec un exemple très simple initialisant un tableau en parallèle.
+Le listing~\ref{lst:context:openmp:taskwait} illustre ce concept en reprenant l'exemple d'une factorisation de Cholesky, donné dans la section~\ref{sec:context:others:examples}.
 
+\begin{figure}[ht!]
 \begin{lstlisting}[language=c++,caption=Création et synchronisation explicite de tâches,label=lst:context:openmp:taskwait]
-#include <stdio.h>
-int main()
-{
-  double tableau[2];
-  #pragma omp parallel num_threads(2)
-  {
-    #pragma omp task shared(tableau)
-    {
-      tableau[0] = 0;
-    }
-    #pragma omp task shared(tableau)
-    {
-      tableau[1] = 1;
-    }
-    #pragma omp taskwait
-    #pragma omp task shared(tableau)
-    {
-      printf("Tableau : {%f, %f}\n", tableau[0], tableau[1]);
-    }
+// On suppose ici que l'expression A(i, j) retourne un pointeur
+// vers le début du bloc i,j de la matrice A.
+for (int k = 0; k < n_blocs; k++) {
+  #pragma omp task
+  dpotrf(A(k, k));
+  #pragma omp taskwait
+  for (int m = k+1; m < n_blocs; m++) {
+    #pragma omp task
+    dtrsm(A(k, k), A(k, m));
   }
-  return 0;
+  #pragma omp taskwait
+  for (int m = k+1; m < n_blocs; m++) {
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task
+      dgemm(A(k, n), A(k, m), A(n, m));
+    }
+    #pragma omp task
+    dsyrk(A(k, m), A(k, k));
+    #pragma omp taskwait
+  }
 }
 \end{lstlisting}
+\end{figure}
+\begin{figure}[h!]
+\begin{lstlisting}[language=c++,caption=Exemple de tâches avec dépendances,label=lst:context:openmp:taskdep]
+for (int k = 0; k < n_blocs; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  dpotrf(A(k, k));
+  for (int m = k+1; m < n_blocs; m++) {
+    #pragma omp task depend(in:A(k, k)) depend(inout:A(k, m))
+    dtrsm(A(k, k), A(k, m));
+  }
+  for (int m = k+1; m < n_blocs; m++) {
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(k, n), A(k, m))
+                       depend(inout:A(n, m))
+      dgemm(A(k, n), A(k, m), A(n, m));
+    }
+    #pragma omp task depend(in:A(k, m)) depend(inout:A(k, k))
+    dsyrk(A(k, m), A(k, k));
+  }
+}
+\end{lstlisting}
+\end{figure}
 
 
 La version 4.0 d'OpenMP~\cite{openmp40} pousse le concept de tâche plus loin en ajoutant le mot clé |depend|, spécifiant les modes d'accès de chaque variable partagée utilisée par la tâche pendant son exécution.
@@ -135,27 +157,9 @@ Cette information peut ensuite être traitée par le support exécutif pour déc
 
 Le listing~\ref{lst:context:openmp:taskdep} donne un exemple de tâches avec dépendances, où la variable |foo| est initialisée puis affichée.
 
-\begin{lstlisting}[language=c++,caption=Exemple de tâches avec dépendances,label=lst:context:openmp:taskdep]
-#include <stdio.h>
-int main()
-{
-  int foo;
-  #pragma omp parallel num_threads(2)
-  {
-    #pragma omp task shared(foo) depend(out: foo)
-    {
-      variable = 2;
-    }
-    #pragma omp task shared(foo) depend(inout: foo)
-    {
-      printf("Foo : %i\n", foo);
-    }
-  }
-  return 0;
-}
-\end{lstlisting}
 
 La dernière extension aux tâches a vu le jour dans OpenMP~4.5, qui introduit la notion de \emph{priorité} sur les tâches, permettant d'aider le support exécutif à choisir quelle tâche prête exécuter en priorité.
+L'extension suivante devrait être la réduction sur les tâches, qui devrait voir le jour avec OpenMP~5.0, et pour laquelle nous avons déjà montré qu'elle pouvait permettre d'améliorer le parallélisme de certaines applications~\cite{Virouleau2014}.
 
 \subsection{Vectorisation}
 
@@ -226,7 +230,9 @@ Ces contraintes font qu'aujourd'hui la construction n'est pas clairement adopté
 La version~4.0 d'OpenMP voit aussi l'ajout d'un ensemble de fonctionnalités ayant pour but de donner du contrôle au programmeur sur le placement des threads OpenMP sur la topologie physique de la machine.
 
 Le premier ajout est celui du concept de \emph{places} : il s'agit d'un moyen de représenter des emplacements physiques sur lesquels les threads OpenMP peuvent venir se placer, et permet d'indiquer au support exécutif quelles ressources physiques lui sont disponibles.
-Le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|.
+Avant d'être introduit dans OpenMP, ce concept avait déjà été expérimenté séparément par le support exécutif de GCC --- libGOMP, dans lequel la liste des \emph{places} était contrôlée via la variable d'environnement |GOMP_AFFINITY|, mais également par le support exécutif d'Intel --- libIOMP, qui utilisait lui la variable d'environnement |KMP_AFFINITY|.
+
+Dans OpenMP le contrôle de la sélection des \emph{places} se fait via la variable d'environnement |OMP_PLACES|, et la syntaxe est directement inspirée de ses prédécesseurs.
 Elle peut être une liste précise d'indices de cœurs physiques, ou prendre la valeur d'éléments plus génériques de la machine tels que \emph{sockets} ou \emph{cores}.
 
 Il n'y a pas de dépendance entre le nombre de threads dans une région parallèle (spécifié par |OMP_NUM_THREADS|) et la liste des \emph{places} : il peut y avoir plus de threads que de \emph{places} ou inversement, sans que cela empêche l'exécution du programme.

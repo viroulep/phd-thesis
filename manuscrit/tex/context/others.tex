@@ -1,6 +1,7 @@
 \section{Modèles de programmation à base de tâches}\label{sec:context:others}
 
-Il existe de nombreux modèles de programmation à base de tâches, certaines fonctionnalités diffèrent, mais les concepts de base restent les même, et seront détaillés ci dessous.
+Il existe de nombreux modèles de programmation à base de tâches, et dans le cadre de cette thèse nous nous sommes restreint à appliquer nos idées dans OpenMP.
+Les concepts de base sont les même que dans les autres modèles de programmation, et sont détaillés ci dessous.
 
 \subsection{L'unité de base : la tâche}
 
@@ -18,35 +19,9 @@ Les trois paragraphes suivants décrivent quelques points clés accompagnant l'u
 
 \subsubsection{Création}
 
+
 En fonction du modèle de programmation, la création d'une tâche peut être plus ou moins complexe pour le programmeur.
-
-Prenons deux exemples représentatifs pour illustrer.
-
-En StarPU natif, voici par exemple comment on pourrait définir et créer une tâche~:
-
-\begin{lstlisting}[language=c++,caption=Exemple simple en StarPU,label=lst:context:simple-starpu]
-void work() {
-  // calcul
-}
-
-int main() {
-  // ...
-  struct starpu_codelet dummy_big_cl =
-  {
-    // ...
-    .cpu_funcs = { work },
-  };
-
-  task = starpu_task_create();
-  task->cl = &dummy_big_cl;
-  starpu_task_submit(task);
-}
-\end{lstlisting}
-
-On voit ici que l'utilisateur doit d'une part avoir isolé la partie calcul de son code, et d'autre part interagir avec le support exécutif de manière significative pour créer une tâche.
-
-Si on regarde maintenant un exemple simple en OpenMP :
-
+L'exemple simple ci-dessous illustre la création d'une tâche en OpenMP~:
 \begin{lstlisting}
 void foo()
 {
@@ -60,18 +35,17 @@ void foo()
 }
 \end{lstlisting}
 
-Cela parait certes moins intrusif et plus simple pour le programmeur, mais pour autant cela ne veut pas dire qu'il y a moins d'actions effectuées en pratique !
-Que se passe-t-il vraiment ?
+Certains modèles de programmation nécessitent que l'utilisateur écrive une fonction suivant un prototype particulier, qui sera le point d'entrée passé à une routine spécifique du support exécutif pour effectivement créer la tâche.
 
-Le compilateur ne va pas laisser ces éléments tels quels dans l'objet binaire généré~: il va les transformer en un ensemble de fonctions élémentaires imposées par le support exécutif. Cet ensemble de fonctions élémentaires s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
-
-Un exemple de ce type en OpenMP va donc entrainer deux transformations importantes par le compilateur :
+Dans le cas spécifique d'OpenMP, ce travail est effectué par le compilateur via deux transformations~:
 \begin{itemize}
   \item l'\emph{outlining} de la fonction, qui consiste à externaliser le code de la tâche et son contexte dans une fonction séparée.
   \item la substitution du pragma par un appel au support exécutif.
 \end{itemize}
 
-Cela donnera au final un code binaire généré correspondant à un programme de ce type, dans l'ABI de Clang :
+Cet ensemble d'appels au support exécutif n'est présent que dans le binaire, et s'appelle l'\emph{ABI} (pour \emph{Abstract Binary Interface}).
+
+Au final le code correspondant qui est généré dans le binaire est plus complexe qu'il n'y parait, et en l'exprimant dans l'ABI de Clang il serait équivalent à un programme de ce type~:
 
 \begin{lstlisting}
 struct unamed_struct_1 {
@@ -102,7 +76,7 @@ void foo()
 }
 \end{lstlisting}
 
-Au final les actions effectuées pour la création d'une tâche sont équivalentes, bien que parfois cachées.
+C'est effectivement ce qu'il faut écrire dans certains modèles de programmation, comme on le verra dans la section~\ref{sec:context:others:examples}.
 
 
 \subsubsection{Gestion}
@@ -114,6 +88,7 @@ Le support exécutif va utiliser ces informations au cours de l'exécution du pr
 En pratique cela signifie que ces structures de données vont être placées dans des conteneurs tels que des files ou des piles, et qu'un certain nombre d'opérations seront effectuées dessus (ajout, suppression, parcours).
 
 En conséquence le coût du maintien des informations à propos d'une tâche entre sa création et son exécution dépend du support exécutif et des structures de données qu'il utilise.
+Ce point est illustré dans la section~\ref{sec:context:others:granularity}.
 
 
 \subsubsection{Exécution}
@@ -135,22 +110,32 @@ Les différentes tâches définies par l'utilisateur vont être exécutées en p
 
 Il y a deux grands types de synchronisations pour la programmation à base de tâches~: la synchronisation explicite, et les dépendances de données.
 
-\subsubsection{Synchronisation explicite}
+\subsubsection{Synchronisation globale}
 
-Le programmeur peut ajouter un point de synchronisation explicite dans le code.
-Lorsque le thread exécutant la tâche atteint ce point de synchronisation, il se bloque et attend que l'ensemble des tâches qu'il a créées ait été exécuté avant de reprendre son exécution. Dans l'exemple du listing~\ref{lst:context:task-wait}, exprimé en OpenMP, la tâche C sera garantie d'être exécutée \textbf{après} les tâches A et B.
+Le programmeur peut ajouter un point de synchronisation global dans le code.
+Pour les tâches OpenMP, ce moyen de synchronisation est le |taskwait|, et il est montré en exemple dans le listing~\ref{lst:context:task-wait}.
+Lorsque le thread exécutant la tâche atteint le |taskwait|, il se bloque et attend que l'ensemble des tâches créées par la tâche courante soient terminées.
+Dans l'exemple le thread arrivant sur le |taskwait| attendra donc la complétion des tâches B et C, mais n'aura pas besoin d'attendre la complétion de la tâche A.
 
 \begin{lstlisting}[caption=Synchronisation dans le thread courant (OpenMP),label=lst:context:task-wait]
 void foo() {
-  #pragma omp task
-  A();
-  #pragma omp task
-  B();
-  #pragma omp taskwait
-  #pragma omp task
-  C();
+  #pragma omp task // Tâche 1
+  {
+    #pragma omp task // Tâche A
+    A();
+    #pragma omp task // Tâche 2
+    {
+      #pragma omp task // Tâche B
+      B();
+      #pragma omp task // Tâche C
+      C();
+      #pragma omp taskwait
+    }
+  }
 }
 \end{lstlisting}
+
+Cette sémantique est particulière à OpenMP, dans d'autres modèles de programmation tels que Cilk ou Kaapi, le point de synchronisation imposerait l'attente de la complétion de toutes les tâches créées avant le point de synchronisation.
 
 
 \subsubsection{Dépendances de données}
@@ -190,89 +175,154 @@ Cet exemple de code se traduit en un graphe de tâches direct et acyclique (\emp
   \caption{DAG équivalent au listing~\ref{lst:context:task-dep}}\label{fig:context:dag-dataflow}
 \end{figure}
 
-Les deux types de synchronisation ont des avantages et des inconvénients : la synchronisation dans le thread courant représente très peu d'overhead lors de l'exécution, mais si le travail est légèrement déséquilibré, certains threads pourraient rester inactifs alors que des tâches pourraient être exécutées.
-Les dépendances induisent un coût de calcul des tâches prêtes lors de l'exécution, mais maximise l'utilisation des ressources.
+Exprimer son code avec des dépendances de données plutôt qu'avec des synchronisations globales permet de définir des synchronisations plus fines entre les différentes tâche, que le support exécutif peut utiliser pour minimiser le temps d'inactivité des ressources.
+En effet, en utilisant des dépendances de données une tâche devient prête dès lors que ses données en lecture sont prêtes, ce qui, contrairement à une approche par synchronisation globale, est robuste à un déséquilibre de charge entre les tâches.
 
 
-\subsection{Quelques exemples de modèles de programmation}
+\subsection{Quelques exemples de modèles de programmation}\label{sec:context:others:examples}
 
-Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, TBB, et OpenMP, qui fonctionnent chacun avec des méthodes différentes : respectivement via des annotations sur des fonctions, des appels dans le code utilisateur, et des directives pour le compilateur.
+Plusieurs modèles de programmation populaires proposent d'exprimer du parallélisme à base de tâches, parmi lesquels Cilk, OmpSs, et OpenMP, qui fonctionnent avec des approches légèrement différentes.
+Le but de cette section est de comparer l'expression d'une même application, la factorisation de Cholesky, dans ces différents modèles.
+Une comparaison plus large des supports exécutifs est effectuée dans la section~\ref{sec:rw:other-runtimes}.
 
-Les listings~\ref{lst:context:cilk},~\ref{lst:context:tbb}, et ~\ref{lst:context:openmp} donnent une comparaison de l'expression du même exemple simple, le calcul du nième nombre de la suite de Fibonacci.
 
-Les modèles de programmation plus spécifiques à certaines constructions ou architectures seront abordés dans la section~\ref{sec:rw:other-runtimes}
+\subsubsection{Code séquentiel de base}
+
+La factorisation de Cholesky sera prise comme étude de cas et présentée en détails dans la section~\ref{sec:contribs:apps:cholesky}.
+Le code séquentiel utilisé comme base pour la parallélisation est présenté dans le listing~\ref{lst:context:cholesky-seq}.
+
+\begin{figure}[h!]
+\begin{lstlisting}[language=c++,caption=Algorithme séquentiel,label=lst:context:cholesky-seq]
+// Prototype des fonctions communes aux modèles de programmation
+void dpotrf(double *A);
+void dtrsm(double *A, double *B);
+void dsyrk(double *A, double *B);
+void dgemm(double *A, double *B, double *C);
+
+// On suppose ici que l'expression A(i, j) retourne un pointeur
+// vers le début du bloc i,j de la matrice A.
+for (int k = 0; k < n_blocs; k++) {
+  dpotrf(A(k, k));
+  for (int m = k+1; m < n_blocs; m++)
+    dtrsm(A(k, k), A(k, m));
+  for (int m = k+1; m < n_blocs; m++) {
+    for (int n = k+1; n < m; n++) {
+      dgemm(A(k, n), A(k, m), A(n, m));
+    }
+    dsyrk(A(k, m), A(k, k));
+  }
+}
+\end{lstlisting}
+\end{figure}
 
 \subsubsection{Cilk}
 
 Cilk~\cite{cilk5} est un modèle de programmation basé sur C.
-Il introduit principalement deux nouveaux mots clés : |cilk_spawn| et |cilk_sync|, pour, respectivement, exposer du parallélisme et introduire un point de synchronisation.
-Le mot clé |cilk_spawn| vient précéder un appel de fonction pour indiquer que la fonction peut s'exécuter en parallèle. Cela en fait donc un modèle de programmation à base de tâches.
+Il introduit principalement deux nouveaux mots clés : |spawn| et |sync|, pour, respectivement, exposer du parallélisme et introduire un point de synchronisation.
+Le mot clé |spawn| vient précéder un appel de fonction pour indiquer que la fonction peut s'exécuter en parallèle. Cela en fait donc un modèle de programmation à base de tâches.
 Cilk propose également une extension de la notation de tableau, ayant pour but de faciliter la vectorisation automatique par le compilateur.
+La version parallélisée en Cilk est présentée dans le listing~\ref{lst:context:cilk}.
 
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en Cilk,label=lst:context:cilk]
-int fib(int n) {
-  if (n < 2)
-    return n;
-  int x = cilk_spawn fib(n-1);
-  int y = fib(n-2);
-  cilk_sync;
-  return x + y;
-}
-\end{lstlisting}
-
-
-\subsubsection{Threading Building Block}
-
-Threading Building Block (TBB)~\cite{Reinders2007} est un modèle de programmation développé par Intel comme une bibliothèque C++.
-
-Elle propose différentes fonctions pour que le programmeur puisse exprimer du parallélisme, dont notamment :
-\begin{itemize}
-  \item La fonction template |parallel_for|, s'appliquant sur une boucle et prenant en paramètre une fonction utilisateur.
-    La bibliothèque découpe automatiquement l'espace d'itération en groupes d'itérations et envoie un itérateur C++ à la fonction utilisateur pour son traitement.
-  \item Un ensemble de fonctions pour accéder à l'ordonnanceur de tâches de la bibliothèque.
-\end{itemize}
-
-La bibliothèque propose également un ensemble de structures de données à accès concurrent (listes, tables de hachage), ainsi que des allocateurs mémoire.
-
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en TBB,label=lst:context:tbb]
-#include "tbb/task_group.h"
-using namespace tbb;
-
-int Fib(int n) {
-  if( n<2 ) {
-    return n;
-  } else {
-    int x, y;
-    task_group g;
-    g.run([&]{x=Fib(n-1);}); // création d'une tâche
-    g.run([&]{y=Fib(n-2);}); // création d'une autre tâche
-    g.wait();                // synchronisation
-    return x+y;
+\begin{figure}[h!]
+\begin{lstlisting}[language=c++,caption=Cholesky exprimé en Cilk,label=lst:context:cilk]
+for (int k = 0; k < n_blocs; k++) {
+  spawn dpotrf(A(k, k));
+  sync;
+  for (int m = k+1; m < n_blocs; m++)
+    spawn dtrsm(A(k, k), A(k, m));
+  sync;
+  for (int m = k+1; m < n_blocs; m++) {
+    for (int n = k+1; n < m; n++) {
+      spawn dgemm(A(k, n), A(k, m), A(n, m));
+    }
+    spawn dsyrk(A(k, m), A(k, k));
+    sync;
   }
 }
 \end{lstlisting}
+\end{figure}
+
 
 \subsubsection{OpenMP}
 
 OpenMP~\cite{openmp45} est un modèle de programmation supportant le C/C++ et Fortran.
-Il s'utilise à travers des directives de compilation ainsi qu'une API, et propose lui aussi les constructions classiques : boucles, tâches, et autres éléments facilitant la programmation parallèle.
-
-Originellement OpenMP ne proposait que du parallélisme de boucle, le concept de tâches n'a été introduit que plus tard avec OpenMP~3.0, et le concept de dépendances de données entre tâches a été introduit encore plus tard avec la version~4.0.
-
 Le standard d'application de nos idées pour cette thèse étant OpenMP, une description détaillée des fonctionnalités et de ses spécificités est faite dans la section~\ref{sec:context:openmp}.
 
-\begin{lstlisting}[language=c++,caption=Fibonacci exprimé en OpenMP,label=lst:context:openmp]
-int fib(int n) {
-  if (n < 2)
-    return n;
-#pragma omp task
-  int x = fib(n-1);
-  int y = fib(n-2);
-#pragma omp taskwait
-  return x + y;
+Contrairement à Cilk où la synchronisation est faite via un |sync| global, dans l'implémentation donnée dans le listing~\ref{lst:context:openmp} ce sont les dépendances de données qui induisent l'ordre d'exécution.
+
+\begin{figure}[h!]
+\begin{lstlisting}[language=c++,caption=Cholesky exprimé en OpenMP,label=lst:context:openmp]
+for (int k = 0; k < n_blocs; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  dpotrf(A(k, k));
+  for (int m = k+1; m < n_blocs; m++) {
+    #pragma omp task depend(in:A(k, k)) depend(inout:A(k, m))
+    dtrsm(A(k, k), A(k, m));
+  }
+  for (int m = k+1; m < n_blocs; m++) {
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(k, n), A(k, m))
+                       depend(inout:A(n, m))
+      dgemm(A(k, n), A(k, m), A(n, m));
+    }
+    #pragma omp task depend(in:A(k, m)) depend(inout:A(k, k))
+    dsyrk(A(k, m), A(k, k));
+  }
 }
 \end{lstlisting}
+\end{figure}
+
+\subsubsection{OmpSs}
+
+OmpSs~\cite{OMPSs} est un modèle de programmation proche d'OpenMP, mais où certaines \emph{déclarations} de fonctions sont marquées comme des tâches avec leurs dépendances (et leurs tailles associées).
+Le listing~\ref{lst:context:cholesky-ompss} montre la factorisation de Cholesky exprimée en OmpSs.
+
+\begin{figure}[h!]
+\begin{lstlisting}[language=c++,caption=Cholesky exprimé en OmpSs,label=lst:context:cholesky-ompss]
+// Taille de bloc
+int bs = X;
+
+#pragma omp task inout([bs][bs]A)
+void dpotrf(double *A);
+#pragma omp task in([bs][bs]A) inout([bs][bs]B)
+void dtrsm(double *A, double *B);
+#pragma omp task in([bs][bs]A) inout([bs][bs]B)
+void dsyrk(double *A, double *B);
+#pragma omp task in([bs][bs]A, [bs][bs]B) inout([bs][bs]C)
+void dgemm(double *A, double *B, double *C);
+
+for (int k = 0; k < n_blocs; k++) {
+  dpotrf(A(k, k));
+
+  for (int m = k+1; m < n_blocs; m++)
+    dtrsm(A(k, k), A(k, m));
+
+  for (int m = k+1; m < n_blocs; m++) {
+    for (int n = k+1; n < m; n++) {
+      dgemm(A(k, n), A(k, m), A(n, m));
+    }
+    dsyrk(A(k, m), A(k, k));
+  }
+}
+\end{lstlisting}
+\end{figure}
+
+
+\subsubsection{Quelques autres modèles de programmation}
+
+En plus des modèles présentés ci-dessus et des modèles abordés en détails dans la section~\ref{sec:rw:other-runtimes}, il existe un certain nombre de modèles de programmation à base de tâches, trop éloignés de nos travaux pour en faire une description approfondie.
+
+Threading Building Block (TBB)~\cite{Reinders2007} est un modèle de programmation développé par Intel comme une bibliothèque C++.
+Les tâches sont soumises au support exécutif via des fonctions mises à disposition du programmeur, qui doit passer en paramètre un pointeur vers une fonction au prototype prédéfini.
+
+Hpx~\cite{Kaiser2014} est un modèle de programmation construit sur le modèle \emph{Partitioned Global Address Space}~\cite{PGAS}.
+Il s'agit également d'une API C++, où les primitives de création de tâches prennent en paramètre un pointeur de fonction et une liste d'arguments à lui passer.
+
+X10~\cite{Charles2005} est un langage basé sur Java et étendu implémenter un modèle PGAS.
+Les opérations sur les tâches (création, synchronisation) se fait de manière similaire à Cilk, à l'aide de mots clés ajoutés dans le langage.
+Il supporte une synchronisation fine des tâches à travers la notion de \emph{futures}~: le résultat d'une tâche peut être encapsulé dans un objet \emph{future}, sur lequel d'autres tâches peuvent se placer en attente.
+
 
 \subsection{Quantité de travail et granularité}\label{sec:context:others:granularity}
 
@@ -283,7 +333,7 @@ Il faut donc jouer sur le degré de parallélisme pour atteindre les meilleures 
 
 Ce grain optimal dépend de plusieurs facteurs : les structures de données utilisées par le support exécutif, le coût de création des tâches, et la quantité de travail mis à disposition par cœur via ce grain.
 
-Cela peut être illustré via une application telle que la factorisation de Cholesky par bloc : à taille de matrice fixée le nombre de tâches créées dépend directement de la taille de bloc choisie.
+Cela peut être illustré via une application telle que la factorisation de Cholesky par bloc présentée dans la section précédente : à taille de matrice fixée le nombre de tâches créées dépend directement de la taille de bloc choisie.
 Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le nombre de tâches, et le parallélisme potentiel) est important.
 
 \begin{figure}[ht]
@@ -293,14 +343,14 @@ Plus la taille de bloc est petite, plus le nombre de blocs créés (et donc le n
 \end{figure}
 
 La figure~\ref{fig:context:granularity} illustre l'évolution des performances d'une factorisation de Cholesky d'une matrice de taille 8192, sur un nombre de cœurs fixé (64), en fonction de la taille de bloc et du support exécutif.
-Une description détaillée de ces supports exécutif sera faite dans la section~\ref{sec:contribs:perf_eval:portage_libkomp} pour libKOMP, et dans la section~\ref{sec:rw:other-runtimes} pour les autres.
+La machine utilisée pour cette expérience est \emph{idchire}, qui sera décrite en détails dans la section~\ref{sec:contribs:machines:idchire}.
+De même une description détaillée des supports exécutif sera faite dans la section~\ref{sec:contribs:perf_eval:portage_libkomp} pour libKOMP, et dans la section~\ref{sec:rw:other-runtimes} pour les autres.
 
 Comme on peut le voir, les parties extrèmes de la courbe se comportent de manière similaires quel que soit le support exécutif : une taille de bloc trop faible génère beaucoup trop de tâches et les support exécutifs sont complètement surchargés. Une taille de bloc trop importante limite complètement le parallélisme et donc les performances.
 
 Le grain adapté n'est pas nécessairement unique : en fonction du support exécutif on peut avoir un choix plus ou moins important. Cela est illustré sur la figure~\ref{fig:context:granularity} : avec OmpSs le grain optimal se situe dans un intervalle de tailles de blocs assez restreint (entre environ 250 et 350), alors qu'avec clang ou libkomp une taille de bloc entre 150 et 350 permet d'obtenir des performances sensiblement équivalentes.
 
-La courbe tracée avec libkomp inclut nos travaux sur l'affinité, et permet d'illustrer que même si l'affinité permet d'influer sur les performances maximales, elle n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k}, ou le maximum de performance est obtenu pour tous les supports exécutifs aux environs de 300.
-
+La courbe tracée avec libkomp inclut nos travaux sur l'affinité, et permet d'illustrer que même si l'affinité permet d'influer sur les performances maximales, elle n'a pas vraiment d'impact sur le grain optimal, comme cela est illustré sur la figure~\ref{fig:context:granularity-16k} (également réalisée sur la machine \emph{idchire}), ou le maximum de performance est obtenu pour tous les supports exécutifs aux environs de 300.
 
 \begin{figure}[ht]
   \centering
@@ -313,7 +363,7 @@ Le choix du grain pour une tâche dépend entièrement de l'application, et rest
 
 \bigskip
 
-Bien que tous ces modèles de programmation aient leur spécificités, ils permettent tous de décrire l'application sous forme de graphe de tâches direct et acyclique (DAG).
+Bien que tous les modèles de programmation à base de tâches avec dépendances aient leur spécificités, ils permettent tous de décrire l'application sous forme de graphe de tâches direct et acyclique (DAG).
 
 L'étape suivante consiste à exécuter ce graphe sur la machine, et pour cela le support exécutif peut se reposer sur un ensemble important de techniques d'ordonnancement. 
 

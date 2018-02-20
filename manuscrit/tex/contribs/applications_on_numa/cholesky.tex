@@ -50,13 +50,13 @@ for (int k = 0; k < n_blocs; k++) {
 
   for (int m = k+1; m < n_blocs; m++) {
     DTRSM(A(k, k), A(k, m));
+  }
 
-    for (int m = k+1; m < n_blocs; m++) {
-      DSYRK(A(k, m), A(k, k));
+  for (int m = k+1; m < n_blocs; m++) {
+    DSYRK(A(k, m), A(k, k));
 
-      for (int n = k+1; n < m; n++) {
-        DGEMM(A(k, n), A(k, m), A(n, m));
-      }
+    for (int n = k+1; n < m; n++) {
+      DGEMM(A(k, n), A(k, m), A(n, m));
     }
   }
 }
@@ -99,6 +99,8 @@ Le nombre de tâches créées pour une largeur $k$, ainsi que le nombre d'opéra
 Les \gemm sont donc très largement majoritaires dans l'algorithme quand la largeur de la matrice augmente.
 
 \subsection{Observations préliminaires et limites}\label{sec:contribs:apps:cholesky:observations}
+
+TODO versions openblas ! (sauf indications contraires)
 
 La figure~\ref{fig:context:granularity} a montré qu'on pouvait observer l'impact de certains paramètres, tels que la taille de bloc ou le support exécutif, sur les performances globales.
 
@@ -266,6 +268,8 @@ Cette conclusion est similaire lors d'un placement distant des données.
 
 
 \subsubsection{Impact de la bibliothèque BLAS}
+
+TODO la figure est grosse, couper en deux
 
 Pour comparer l'impact potentiel de la bibliothèque implémentant les BLAS, nous avons configuré \outil pour qu'il utilise soit OpenBLAS (2.19), Intel MKL (11.3), ou ATLAS (3.10.3).
 La figure~\ref{fig:contribs:apps:cholesky:perf-blas} montre la performance des \gemm et \potrf sur \emph{brunch}, pour une taille de bloc de 256 avec des données locales, en fonction de la bibliothèque BLAS utilisée.
