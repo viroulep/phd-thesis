@@ -20,7 +20,7 @@ Elles ont une influence directe sur le comportement du nœud au sein de la machi
 Les sections suivantes se concentrent sur certains composants clés des performances d'un processeur multicœur.
 Les fréquences des cœurs des processeurs sont beaucoup plus élevées que celles des bus d'accès à la mémoire centrale.
 Cela implique a priori que le temps d'exécution du programme va être limité par le temps d'accès à la mémoire (phénomène introduit sous le nom de \emph{Memory Wall}~\cite{Wulf1995}).
-L'architecture des caches et leurs caractéristiques sont cruciaux pour limiter l'impact de ce phénomène, nous les abordons en détail dans la section~\ref{sec:context:numa:cache}.
+L'architecture des caches et leurs caractéristiques sont cruciales pour limiter l'impact de ce phénomène, nous les abordons en détail dans la section~\ref{sec:context:numa:cache}.
 La section~\ref{sec:context:numa:node} décrit le parallélisme que les processeurs peuvent exposer pour augmenter les performances, via des instructions ou composants matériels spécifiques.
 
 
@@ -60,16 +60,7 @@ Le choix de la ligne à évincer est un sujet très étudié, et le prochain par
 
 Le cache ne peut être suffisamment grand pour contenir toute la mémoire~: le temps d'accès est lié à sa taille, et sa taille est généralement négligeable face à la quantité totale de mémoire disponible.
 Néanmoins chaque partie de la mémoire doit pouvoir être stockée dans une partie du cache, il faut donc pouvoir déterminer l'association entre l'adresse d'une ligne dans la mémoire centrale et son emplacement dans le cache.
-Il y a trois grandes catégories d'associativité utilisées par les caches :
-\begin{itemize}
-  \item Les caches à association directe (\emph{direct-mapped cache}) : dans ce système, chaque ligne de la mémoire est associée à exactement un emplacement dans le cache.
-    Ce système est simple, propose le meilleur temps de réponse, mais à taille identique il est moins efficace que les deux autres catégories : son manque de flexibilité ne lui permet pas de bien utiliser l'espace disponible lorsque le jeu de données à stocker devient important.
-  \item Les caches complètement associatifs (\emph{fully associative cache}) : dans ce système, chaque ligne de la mémoire peut être associée à n'importe quel emplacement dans le cache.
-    Cela permet de maximiser l'utilisation de l'espace disponible, mais cela induit un coût supplémentaire pour déterminer l'association entre une ligne et son emplacement.
-  \item Les caches N-associatifs (\emph{N-way associative cache}) : ce système est un compromis entre les deux précédents.
-    Chaque ligne de la mémoire peut être associée à exactement N emplacements dans le cache.
-    Cela implique un certain nombre d'opérations sur les adresses des lignes, et l'espace pris par le composant ainsi que le temps d'accès moyen dépend directement de la valeur de N.
-\end{itemize}
+L'associativité du cache varie entre une association directe (\emph{direct-mapped cache}), où chaque ligne de la mémoire est associée à exactement un emplacement dans le cache~; et une association complète (\emph{fully associative cache}), où chaque ligne de la mémoire peut être associée à n'importe quel emplacement dans le cache.
 
 Hill et al.~\cite{Hill1989} illustrent l'impact de l'associativité (dans la table III de l'article) sur la proportion de \emph{cache miss} et catégorise son origine (conflit d'adresse, défaut de capacité du cache, chargement normal de la donnée).
 Cela permet de dégager deux observations : d'une part qu'augmenter l'associativité permet de diminuer les \emph{cache miss}.
@@ -77,16 +68,12 @@ D'autre part que les défauts de cache ayant une forte associativité sont quasi
 
 \paragraph{Niveaux de caches}
 
-Il y a en général 3 niveaux de caches dans ces architectures :
-\begin{itemize}
-  \item L1 : C'est le cache le plus "proche" du CPU, mais aussi le plus petit - typiquement quelques Ko. Il est généralement découpé en deux parties distinctes : une partie pour les instructions, une autre pour les données.
-  \item L2 : Ce cache est physiquement plus éloigné du processeur et présente une latence d'accès plus importante que le L1, mais propose une plus grande capacité de mémoire. Il a un ordre de grandeur de quelques centaines de Ko.
-  \item L3 : Ce cache est généralement le cache de dernier niveau - \emph{Last Level Cache (LLC)} - sur un processeur. La latence pour y accéder est plus importante que le L2, mais sa capacité est bien supérieure, atteignant en général plusieurs Mo.
-\end{itemize}
+Il y a en général 3 niveaux de caches dans ces architectures, labellisés L1, L2, et L3.
+La figure~\ref{fig:context:schema-caches} décrit la hiérarchie typique d'un processeur multicœurs que l'on peut trouver sur un nœud NUMA.
 
-En fonction des fabricants, ces caches peuvent être \emph{inclusifs} (c'est-à-dire que toutes les données présentes dans le L1 sont également présentes dans le L2), ou \emph{exclusifs} (c'est-à-dire qu'une donnée n'est garantie d'être présente que dans l'un des caches).
-
-Au sein d'un nœud, le L3 est généralement partagé par tous les cœurs, alors que les caches L1 et L2 sont spécifiques à un cœur.
+Le L1 est privé au cœur, il est découpé en deux parties~: une spécifique aux données, et l'autre aux instructions. C'est le niveau de cache le plus proche du CPU mais aussi le plus petit~: seulement 32 Ko dans cet exemple.
+Le cache L2 est lui aussi privé au cœur, mais propose une plus grande capacité (ici 256 Ko) au prix d'une latence plus importante.
+Enfin le cache L3, ou cache de dernier niveau - \emph{Last Level Cache (LLC)}, est partagé par tous les cœurs du processeur. La latence pour y accéder est plus importante que pour accéder au L2, mais sa capacité est bien supérieure, atteignant en général plusieurs Mo, 20 dans cet exemple.
 
 \begin{figure}[ht]
   \centering
@@ -94,25 +81,16 @@ Au sein d'un nœud, le L3 est généralement partagé par tous les cœurs, alors
   \caption{Schéma d'un processeur multicœurs}\label{fig:context:schema-caches}
 \end{figure}
 
-La figure~\ref{fig:context:schema-caches} décrit la hiérarchie typique d'un processeur multicœurs que l'on peut trouver sur un nœud NUMA.
-Dans cet exemple, le processeur dispose de 8 cœurs, et chaque cœur dispose d'une cache L1 indépendant pour les données et les instructions (32 Ko chacun), d'un cache L2 (256 Ko), et d'un cache L3 partagé avec 7 autres cœurs (20 Mo).
-
-
 En général les développeurs d'applications pour le HPC accordent beaucoup d'attention à l'optimisation de leur application, pour que les parties de code séquentiel critiques utilisent des données qui puissent être contenues dans le L1/L2.
 De même, beaucoup d'optimisations au sein des compilateurs visent également cet objectif.
 
-Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3, qui représente la mémoire la plus rapide accessible par tous les cœurs d'un même nœud.
-
-\begin{todo}
-TODO : ref + paragraph sur les caches configurables du ryzen.
-Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé Jenga : http://people.csail.mit.edu/sanchez/papers/2017.jenga.isca.pdf
-\end{todo}
+Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement s'intéresser au L3 qui représente la mémoire la plus rapide accessible par tous les cœurs d'un même nœud, et donc faire attention à ce que les données qui sont partagées par plusieurs cœurs puissent être contenues dans ce cache.
 
 \begin{table}[ht]
 \def\arraystretch{1.5}
 \centering
 \begin{tabular}{|c||c|c|c|c|}\hline
-  Cache & \multicolumn{2}{c|}{Intel Sandy Bridge (idchire)} & \multicolumn{2}{c|}{Intel Broadwell (brunch)}  \\ \cline{2-5} 
+  Cache & \multicolumn{2}{c|}{Intel Sandy Bridge (2012, idchire)} & \multicolumn{2}{c|}{Intel Broadwell (2016, brunch)}  \\ \cline{2-5}
  & Latence & Bande passante & Latence & Bande passante \\ \hline
  L1 & 1.6 ns & 16 Go/s & 1.8 ns & 32 Go/s \\ \hline
  L2 & 5.0 ns & 14 Go/s & 5.4 ns & 17 Go/s \\ \hline
@@ -124,34 +102,28 @@ Pas trouvé de ref sur le ryzen parlant de cache configurable, mais j'ai trouvé
 \end{table}
 
 Afin de donner un ordre d'idée des latences et bandes passantes sur les différents processeurs, le tableau~\ref{tab:synthese-processeurs} récapitule les chiffres en fonction de la génération du processeur.
-Les mesures ont été faites à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour la latence, les débits considérés sont ceux du benchmark |lat_mem_rd| avec un accès aléatoire à la mémoire.
+Nous avons fait ces mesures à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour la latence, les débits considérés sont ceux du benchmark |lat_mem_rd| avec un accès aléatoire à la mémoire.
 Pour la bande passante les temps considérés sont ceux du benchmark |bw_mem|, en utilisant un équivalent de |memcpy|.
 La majorité des processeurs dotés d'un cache dispose également d'un composant matériel - le \emph{prefetcher} - dont le but est de charger en avance des données dans le cache en fonction des accès déjà effectués aux données.
 Pour la latence, tout effet potentiel de ce composant est annulé par l'utilisation de \emph{pointer chasing} (l'adresse de la case suivante à charger est située dans la case courante), ce qui n'est pas le cas pour la bande passante.
 
-Comme on peut le voir sur ces chiffres, le coût d'accès à la mémoire principale est bien plus grand que l'accès des différents caches, et l'accès à la mémoire distante est tout simplement prohibitif.
+Comme nous pouvons le voir sur ces chiffres, le coût d'accès à la mémoire principale est bien plus grand que l'accès des différents caches, et l'accès à la mémoire distante est tout simplement prohibitif.
+Il faut également noter une évolution intéressante au niveau des latences~: bien que Broadwell soit une architecture plus récente que Sandy Bridge, les latences aux différents niveaux de caches sont plus élevées, sauf pour l'accès à la mémoire distante où elle a été diminuée de moitié.
 Les différentes caractéristiques de ces processeurs et des machines sur lesquelles ils sont intégrés seront étudiées en détails dans la section~\ref{sec:contribs:machines}.
+
 
 \paragraph{Politiques d'éviction}
 
 Le choix de la ligne de cache à remplacer lorsque le cache est plein a un impact direct sur les performances, et les politiques de remplacement ont été très étudiées par les différents acteurs de la communauté académique et industrielle.
+Le choix de la politique dépend de multiple facteurs, tels que la taille du cache, son associativité, ou l'espace matériel disponible pour la réaliser.
+Al-Zoubi et al.~\cite{Al-Zoubi2004} proposent une évaluation complète et détaillée de l'impact des politiques d'éviction en fonction de l'associativité du cache.
+Dans cette évaluation, des variations de la politique Pseudo-LRU semblent être les plus avantageuses pour les associativités étudiées.
+Le coût d'implémentation de la politique \emph{Least Recently Used (LRU)} devient trop important lorsque l'associativité dépasse un certain seuil~\cite{Kedzierski2010}~; Pseudo-LRU offre une alternative où la ligne choisie pour être évincée est une parmi celles utilisées il y a le plus longtemps.
 
-La politique optimale serait de remplacer la ligne qui sera réutilisée le plus tard, mais ce genre de clairvoyance est impossible à implémenter en pratique.
-Un certain nombre d'alternatives ont donc été imaginées, et sont décrites ci-après :
-\begin{itemize}
-  \item Random : cette politique choisit une ligne à remplacer au hasard. Sa simplicité la rend facile à implémenter en pratique, il a notamment été utilisée dans les processeurs ARM Cortex-R~\cite{ARM-Cortex-R}.
-  \item First-In First-Out : comme son nom l'indique, la ligne remplacée est la plus ancienne qui est rentrée dans le cache parmi celles présentes.
-  \item Least Recently Used (LRU) : dans cette politique, chaque ligne dispose de plusieurs bits représentant la date de la dernière utilisation de cette ligne. La ligne remplacée est celle ayant été utilisée il y a le plus longtemps.
-  \item Pseudo-LRU : cette politique offre une version dégradée permettant de gérer des caches de grande taille.
-Lorsque l'associativité du cache dépasse un certain seuil, le coût d'implémentation de LRU devient trop important~\cite{Kedzierski2010}, l'alternative proposée par les politiques pseudo-LRU est donc de remplacer une ligne parmi celles utilisées il y a le plus longtemps.
-Cela permet de limiter le nombre de bits nécessaire pour tracer les potentielles lignes à remplacer.
-  \item Autres politiques adaptatives : dans le cas spécifique du cache de dernier niveau (LLC), certains fabricants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
-    \emph{Dynamic Re-Referency Interval Prediction} en est un exemple, qui a été présenté parmi d'autres par Jaleel et al.~\cite{Jaleel2010}.
-\end{itemize}
-
-Dans les processeurs Intel, des variantes de la politique pseudo-LRU semble être la plus utilisée pour les caches de faibles associativités, et donc typiquement les caches de niveaux L1 et L2~\cite{Abel2014,IntelXeonPhi2014}. Al-Zoubi et al.~\cite{Al-Zoubi2004} proposent une évaluation complète et détaillée de l'impact des politiques d'éviction en fonction de l'associativité du cache, justifiant le choix des constructeurs.
-
-
+Dans les processeurs Intel, des variantes de la politique Pseudo-LRU semble être les plus utilisées pour les caches de faibles associativités, et donc typiquement les caches de niveaux L1 et L2~\cite{Abel2014,IntelXeonPhi2014}.
+Dans le cas spécifique du cache de dernier niveau (LLC), certains fabricants comme Intel utilisent des politiques adaptatives présentées comme supérieures à Pseudo-LRU, prenant en compte la fréquence à laquelle sont utilisées certaines lignes de caches.
+\emph{Dynamic Re-Referency Interval Prediction} en est un exemple, qui a été présenté parmi d'autres par Jaleel et al.~\cite{Jaleel2010}.
+D'autres constructeurs tels que ARM font le choix de la simplicité d'implémentation, comme par exemple dans les processeurs ARM Cortex-R~\cite{ARM-Cortex-R}, où le choix de la ligne à évincer est tout simplement aléatoire.
 
 \subsubsection{Du parallélisme au sein du processeur pour augmenter la puissance de calcul}\label{sec:context:numa:node}
 
