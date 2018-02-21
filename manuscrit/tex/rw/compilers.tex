@@ -54,6 +54,8 @@ Il existe donc en fait plusieurs couches de compatibilité, que nous allons déc
 Vis à vis des compilateurs décrits dans la section précédente, la compatibilité est quasi totale~: Clang et ICC génèrent du code pour la même ABI, et libOMP implémente une couche de compatibilité entre l'ABI de libGOMP et libOMP.
 S'il est impossible d'utiliser libGOMP pour exécuter du code compilé par ICC ou Clang, toutes les autres substitutions sont possibles.
 
-S'agissant des autres supports exécutifs~: OmpSs dispose de son propre compilateur OpenMP source à source, \emph{Mercurium}, pour cibler \emph{Nanos++}. StarPU dispose également d'un compilateur OpenMP source à source, \emph{KStar}, basé sur le frontend de Clang.
-Quand à XKaapi et libKOMP, ils implémentent une couche de compatibilité avec les ABI de libGOMP et libOMP, ce qui permet de les substituer juste avant l'exécution d'un programme compilé par Clang, GCC, ou ICC.
+S'agissant des autres supports exécutifs~: OmpSs dispose de son propre compilateur OpenMP source à source, \emph{Mercurium}, pour cibler \emph{Nanos++}.
+\emph{KStar} est un compilateur OpenMP soure à source basé sur le frontend de Clang, permettant de cibler les supports exécutif XKaapi et StarPU.
+Le compilateur a été écrit lorsqu'il n'y avait pas de support officiel d'OpenMP dans Clang, et quand la génération de code pour les tâches avec dépendances n'était pas encore disponible dans le prototype d'Intel.
+Le support de XKaapi à travers KStar a été ensuite abandonné quand Clang a officiellement supporté OpenMP~4.0 en utilisant un support exécutif, basé sur celui d'Intel, libOMP. Ce support a été abandonné au profit de libKOMP, une couche de compatibilité avec les ABI de libGOMP et libOMP, ce qui permet de les substituer juste avant l'exécution d'un programme compilé par Clang, GCC, ou ICC.
 

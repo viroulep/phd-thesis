@@ -74,6 +74,10 @@ Ils proposent plusieurs types de mécanismes :
 Contrairement à \emph{numactl}, cette bibliothèque permet d'avoir une distribution basée sur les blocs de données effectivement manipulés par l'application.
 Elle peut s'utiliser soit via une modification du code, soit via un compilateur source à source.
 
+\paragraph{Gautier et al.~\cite{Gautier2007}} propose un ordonnancement dynamique d'un graphe de tâches avec dépendances en deux étapes~: dans un premier temps le graphe est partitionné et réparti sur la machine, et dans un second temps l'équilibrage de charge est fait à l'aide du vol de travail.
+Une approche similaire, mais dans le cadre d'une approche purement \emph{offline}, est utilisée par \textbf{Gustedt et al.~\cite{Gustedt2017}} qui proposent une extension à ORWL~\cite{Clauss2010}.
+Cette extension permet d'utiliser les informations sur l'application et la topologie de l'architecture pour d'une part déterminer une matrice de communication entre les tâches, et d'autre part déterminer une affectation automatique des ressources et des calculs associés sur la topologie.
+
 
 
 %An Efficient OpenMP Loop Scheduler for Irregular Applications on Large-Scale NUMA Machines
@@ -121,18 +125,14 @@ Une autre différence importante est que dans leur approche une affinité est \e
 Dans notre proposition l'affinité est un indice de placement que le support exécutif peut ignorer selon les besoins de l'ordonnancement, mais que le programmeur peut rendre obligatoire, rejoignant dans ce cas l'approche précédente.
 
 
-\begin{todo}
-  Gustedt~\cite{Gustedt2017}
-\end{todo}
-
-
 %Scheduling Data Flow Program in XKaapi: A New Affinity Based Algorithm for Heterogeneous Architectures
 %Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
 \paragraph{En contexte hétérogène} plusieurs travaux s'attaquent à l'ordonnancement de tâches en ciblant plusieurs GPU.
 Le problème de localité des données que l'on rencontre sur les architectures NUMA est encore plus critique lorsque l'on cible ce type d'accélérateur.
-Bleuse et al.~\cite{Bleuse2014}, ainsi que Lima et al.~\cite{Lima2015} étendent le vol de travail avec des stratégies ciblant les architectures multi-GPU.
-Pour décider du placement d'une tâche prête, ils considèrent les données déjà présentes sur les différents GPUs, et placent la tâche dans la file du GPU sur lequel le plus de données sont présentes.
+Plusieurs travaux~\cite{Lima2015, StarPU} utilisent une approche dérivée de HEFT, en utilisant des informations sur les performances estimées des tâches à ordonnancer pour guider le placement dynamique de ces tâches sur CPU ou sur GPU.
 
+Bleuse et al.~\cite{Bleuse2014} proposent un algorithme d'ordonnancement hétérogène prenant en compte l'affinité entre une tâche et ses données.
+Pour décider du placement d'une tâche prête, ils considèrent les données déjà présentes sur les différents GPUs, et placent la tâche dans la file du GPU sur lequel le plus de données sont présentes.
 Ils montrent une réduction significative de la quantité de données transférée au cours de l'exécution, ce qui se traduit sur certaines classes d'application par un gain important de performance comparé aux stratégies basées sur HEFT ou du vol de travail standard.
 
 

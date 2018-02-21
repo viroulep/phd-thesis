@@ -1,17 +1,3 @@
-@article{Lima2015,
-  author    = {Jo{\~{a}}o V. F. Lima and
-               Thierry Gautier and
-               Vincent Danjean and
-               Bruno Raffin and
-               Nicolas Maillard},
-  title     = {Design and analysis of scheduling strategies for multi-CPU and multi-GPU
-               architectures},
-  journal   = {Parallel Computing},
-  volume    = {44}, pages     = {37--52},
-  year      = {2015}
-}
-
-
 @book{Saad2003,
  author = {Saad, Y.},
  title = {Iterative Methods for Sparse Linear Systems},
@@ -38,24 +24,12 @@
  address = {Philadelphia, PA, USA},
  keywords = {fill-reducing orderings, finite element computations, graph partitioning, parallel computations},
 }
-
-@inproceedings{HPF,
- author = {Kennedy, Ken and Koelbel, Charles and Zima, Hans},
- title = {The Rise and Fall of High Performance Fortran: An Historical Object Lesson},
- booktitle = {Proceedings of the Third ACM SIGPLAN Conference on History of Programming Languages},
- series = {HOPL III},
- year = {2007},
- isbn = {978-1-59593-766-7},
- location = {San Diego, California},
- pages = {7-1--7-22},
- url = {http://doi.acm.org/10.1145/1238844.1238851},
- doi = {10.1145/1238844.1238851},
- acmid = {1238851},
- publisher = {ACM},
- address = {New York, NY, USA},
- keywords = {High Performance Fortran (HPF), compilers, parallel computing},
+@book{HPF,
+  title={The high performance Fortran handbook},
+  author={Koelbel, Charles H},
+  year={1994},
+  publisher={MIT press}
 }
-
 @inproceedings{Duran2009,
   title={Barcelona OpenMP Tasks Suite: A set of benchmarks targeting the exploitation of task parallelism in OpenMP},
   author={Duran, A. and Teruel, X. and Ferrer, R. and Martorell, X. and Ayguade, E.},
@@ -93,15 +67,70 @@ publisher="Springer International Publishing",
 address="Cham",
 pages="560--571",
 }
-
-
 @inproceedings{Gautier2007,
   title = {{Kaapi:} A Thread Scheduling Runtime System for Data Flow Computations on Cluster of Multi-Processors},
   author = {Gautier, T. and Besseron, X. and Pigeon, L.},
   booktitle = {PASCO'07},
   year = 2007,
 }
-
+@inproceedings{Besseron2009,
+  TITLE = {{X-Kaapi : Une nouvelle impl{\'e}mentation eXtr{\^e}me du vol de travail}},
+  AUTHOR = {Besseron, Xavier and Laferriere, Christophe and Traore, Daouda and Gautier, Thierry},
+  URL = {https://hal.inria.fr/hal-00800429},
+  BOOKTITLE = {{Proceedings des Rencontres Francophones du Parall{\'e}lisme, RenPar'19}},
+  ADDRESS = {Toulouse, France, France},
+  YEAR = {2009},
+  HAL_ID = {hal-00800429},
+  HAL_VERSION = {v1},
+}
+@inproceedings{Gautier2013,
+  title={Xkaapi: A runtime system for data-flow task programming on heterogeneous architectures},
+  author={Gautier, Thierry and Lima, Joao VF and Maillard, Nicolas and Raffin, Bruno},
+  booktitle={Parallel \& Distributed Processing (IPDPS), 2013 IEEE 27th International Symposium on},
+  pages={1299--1308},
+  year={2013},
+  organization={IEEE}
+}
+@article{Lima2015,
+  author    = {Jo{\~{a}}o V. F. Lima and
+               Thierry Gautier and
+               Vincent Danjean and
+               Bruno Raffin and
+               Nicolas Maillard},
+  title     = {Design and analysis of scheduling strategies for multi-CPU and multi-GPU
+               architectures},
+  journal   = {Parallel Computing},
+  volume    = {44}, pages     = {37--52},
+  year      = {2015}
+}
+@techreport{Lementec2011,
+  TITLE = {{The X-Kaapi's Application Programming Interface. Part I: Data Flow Programming}},
+  AUTHOR = {Le Mentec, Fabien and Gautier, Thierry and Danjean, Vincent},
+  URL = {https://hal.inria.fr/hal-00648245},
+  TYPE = {Technical Report},
+  NUMBER = {RT-0418},
+  PAGES = {48},
+  INSTITUTION = {{INRIA}},
+  YEAR = {2011},
+  MONTH = Dec,
+  KEYWORDS = {parallel computing ; data flow graph ; scheduling},
+  PDF = {https://hal.inria.fr/hal-00648245/file/RT-0418.pdf},
+  HAL_ID = {hal-00648245},
+  HAL_VERSION = {v1},
+}
+@INPROCEEDINGS{Gautier2013b, 
+author={T. Gautier and F. Lementec and V. Faucher and B. Raffin}, 
+booktitle={2013 42nd International Conference on Parallel Processing}, 
+title={X-kaapi: A Multi Paradigm Runtime for Multicore Architectures}, 
+year={2013}, 
+volume={}, 
+number={}, 
+pages={728-735}, 
+keywords={multiprocessing systems;parallel processing;EUROPLEXUS industrial simulation code;OpenMP;PLASMA;QUARK;X-KAAPI multiparadigm runtime;dataflow tasks;dense linear algebra;fork-join tasks;multicore architectures;multiparallel paradigms;parallel independent loops;parallelization;performance penalty;Adaptation models;Computational modeling;Instruction sets;Load modeling;Multicore processing;Plasmas;Runtime}, 
+doi={10.1109/ICPP.2013.86}, 
+ISSN={0190-3918}, 
+month={Oct},
+}
 @article{Kurzak2010,
  author = {Kurzak, Jakub and Ltaief, Hatem and Dongarra, Jack and Badia, Rosa M.},
  title = {Scheduling Dense Linear Algebra Operations on Multicore Processors},
@@ -1469,11 +1498,33 @@ year = {2009}
   year={1966},
   publisher={Wiley Online Library}
 }
-@inproceedings{Gautier2013,
-  title={Xkaapi: A runtime system for data-flow task programming on heterogeneous architectures},
-  author={Gautier, Thierry and Lima, Joao VF and Maillard, Nicolas and Raffin, Bruno},
-  booktitle={Parallel \& Distributed Processing (IPDPS), 2013 IEEE 27th International Symposium on},
-  pages={1299--1308},
-  year={2013},
-  organization={IEEE}
+@article{Clauss2010,
+  TITLE = {{Iterative Computations with Ordered Read-Write Locks}},
+  AUTHOR = {Clauss, Pierre-Nicolas and Gustedt, Jens},
+  URL = {https://hal.inria.fr/inria-00330024},
+  TYPE = {Research Report},
+  JOURNAL = {{Journal of Parallel and Distributed Computing}},
+  HAL_LOCAL_REFERENCE = {RR-6685},
+  PUBLISHER = {{Elsevier}},
+  VOLUME = {70},
+  NUMBER = {5},
+  PAGES = {496­-504},
+  YEAR = {2010},
+  DOI = {10.1016/j.jpdc.2009.09.002},
+  KEYWORDS = {synchronization ; iterative algorithms ; read-write locks},
+  PDF = {https://hal.inria.fr/inria-00330024/file/RR-6685.pdf},
+  HAL_ID = {inria-00330024},
+  HAL_VERSION = {v1},
+}
+@inproceedings{Quinlan2003,
+abstract = {In this paper we describe a C++ infrastructure for source-to-source translation. We demonstrate the translation of a serial program with high-level abstractions to a lower-level parallel program in two separate phases. In the first phase OpenMP directives are introduced, driven by the semantics of high-level abstractions. Then the OpenMP directives are translated to a C++ program that explicitly creates and manages parallelism according to the specified directives. Both phases are implemented using the same mechanisms in our infrastructure.},
+address = {Berlin, Heidelberg},
+author = {Quinlan, Dan and Schordan, Markus and Yi, Qing and de Supinski, Bronis R},
+booktitle = {OpenMP Shared Memory Parallel Programming},
+editor = {Voss, Michael J},
+isbn = {978-3-540-45009-2},
+pages = {13--25},
+publisher = {Springer Berlin Heidelberg},
+title = {{A C++ Infrastructure for Automatic Introduction and Translation of OpenMP Directives}},
+year = {2003}
 }
