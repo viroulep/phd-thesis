@@ -1,6 +1,7 @@
 \section{Exécution précise de noyaux}\label{sec:contribs:outil}
 
 Cette partie se concentre sur la présentation de \outil, un outil que nous avons créé afin de faciliter la réalisation d'expériences avec un contrôle précis sur le placement de noyaux à exécuter ainsi que leurs données.
+Le but de ces expériences est d'analyser le comportement des parties de calcul critiques aux performances d'une application, sur une architecture donnée.
 
 \subsection{Besoins pour un outil spécifique: \outil}
 
@@ -13,8 +14,14 @@ La suite naturelle de cette identification est de déterminer s'il existe des am
 Dans le cas d'une application à base de flots de données, chaque partie de l'application est bien identifiée, et correspond à un nœud dans le graphe de tâches.
 Toutes les données manipulées par une partie de l'application sont facilement identifiées également, puisqu'il s'agit des connexions entre les nœuds du graphe de tâches.
 
-Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend à la fois du placement de son exécution, ainsi que du placement de ces données. On a donc envie de pouvoir modéliser le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données qu'elle accède.
+Dans le contexte d'une machine NUMA, le temps d'exécution d'une tâche dépend à la fois du placement de son exécution, ainsi que du placement de ces données. On a donc envie de pouvoir étudier le comportement individuel de chaque type de tâche en fonction de son placement et du placement des données qu'elle accède.
 Une fois cela fait, cela permettra d'identifier des potentielles variations de comportement, et ajuster les heuristiques d'ordonnancement pour prendre en compte ces variations.
+
+Nous n'avons pas trouvé d'outil existant répondant précisément à ce besoin.
+BOAST~\cite{Videau2017} est un outil assez proche dans la thématique d'optimisation de noyaux applicatif~: l'utilisateur fourni des noyaux et un ensemble d'optimisations possibles, BOAST en déduit un espace à explorer et va rechercher automatiquement les paramètres optimaux.
+
+Dans notre cas l'objectif n'est pas d'optimiser le code, mais de replacer le noyau applicatif dans une série de situations se présentant au cours de l'exécution réelle de l'application, afin de déterminer des stratégies d'ordonnancement qui pourrait favoriser l'exécution de ce noyau applicatif dans de bonnes conditions.
+De fait nous avions également besoin d'un outil qui nous permette de contrôler et faire varier le placement des noyaux et de ses données sur la topologie de la machine, et qui permette une exécution simultanée de noyaux applicatifs.
 
 C'est à ce besoin que répond \outil : une fois que l'utilisateur a isolé les parties critiques de son application, \outil lui permet de définir lesquelles il souhaite exécuter et où, et lui garantir cette exécution, avec un certain nombre de variables observables.
 
@@ -24,30 +31,50 @@ Dans la suite de ce chapitre, on appellera l'ensemble des paramètres décrivant
 
 Ce que l'on appelle ici un \emph{scenario} n'est ni plus ni moins que la description d'une expérience.
 Par exemple on pourrait vouloir "observer les performances en gigaflops d'une multiplication de matrices carrées sur le cœur 0 d'une machine".
-C'est un scenario simple, et l'exemple que l'on prendra pour illustrer les points un peu plus formel qui vont suivre.
+C'est un scénario simple, et l'exemple que l'on prendra pour illustrer les points un peu plus formel qui vont suivre.
 
-En pratique un scenario est défini par les éléments suivants :
+En pratique un scénario est défini par les éléments suivants :
 \begin{itemize}
  \item Un ensemble de données et variables~;
  \item Une liste d'actions à effectuer~;
  \item Un ensemble de caractéristiques à observer.
 \end{itemize}
 
-Cette définition très générique permet beaucoup de flexibilité, et les sections suivantes précisent les différentes caractéristiques de ces points, ainsi que des exemples concrêts d'utilisation.
 
-Il est important que le format de description d'un scenario soit humainement lisible, et ne conduise pas à une recompilation systématique du programme. C'est donc une description en YAML~\cite{YAML} qui a été choisie.
+Il est important que le format de description d'un scénario soit humainement lisible, et ne conduise pas à une recompilation systématique du programme. C'est donc une description en YAML~\cite{YAML} qui a été choisie.
+
+
+\paragraph{Modèle d'exécution.}
+
+Le flot d'exécution est le suivant~:
+Dans un premier \outil commence par charger le scénario fourni par l'utilisateur, créer les différentes données, et analyser les actions pour déterminer l'ensemble des cœurs physiques qui seront utilisés au cours des actions.
+Pour chacun des cœurs utilisés, un thread est créé et attaché à ce cœur. De plus, une file d'actions (FIFO) est créée pour ce thread.
+Les actions sont poussées dans les files d'actions correspondantes, dans l'ordre du fichier.
+Une fois l'ensemble des actions chargées, les threads exécutent chacun les actions présentes dans leur file, et vont déclencher les mesures de chaque paramètre observé avant et après chaque action.
+
+Une unique primitive de synchronisation est disponible, sous la forme d'une action prédéfinie à insérer dans le scénario~: une barrière sur un ensemble arbitraire de cœurs.
+
+
+L'architecture de l'outil est donc simple, avec peu de logique relative au contrôle de l'exécution des tâches et à la synchronisation, ce qui permet de minimiser le <<bruit>> lors des expériences.
+
+Les sections suivantes reviennent sur les différentes caractéristiques définissant un scénario, avec des exemples concrets d'utilisation.
+
 
 \subsubsection{Données et variables}
 
-Elles sont indispensables car c'est là-dessus que vont se baser les actions du scenario.
+Elles sont indispensables car c'est là-dessus que vont se baser les actions du scénario.
 
-L'utilisateur doit fournir les noms et types des variables utilisées en paramètre des différents noyaux, elles peuvent être réutilisées par différents noyaux, mais dans tous les cas l'utilisateur est le seul responsable de leur gestion.
+L'utilisateur doit fournir les noms et types des variables utilisées en paramètre des différents noyaux, elles peuvent être réutilisées par différents noyaux.
 
-En pratique ces variables peuvent soit être des constantes, ou bien être initialisées par une action dans le scénario.
+\outil ne prend pas en charge l'allocation ou l'initialisation des données. Dans le cas de variables simples comme des constantes, elles peuvent être directement affectées dans le scénario. Dans le cas de variables complexes, l'utilisateur doit déclarer une action d'initialisation (avec ses paramètres) dans \outil, pour pouvoir l'utiliser ensuite dans le scénario pour initialiser les données.
+Cette action peut être soit une fonction implémentée comme un module de \outil, soit être un point d'entrée dans une bibliothèque externe.
 
-Pour revenir à l'exemple du scenario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un cœur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi que d'une taille pour les bloc de données manipulés (qui correspond donc à la largeur de la matrice), |block_size|.
+\outil met néanmoins à disposition une fonction d'allocation ne faisant aucune réutilisation de page, avec une politique explicite d'allocation physique des pages en \emph{first-touch}.
 
-Voici concrêtement à quoi ressemblerait la déclaration de ces données :
+
+Pour revenir à l'exemple du scénario simple ou l'on souhaite exécuter une multiplication de matrices carrées - |dgemm| - sur un cœur donné, nous avons besoin de trois matrices |a|, |b|, et |c|, ainsi qu'une largeur en nombre d'éléments pour les matrices manipulées, |size|.
+
+Voici concrètement à quoi ressemblerait la déclaration de ces données :
 
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration de variables,label=lst:tool:data-example]
 data:
@@ -57,153 +84,198 @@ data:
     - type: "double *"
   - c:
     - type: "double *"
-  - block_size:
+  - size:
     - type: "int"
     - value: 256
 \end{lstlisting}
 
+Nous pouvons voir ici que |size| est initialisée directement, mais les pointeurs |a|, |b|, et |c| seront initialisés plus tard par une action.
+
+\paragraph{Déclarations multiples.}
+
+Il est possible de créer un ensemble de variables en se basant sur un modèle paramétré de nom.
+Un nom de variable peut contenir un ensemble de caractères (|[a-zA-Z]+|) encadré par des chevrons (|<>|).
+Cet ensemble de caractères est interprété comme un paramètre du nom de la variable, et la déclaration devra alors contenir l'ensemble des valeurs que ce paramètre peut prendre.
+L'ensemble des valeurs est soit~: un ensemble d'entier désignant, à la manière d'une boucle, les limites de l'espace d'itération sous la forme |[début, fin, pas]|~; ou bien un ensemble de chaines de caractères qui seront substituées dans le nom de la variable.
+
+L'exemple suivant illustre cette syntaxe en déclarant les variables |a0|, |a2|, |a4|, |a6|, |array_input|, et |array_output|~:
+
+\begin{lstlisting}[language=yaml,caption=Exemple de déclaration de variables paramètrées,label=lst:tool:data-example-for]
+data:
+  - a<i>:
+    - i: [0, 7, 2]
+    - type: "double *"
+  - array_<name>:
+    - name: ["input", "output"]
+    - type: "int *"
+\end{lstlisting}
+
+
+
 \subsubsection{Actions}
 
-C'est là où l'on décrit effectivement les noyaux exécutés au cours du scénario.
-L'utilisateur indique une série d'actions à exécuter, et avec quels paramètres.
+C'est là où l'utilisateur décrit effectivement les noyaux exécutés au cours du scénario.
+Il indique une série d'actions à exécuter, et avec quels paramètres.
 
 Chaque action peut avoir les caractéristiques suivantes :
-\begin{itemize}
-  \item core: nombre entier indiquant le cœur sur lequel exécuter l'action.
-  \item kernel: chaine de caractères avec le nom de l'action, correspondant à un noyau connu du programme.
-  \item params: liste de variables à passer à l'action, leur nom doit correspondre à des données déclarées dans la section précédente.
-  \item repeat: nombre entier indiquant le nombre de fois que cette action doit être répétée.
-  \item sync: booléen indiquant s'il faut synchroniser le démarrage de cette action avec celui des autres actions présentes dans les files d'attente des autres cœurs.
-\end{itemize}
+\begin{description}
+  \item [kernel~:] chaine de caractères identifiant l'action. L'action peut être prédéfinie par \outil (comme c'est le cas pour une barrière), implémentée par l'utilisateur comme un module de \outil, ou être un point d'entrée dans une bibliothèque.
+    Cet attribut n'a pas de valeur par défaut et est obligatoire.
+  \item [core~:] nombre entier indiquant le cœur sur lequel exécuter l'action. Il n'a pas de valeur par défaut, et est obligatoire.
+  \item [params~:] liste de variables à passer en paramètre de l'action, leur nom doit correspondre à des données déclarées dans la section précédente.
+  \item [repeat~:] nombre entier indiquant le nombre de fois que cette action doit être répétée. La valeur par défaut est 1.
+\end{description}
 
-Si on continue à décrire l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice, le lancement du dgemm une fois que ces matrices sont initialisées.
+\outil dispose d'une action prédéfinie~: la barrière. Son identifiant est |barrier|, et pour cette action spécifiquement le traitement de l'attribut |core| est un peu différent~: il peut ne pas être spécifié, et auquel cas la barrière sera effectuée sur l'ensemble des cœurs, mais il peut également être un ensemble de cœurs pour restreindre la portée de la barrière.
+
+
+Si on continue à décrire l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice (via une action |init_blas_bloc| implémentée par l'utilisateur, qui prend en paramètre un pointeur et une largeur de matrice), et le lancement du dgemm une fois que ces matrices sont initialisées.
 Afin d'avoir une mesure plus précise du comportement du noyau, on peut indiquer une répétition du noyau, ici on choisit 50 pour l'exemple.
 
-Voici en pratique à quoi ressemblerait un tel scenario :
+Le listing~\ref{lst:tool:actions-example} montre un exemple réalisant ce scénario.
+
+\begin{figure}[h!]
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions,label=lst:tool:actions-example]
 actions:
   - kernel: init_blas_bloc
-    sync: false
-    params: 
+    params:
     - a
-    - block_size
+    - size
     core: 0
-    # Pour l'initialisation, un seul appel suffit
-    repeat: 1
   - kernel: init_blas_bloc
-    sync: false
-    params: 
+    params:
     - b
-    - block_size
+    - size
     core: 0
-    repeat: 1
   - kernel: init_blas_bloc
-    sync: false
-    params: 
+    params:
     - c
-    - block_size
+    - size
     core: 0
-    repeat: 1
   - kernel: dgemm
-    # Les actions sont executees dans l'ordre de declaration, pour un seul dgemm c'est inutile de synchroniser
-    sync: false
-    params: 
+    params:
     - a
     - b
     - c
-    - block_size
+    - size
     core: 0
-    # Ici c'est le noyau de calcul, on veut donc le repeter
     repeat: 50
 \end{lstlisting}
+\end{figure}
 
 Ici les trois initialisations et le calcul ont lieu sur le même cœur, et sont déroulés dans l'ordre de création, il n'y a donc pas lieu d'utiliser une synchronisation.
-En revanche dans le cas où l'on souhaiterait par exemple observer l'exécution de deux |dgemm| qui s'exécuteraient en même, il faudrait synchroniser leur démarrage.
 
-En supposant que |a|, |b|, |a1|, |b1| ont déjà été initialisés, voilà à quoi ressembleraient les dernières initialisations de |c| et |c1| (dont il n'est pas nécessaire de synchroniser le démarrage), suivi de la création (synchronisée) de deux |dgemm|~:
+\paragraph{Actions paramétrées}
+
+De manière similaire à la déclaration de données, il est possible de paramétrer les actions.
+Cela peut être particulièrement pratique dans le cas où l'on souhaite observer l'exécution concurrente de plusieurs noyaux de calcul.
+
+Cela se fait à l'aide d'une action spéciale \emph{for}, qui doit définir au moins deux attributs~: |var|, qui contient le nom de la variable d'itération, et |actions|, qui contient la liste des actions à effectuer.
+Pour définir l'espace d'itération, l'utilisateur doit spécifier un et un seul des deux attributs suivants~: |limits|, qui s'exprime sous la forme |[débug, fin, pas]| et permet d'exprimer les limites de la boucles~; ou |values|, qui indique une liste explicite des valeurs que peut prendre la variable.
+
+Le listing~\ref{lst:tool:actions-example-sync} fait une utilisation de cette syntaxe pour exécuter 4 dgemm simultanément sur les cœurs 0, 1, 2, et 3, en ayant au préalable initialisé les données nécessaires.
+
+\begin{figure}[h!]
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions synchronisées,label=lst:tool:actions-example-sync]
+data:
+  # Déclaration de a0, a1, a2, a3, etc
+  - a<i>:
+    - i: [0, 3, 1]
+    - type: "double *"
+  - b<i>:
+    - i: [0, 3, 1]
+    - type: "double *"
+  - c<i>:
+    - i: [0, 3, 1]
+    - type: "double *"
 actions:
-  # On suppose les autres paramètres
-  # des dgemms déjà initialisés
-  - kernel: init_blas_bloc
-    sync: false
-    params: 
-    - c
-    - block_size
-    core: 0
-    repeat: 1
-  - kernel: init_blas_bloc
-    sync: false
-    params: 
-    - c1
-    - block_size
-    core: 1
-    repeat: 1
-  - kernel: dgemm
-    sync: true
-    params: 
-    - a
-    - b
-    - c
-    - block_size
-    core: 0
-    repeat: 50
-  - kernel: dgemm
-    sync: true
-    params: 
-    - a1
-    - b1
-    - c1
-    - block_size
-    core: 1
-    repeat: 50
+  # Initialise a0, b0, et c0 sur le coeur 0,
+  # a1, b1, et c1 sur le coeur 1, etc.
+  - for:
+      var: name
+      values: ["a", "b", "c"]
+      actions:
+        - for:
+            var: i
+            limits: [0, 3, 1]
+            actions:
+              - kernel: init_blas_bloc
+                params:
+                - <name><i>
+                - size
+                core: <i>
+  # Synchronisation avant de lancer les dgemm
+  - kernel: barrier
+  # Lancement d'un dgemm sur le coeur 0 utilisant a0, b0, et c0,
+  # et d'un dgemm sur le coeur 1 utilisant a1, b1, et c1, etc.
+  - for:
+      var: i
+      limits: [0, 3, 1]
+      actions:
+        - kernel: dgemm
+          params:
+          - a<i>
+          - b<i>
+          - c<i>
+          - size
+          core: <i>
+          repeat: 50
 \end{lstlisting}
+\end{figure}
 
-
-Simplement exécuter ces actions ne nous donnera pas grand chose, il faut donc définir un ensemble de caractéristiques à observer.
+Cette syntaxe permet d'exprimer des scénarios relativement complexe de manière compacte.
+En revanche simplement exécuter ces actions ne nous donnera pas grand chose, il faut donc définir un ensemble de caractéristiques à observer pendant leur exécution.
 
 \subsubsection{Observateurs}
 
-L'outil propose un certain nombre de caractéristiques observables :
+\outil utilise des \emph{Observateurs} pour enregistrer certaines caractéristiques au cours de la vie du programme.
+Un observateur peut avoir plusieurs attributs~:
+\begin{description}
+  \item [name~:] un identifiant d'observateur existant dans \outil.
+  \item [params~:] les paramètres à passer lors de la création de l'observateur.
+  \item [kernels~:] une liste d'identifiants d'actions sur lesquelles appliquer cet observateur.
+\end{description}
+
+\outil propose de base deux observateurs élémentaires~:
 
 \begin{itemize}
-  \item le temps passé dans l'action (en millisecondes).
-  \item la performance de l'action en Gflops.
-    % Note : valable que pour les noyaux d'algère linéaire parce qu'il faut le nombre de flops de l'action.
-  \item des compteurs de performances à travers PAPI
+  \item \emph{time}~: le temps passé dans l'action (en millisecondes).
+  \item \emph{papi}~: permettant de relever des compteurs de performances à travers PAPI.
 \end{itemize}
 
-En continuant sur notre exemple, voici à quoi ressemblerait la section du scénario si nous souhaitions observer la performance de la multiplication de matrice en Gflops, le nombre de cycles passés dans l'action, ainsi que le nombre de \emph{cache miss} de niveau 3 générés par l'action.
+L'utilisateur peut implémenter lui-même des observateurs additionnels au sein de \outil.
+Dans notre cas nous avons implémenté des observateurs spécifiques à certains noyaux d'algèbre linéaire, qui dérivent du temps passé dans l'action et qui indique la performance équivalente en Gflops.
 
+La figure~\ref{lst:tool:watchers-example} illustre à quoi ressemblerait la section du scénario si nous souhaitions observer la performance de dgemm en Gflops, le nombre de cycles, ainsi que le nombre de \emph{cache miss} de niveau 3 pendant l'exécution de chaque dgemm.
+
+\begin{figure}[h!]
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'observateurs,label=lst:tool:watchers-example]
 watchers:
-  flops_dgemm:
-    # Le nombre de flops dépend de la taille de bloc,
-    # il faut donc la donner en paramètre
-    - block_size
-  papi:
-    - PAPI_TOT_CYC
-    - PAPI_L3_TCM
+  - name: flops_dgemm
+    # Le nombre de flops dépend de la taille de la matrice,
+    # qu'il faut donc donner en paramètre.
+    params:
+      - size
+    kernels:
+      - dgemm
+  - name: papi
+    params:
+      - PAPI_TOT_CYC
+      - PAPI_L3_TCM
+    kernels:
+      - dgemm
 \end{lstlisting}
+\end{figure}
 
 L'ensemble des compteurs à observer étant passé tel quel à PAPI, il est donc de la responsabilité de l'utilisateur de fournir un ensemble de compteurs compatibles entre eux.
 
-\subsection{Design de l'outil}
+L'observation se faisant sur la base d'une seule action, une ligne récapitulative est générée à partir des données des observations.
+Si l'utilisateur a indiqué une action avec un |repeat| de 50, il y aura donc 50 lignes avec les valeurs récoltées pour chaque action.
 
-Afin de minimiser le "bruit" lors des expériences, il fallait que l'architecture de l'outil soit simple, avec peu de logique relative au contrôle de l'exécution des tâches et à la synchronisation.
+\subsection{Notes d'implémentation}
 
-Le flot d'exécution est le suivant :
-
-\paragraph{Lecture et analyse statique du scénario}
-L'outil charge le scénario fourni par l'utilisateur, crée les différentes données, et analyse les actions pour déterminer l'ensemble des cœurs physiques qui seront utilisés au cours des actions.
-
-\paragraph{Déroulement des actions}
-Pour chacun des cœurs utilisés, un thread est créé et attaché à ce cœur. De plus, une file d'actions (FIFO) est créée pour ce thread.
-L'ensemble des actions sont poussées dans les files correspondantes dans l'ordre du fichier.
-
-Les threads exécutent chacun les actions présentes dans leur file, et vont déclencher les mesures de chaque paramètre observé avant et après chaque action.
-
-Lorsque la dernière action du scénario est terminée, l'ensemble des paramètres observés est affiché à l'utilisateur sur la sortie standard.
+La syntaxe décrite et les fonctionnalités décrites ici sont celles que devraient contenir \outil une fois terminé.
+Pour des raisons de temps, un certain nombre de fonctionnalités n'ont pas encore été implémentées~: les syntaxes paramétrées (déclaration de variables et d'actions paramétrées)~; les actions utilisateurs chargées depuis des bibliothèques externes (seules les actions implémentées comme des modules sont utilisables)~; et le filtrage des observateurs par action (le filtrage a lieu en dur dans le code pour le moment).
 
 \subsection{Application et exemples de scénarios}
 

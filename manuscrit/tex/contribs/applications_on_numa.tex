@@ -7,6 +7,13 @@
 \chapter{Caractérisation des architectures NUMA}\label{chap:contrib:characterization}
 \chaptertoc
 
+Les chapitres précédents ont décrit l'existant en terme de matériel et de logiciel.
+Ce chapitre va se concentrer sur l'analyse et la caractérisation des architectures NUMA et de l'exécution d'application sur celles-ci.
+La première section fait la description d'un outil, \outil, que nous avons développé dans le but de faciliter cette opération.
+La section~\ref{sec:contribs:machines} fait une description et une étude, à l'aide de \outil, des deux machines expérimentales que nous avons utilisées dans nos expériences.
+La section~\ref{sec:contribs:apps:cholesky} montre l'utilisation de \outil sur une étude de cas~: la factorisation de Cholesky.
+L'objectif de ce chapitre est de dégager un axe d'amélioration possible du support exécutif à partir des constats fait sur les applications et les machines.
+
 \input{tex/contribs/applications_on_numa/outil}
 \input{tex/contribs/applications_on_numa/machines}
 \input{tex/contribs/applications_on_numa/cholesky}
