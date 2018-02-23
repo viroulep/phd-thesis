@@ -6,8 +6,8 @@ La seconde, \emph{brunch}, est basée sur des processeurs Intel plus récents de
 
 \subsection{idchire}\label{sec:contribs:machines:idchire}
 
-
-Cette machine est équipée de 24 processeurs Intel(R) Xeon(R) CPU E5-4640 (Sandy Bridge), cadencés à 2.4 GHz.
+La machine idchire a été fabriquée par SGI, modèle UV 2000~\cite{uv2000}.
+Elle est équipée de 24 processeurs Intel(R) Xeon(R) CPU E5-4640 (Sandy Bridge), cadencés à 2.4 GHz.
 Chacun de ces processeurs est associé à 31 Go de RAM pour former un nœud NUMA, et dispose de 8 cœurs physiques partageant 20 Mo de cache L3 (20-ways associatif).
 Chacun des cœurs a accès à 32 Ko de cache L1 (données) et 256 Ko de cache L2 (8-ways associatif).
 Les latences et bandes passantes relatives à chacun des niveaux de cache sont présentées dans le tableau~\ref{tab:synthese-processeurs}.
@@ -41,36 +41,45 @@ Pour chaque nœud il y a 12 nœuds situés à un rebond, et 10 nœuds situés à
 \end{figure}
 
 
-La Figure~\ref{fig:contribs:machines:idchire:heatmap} présente la bande passante nœud à nœud en fonction de la source et de la destination, mesurée à l'aide d'une copie de tableau (|memcpy|) de 200 Mo.
+La Figure~\ref{fig:contribs:machines:idchire:heatmap} présente la bande passante nœud à nœud, en fonction du nœud source et du nœud destination.
+La mesure est via une copie de tableau (|memcpy|) de 200 Mo, entre un tableau alloué et initialisé sur le nœud source, et un tableau alloué sur le nœud destination.
 Elle fait apparaître clairement une diagonale où la bande passante est significativement plus grande, illustrant le coût d'un accès mémoire local comparé à un accès distant.
+On peut également constater que la bande passante point à point est symétrique.
 
-Néanmoins cette simple <<carte>> ne suffit pas à caractériser complètement les temps d'accès aux nœuds NUMA, puisque qu'une seule communication ne va pas saturer la bande passante totale disponible, ni même illustrer l'impact de la contention.
+Vu du nœud 0 et en point à point, on a donc 4 niveaux de bande passante en fonction du lien utilisé~: 3.15 Go/s pour le lien local, 1.27 Go/s pour le lien du groupe, 1.12 Go/s pour le lien distant avec 1 hop, et enfin 1.0 Go/s pour le lien distant avec 2 hops.
+
+Ces mesures permettent de quantifier la pénalité d'un accès distant, mais la simple <<carte>> obtenue ne suffit pas à caractériser complètement les temps d'accès aux nœuds NUMA, puisque qu'une seule communication ne va pas saturer la bande passante totale disponible, ni même illustrer l'impact de la contention.
 
 
 \subsubsection{Mesure des liens}\label{sec:contribs:machines:idchire:liens}
 
 En dehors de l'accès aux caches locaux, il y a 4 liens à quantifier, identifiés sur la Figure~\ref{fig:contribs:machines:idchire:topo-liens}.
-Afin de mesurer chacun des liens, nous avons défini des scénarios spécifiques que nous avons exécutés via \outil~: pour un nœud NUMA source donné (ici 0), nous avons alloué et initialisé deux tableaux de 200 Mo. Le premier sur le nœud source, et le second sur le nœud cible. Nous avons ensuite effectué une copie du tableau source vers le tableau cible (via |memcpy|) et mesuré le temps de l'opération.
-Pour chaque type de nœud source (même nœud, distant sur le même groupe, distant via un rebond, distant via deux rebonds), nous avons effectué de une à huit copies simultanées.
+Afin de mesurer la largeur de chacun des liens, nous avons défini des scénarios spécifiques pour mesurer la bande passante en entrée du nœud 0, en fonction du nœud distant possédant la donnée.
 
-L'annexe~\ref{chap:annexe:tool:bp} donne un exemple de scénario avec celui utilisé pour la saturation du lien entre le nœud 0 et le nœud 1, avec 8 copies simultanées.
+Le scénario est le suivant~: deux tableaux de 200 Mo sont alloués, un sur le nœud 0, et un qui est alloué et initialisé sur un autre nœud, qui est le nœud source.
+La seule action est une copie du tableau distant (via |memcpy|), depuis le nœud source vers le nœud 0, et exécutée sur un cœur du nœud 0.
 
-La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante point à point, en fonction du nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
-Pour chacune des courbes les threads effectuant les copies sont placés sur le nœud 0, et les données du tableau source sont placées soit sur le nœud local (nœud 0), le nœud du même groupe (nœud 1), un nœud situé à une distance 1 (nœud 2), et un nœud situé à une distance 2 (nœud 10).
+Étant donné qu'il y a 8 cœurs sur le nœud 0, nous avons effectué jusqu'à 8 copies simultanées (effectuées sur des tableaux indépendants).
 
-On constate que la bande passante maximum du lien local atteint 12.2 Go/s, et qu'il commence à saturer lorsque plus de la moitié des cœurs sont utilisés.
-Le lien groupe plafonne à 5.6 Go/s, le lien à distance 1 plafonne à 5.1 Go/s, et le lien à distance 2 à 4.8 Go/s.
-On peut également noter que les communications point à point sont symétriques.
+L'annexe~\ref{chap:annexe:tool:bp} donne l'exemple du scénario utilisé pour la saturation du lien <<groupe>>, qui effectue de 1 à 8 copie simultanées depuis le nœud 1 vers le nœud 0, et qui a permis de générer la courbe verte dans la figure~\ref{fig:contribs:machines:idchire:saturation} (nœud source 1).
+
+La figure~\ref{fig:contribs:machines:idchire:saturation} regroupe les résultats de la bande passante cumulée, en fonction du nombre de copies simultanées ayant lieu, et en fonction du nœud d'où provient les données.
+Faire les copies depuis le nœud 0 permet de quantifier la largeur du lien local (qui atteint au maximum 12.2 Go/S)~;
+les copies depuis le nœud 1 permettent de quantifier le lien groupe (qui plafonne à 5.6 Go/s)~;
+les copies depuis le nœud 2 permettent de quantifier le lien distant avec 1 hop (au maximum 5.1 Go/s)~;
+et enfin les copies depuis le nœud 10 permettent de quantifier le lien distant avec 2 hops, qui atteint au maximum 4.8 Go/s.
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\textwidth]{link_output_saturation}
-  \caption{Bande passante cumulée depuis le nœud 0 vers un nœud distant, en fonction du nombre de threads distant effectuant une copie}\label{fig:contribs:machines:idchire:saturation-output}
+  \caption{Bande passante cumulée depuis le nœud 0 vers plusieurs nœuds distants, en fonction du nombre de threads distants effectuant une copie}\label{fig:contribs:machines:idchire:saturation-output}
 \end{figure}
 
 Pour terminer la caractérisation de ces liens, nous avons finalement mesuré la bande passante maximale que l'on peut obtenir en <<sortie>> d'un nœud, en saturant les différents liens.
-La figure~\ref{fig:contribs:machines:idchire:saturation-output} montre la bande passante cumulée lors d'une copie du nœud 0 vers un nœud distant, en fonction du nombre de threads effectuant une copie.
-Les threads sont placés consécutivement sur les cœurs des nœuds 1, 2, 3, 4, et 10~; le lien local n'est donc pas utilisé, et seul les liens groupe, distant 1, et distant 2 sont utilisés.
+Pour ce faire nous allons effectuer simultanément plusieurs copies d'un tableau de 200 Mo alloué et initialisé sur le nœud 0, vers un tableau alloué sur un nœud distant. Le thread effectuant la copie est placé sur le nœud distant.
+
+La figure~\ref{fig:contribs:machines:idchire:saturation-output} montre la bande passante cumulée lors d'une copie du nœud 0 vers plusieurs nœuds distants, en fonction du nombre de threads effectuant une copie.
+Pour cette expérience la manière de placer les threads sur les nœuds distants est importante~: les threads sont d'abord placés de manière à remplir progressivement le nœud 1 (nombre de threads de 1 à 8), qui passent par le lien groupe~; puis ce sont les nœuds 2, 3, et 4 qui sont remplis progressivement (threads 9 à 32), qui passent par le lien distant 1, et enfin le nœud 10 est rempli (threads 33 à 40), qui passent par le lien distant 2.
 
 La bande passante maximale en sortie de nœud est donc de 7.5 Go/s, et commence à saturer aux alentours d'une vingtaine de copies distantes.
 
@@ -107,18 +116,20 @@ La topologie complète de la machine est représentée sur la figure~\ref{fig:co
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{link_saturation_brunch}
-  \caption{Bande passante cumulée depuis le nœud 0, en fonction du nombre de threads effectuant une copie et du nœud destination}\label{fig:contribs:machines:brunch:saturation}
+  \caption{Bande passante cumulée vers le nœud 0, en fonction du nombre de threads effectuant une copie et du nœud source}\label{fig:contribs:machines:brunch:saturation}
 \end{figure}
 
 
 La Figure~\ref{fig:contribs:machines:brunch:heatmap} présente la bande passante nœud à nœud en fonction de la source et de la destination, mesurée à l'aide d'une copie de tableau (|memcpy|) de 200 Mo.
-Bien qu'une diagonale se dégage clairement, la différence entre accès local et accès distant n'est de l'ordre que de 10\%, comme en témoigne l'échelle de couleur sur la figure.
+Bien qu'une diagonale se dégage clairement, la différence entre accès local et accès distant n'est de l'ordre que de 10\%~: la bande passante point à point pour l'accès local est d'environ 3.6 Go/s, et d'environ 3.3 Go/s pour le point à point sur un nœud distant.
 
 \subsubsection{Mesure des liens}
 
 De même que pour idchire, nous avons effectué des observations complémentaires pour caractériser plus précisément les liens locaux et distants, afin de déterminer leur saturation.
 Les résultats de ces expériences ont été rassemblés sur la figure~\ref{fig:contribs:machines:brunch:saturation}.
-Bien que la bande passante soit bien plus importante que sur idchire, les liens arrivent à saturation bien plus vite~: à peine 20\% de charge du nœud permet de saturer la bande passante.
+Il s'agit de la même approche que pour la figure~\ref{fig:contribs:machines:idchire:saturation}, et nous avons effectué des copies simultanées depuis un nœud source vers le nœud 0.
+
+En plus de constater que la bande passante cumulée est bien plus importante que sur idchire, on peut voir que les liens arrivent à saturation avec le même nombre de copies simultanées (environ 6), même si proportionnellement ça ne représente que 20\% d'utilisation du nœud.
 
 \bigskip
 \bigskip

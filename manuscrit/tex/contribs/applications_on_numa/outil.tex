@@ -102,12 +102,12 @@ L'exemple suivant illustre cette syntaxe en déclarant les variables |a0|, |a2|,
 
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration de variables paramètrées,label=lst:tool:data-example-for]
 data:
-  - a<i>:
-    - i: [0, 7, 2]
-    - type: "double *"
-  - array_<name>:
-    - name: ["input", "output"]
-    - type: "int *"
+  a<i>:
+    i: [0, 7, 2]
+    type: "double *"
+  array_<name>:
+    name: ["input", "output"]
+    type: "int *"
 \end{lstlisting}
 
 
@@ -179,15 +179,15 @@ Le listing~\ref{lst:tool:actions-example-sync} fait une utilisation de cette syn
 \begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions synchronisées,label=lst:tool:actions-example-sync]
 data:
   # Déclaration de a0, a1, a2, a3, etc
-  - a<i>:
-    - i: [0, 3, 1]
-    - type: "double *"
-  - b<i>:
-    - i: [0, 3, 1]
-    - type: "double *"
-  - c<i>:
-    - i: [0, 3, 1]
-    - type: "double *"
+  a<i>:
+    i: [0, 3, 1]
+    type: "double *"
+  b<i>:
+    i: [0, 3, 1]
+    type: "double *"
+  c<i>:
+    i: [0, 3, 1]
+    type: "double *"
 actions:
   # Initialise a0, b0, et c0 sur le coeur 0,
   # a1, b1, et c1 sur le coeur 1, etc.

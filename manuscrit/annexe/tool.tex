@@ -9,8 +9,8 @@
 \chaptertoc
 
 \section{Saturation du lien local}\label{chap:annexe:tool:bp}
-
-\begin{lstlisting}[language=yaml,caption=Scénario de saturation du lien groupe entre le nœud 0 et le nœud 1 avec 8 copies simultanées,label=lst:annexe:tool:bp,multicols=2,xleftmargin=3em]
+%,multicols=2,xleftmargin=3em
+\begin{lstlisting}[language=yaml,caption=Scénario de saturation du lien groupe entre le nœud 0 et le nœud 1 avec 8 copies simultanées,label=lst:annexe:tool:bp]
 ---
 scenarii:
   params: {}
@@ -18,287 +18,59 @@ scenarii:
     n_elems:
       type: int
       value: 25000000
-    random:
-      type: bool
-      value: false
-    a0:
+    a<i>:
+      i: [0, 7, 1]
       type: double*
       value: 0
-    b0:
-      type: double*
-      value: 0
-    a1:
-      type: double*
-      value: 0
-    b1:
-      type: double*
-      value: 0
-    a2:
-      type: double*
-      value: 0
-    b2:
-      type: double*
-      value: 0
-    a3:
-      type: double*
-      value: 0
-    b3:
-      type: double*
-      value: 0
-    a4:
-      type: double*
-      value: 0
-    b4:
-      type: double*
-      value: 0
-    a5:
-      type: double*
-      value: 0
-    b5:
-      type: double*
-      value: 0
-    a6:
-      type: double*
-      value: 0
-    b6:
-      type: double*
-      value: 0
-    a7:
-      type: double*
-      value: 0
-    b7:
+    b<i>:
+      i: [0, 7, 1]
       type: double*
       value: 0
   actions:
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a0
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 0
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b0
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a1
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 1
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b1
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a2
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 2
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b2
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a3
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 3
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b3
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a4
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 4
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b4
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a5
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 5
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b5
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a6
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 6
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b6
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 8
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - a7
-    - n_elems
-    - random
-  - kernel: init_array
-    core: 7
-    repeat: 1
-    sync: false
-    flush: false
-    params:
-    - b7
-    - n_elems
-    - random
-  - barrier
-  - kernel: copy
-    core: 0
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a0
-    - b0
-    - n_elems
-  - kernel: copy
-    core: 1
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a1
-    - b1
-    - n_elems
-  - kernel: copy
-    core: 2
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a2
-    - b2
-    - n_elems
-  - kernel: copy
-    core: 3
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a3
-    - b3
-    - n_elems
-  - kernel: copy
-    core: 4
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a4
-    - b4
-    - n_elems
-  - kernel: copy
-    core: 5
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a5
-    - b5
-    - n_elems
-  - kernel: copy
-    core: 6
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a6
-    - b6
-    - n_elems
-  - kernel: copy
-    core: 7
-    repeat: 10
-    sync: true
-    flush: false
-    params:
-    - a7
-    - b7
-    - n_elems
-  - kernel: void
-    core: 8
-    repeat: 1
-    sync: true
-    flush: false
-    params: []
-  name: bandwidth_200000000_1_8
+  # Initialisation des tableaux a<i> (source), sur le nœud 1
+  - for:
+    var: i
+    limits: [0, 7, 1]
+    actions:
+    - kernel: init_array
+      core: 8
+      params:
+      - a<i>
+      - n_elems
+  # Initialisation des tableaux b<i> (destination), sur le nœud 0
+  - for:
+    var: i
+    limits: [0, 7, 1]
+    actions:
+    - kernel: init_array
+      core: i
+      params:
+      - b<i>
+      - n_elems
+  - kernel: barrier
+  # Exécution des copies simultanées sur les cœurs : 0, puis 0 et 1,
+  # puis 0, 1, 2, etc.
+  - for:
+    var: i
+    limits: [0, 7, 1]
+    actions:
+    - for:
+      var: j
+      # Génération des copies
+      # simultanées.
+      limits: [0, i, 1]
+      actions:
+      - kernel: copy
+        core: 1
+        repeat: 10
+        params:
+        - a<j>
+        - b<j>
+        - n_elems
+    - kernel: barrier
   watchers:
-    time:
-    - time
-    size:
-    - n_elems
+    - name: time
+      kernels: copy
 \end{lstlisting}
 
 \section{Scénario de base d'un \gemm sur un cœur}\label{chap:annexe:tool:dgemm-base}
