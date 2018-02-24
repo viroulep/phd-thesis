@@ -117,9 +117,40 @@ data:
 C'est là où l'utilisateur décrit effectivement les noyaux exécutés au cours du scénario.
 Il indique une série d'actions à exécuter, et avec quels paramètres.
 
+\paragraph{Définition d'une action.}
+
+Les actions peuvent être prédéfinies par \outil, ou encore être implémentées par l'utilisateur comme un module de \outil, ou finalement être un point d'entrée dans une bibliothèque.
+Le listing~\ref{lst:tool:declare-action} donne un exemple d'une définition d'action qui serait externe à \outil, où l'on ciblerait la fonction |cblas_dsyrk| de la bibliothèque OpenBLAS.
+
+\begin{figure}[h!]
+\begin{lstlisting}[language=yaml,caption=Exemple de définition d'une action externe,label=lst:tool:declare-action]
+declare_actions:
+  - library: "openblas"
+    # Identifiant de l'action
+    name: "dsyrk"
+    # Point d'entrée dans la bibliothèque
+    entry_point: "cblas_dsyrk"
+    params:
+    - "int"
+    - "int"
+    - "int"
+    - "int"
+    - "int"
+    - "double"
+    - "double *"
+    - "int"
+    - "double"
+    - "double *"
+    - "int"
+\end{lstlisting}
+\end{figure}
+
+\paragraph{Utilisation dans un scénario.}
+
+Un scénario doit contenir une entrée |actions|, qui est le tableau d'actions à réaliser au cours du scénario.
 Chaque action peut avoir les caractéristiques suivantes :
 \begin{description}
-  \item [kernel~:] chaine de caractères identifiant l'action. L'action peut être prédéfinie par \outil (comme c'est le cas pour une barrière), implémentée par l'utilisateur comme un module de \outil, ou être un point d'entrée dans une bibliothèque.
+  \item [kernel~:] chaine de caractères identifiant l'action.
     Cet attribut n'a pas de valeur par défaut et est obligatoire.
   \item [core~:] nombre entier indiquant le cœur sur lequel exécuter l'action. Il n'a pas de valeur par défaut, et est obligatoire.
   \item [params~:] liste de variables à passer en paramètre de l'action, leur nom doit correspondre à des données déclarées dans la section précédente.
@@ -129,13 +160,13 @@ Chaque action peut avoir les caractéristiques suivantes :
 \outil dispose d'une action prédéfinie~: la barrière. Son identifiant est |barrier|, et pour cette action spécifiquement le traitement de l'attribut |core| est un peu différent~: il peut ne pas être spécifié, et auquel cas la barrière sera effectuée sur l'ensemble des cœurs, mais il peut également être un ensemble de cœurs pour restreindre la portée de la barrière.
 
 
-Si on continue à décrire l'exemple simple d'une multiplication de matrices carrées, il faut que l'on définisse les actions suivantes : l'initialisation de chaque matrice (via une action |init_blas_bloc| implémentée par l'utilisateur, qui prend en paramètre un pointeur et une largeur de matrice), et le lancement du dgemm une fois que ces matrices sont initialisées.
+Si on continue à décrire l'exemple simple d'une multiplication de matrices carrées, il faut que l'on effectue les actions suivantes : l'initialisation de chaque matrice (via une action |init_blas_bloc|, implémentée au préalable par l'utilisateur dans \outil, qui prend en paramètre un pointeur et une largeur de matrice), et le lancement du dgemm une fois que ces matrices sont initialisées.
 Afin d'avoir une mesure plus précise du comportement du noyau, on peut indiquer une répétition du noyau, ici on choisit 50 pour l'exemple.
 
 Le listing~\ref{lst:tool:actions-example} montre un exemple réalisant ce scénario.
 
 \begin{figure}[h!]
-\begin{lstlisting}[language=yaml,caption=Exemple de déclaration d'actions,label=lst:tool:actions-example]
+\begin{lstlisting}[language=yaml,caption=Exemple d'actions à réaliser pour une multiplication de matrice,label=lst:tool:actions-example]
 actions:
   - kernel: init_blas_bloc
     params:
@@ -170,7 +201,7 @@ Ici les trois initialisations et le calcul ont lieu sur le même cœur, et sont 
 De manière similaire à la déclaration de données, il est possible de paramétrer les actions.
 Cela peut être particulièrement pratique dans le cas où l'on souhaite observer l'exécution concurrente de plusieurs noyaux de calcul.
 
-Cela se fait à l'aide d'une action spéciale \emph{for}, qui doit définir au moins deux attributs~: |var|, qui contient le nom de la variable d'itération, et |actions|, qui contient la liste des actions à effectuer.
+Cela se fait à l'aide d'une action spéciale \emph{for}, qui doit définir plusieurs attributs~: |var|, qui contient le nom de la variable d'itération, et |actions|, qui contient la liste des actions à effectuer.
 Pour définir l'espace d'itération, l'utilisateur doit spécifier un et un seul des deux attributs suivants~: |limits|, qui s'exprime sous la forme |[débug, fin, pas]| et permet d'exprimer les limites de la boucles~; ou |values|, qui indique une liste explicite des valeurs que peut prendre la variable.
 
 Le listing~\ref{lst:tool:actions-example-sync} fait une utilisation de cette syntaxe pour exécuter 4 dgemm simultanément sur les cœurs 0, 1, 2, et 3, en ayant au préalable initialisé les données nécessaires.
