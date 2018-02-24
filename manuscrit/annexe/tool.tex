@@ -79,196 +79,101 @@ scenarii:
 ---
 scenarii:
   data:
-    bs:
+    size:
       type: int
       value: 256
-    a0:
+    <name>:
+      name: ["a", "b", "c"]
       type: double*
-      value: 0
-    b0:
-      type: double*
-      value: 0
-    c0:
-      type: double*
-      value: 0
   actions:
-  - kernel: init_blas_bloc
-    core: 0
-    repeat: 1
-    sync: false
-    params:
-    - a0
-    - bs
-  - kernel: init_blas_bloc
-    core: 0
-    repeat: 1
-    sync: false
-    params:
-    - b0
-    - bs
-  - kernel: init_blas_bloc
-    core: 0
-    repeat: 1
-    sync: false
-    params:
-    - c0
-    - bs
+  - for:
+    var: name
+    values: ["a", "b", "c"]
+    actions:
+    - kernel: init_blas_bloc
+      core: 0
+      params:
+      - <name>
+      - size
   - kernel: dgemm
     core: 0
-    repeat: '50'
-    sync: true
+    repeat: 50
     params:
-    - a0
-    - b0
-    - c0
-    - bs
-  name: dgemm_256_local_1
+    - a
+    - b
+    - c
+    - size
   watchers:
-    flops_dgemm:
-    - bs
-    time:
-    - time
-    papi:
+  - name: flops_dgemm
+    params:
+    - size
+    kernels:
+    - dgemm
+  - name: papi:
+    params:
     - PAPI_L3_TCM
     - PAPI_L3_DCR
     - PAPI_L3_DCW
+    kernels:
+    - dgemm
 \end{lstlisting}
 
-\section{Sénario d'exécution de 3 \gemm indépendants}\label{chap:annexe:tool:dgemm}
+\section{Sénario d'exécution de 8 \gemm indépendants}\label{chap:annexe:tool:dgemm}
 
-\begin{lstlisting}[language=yaml,caption=Scénario de calcul de 3 gemm indépendants,label=lst:annexe:tool:dgemm,multicols=2,xleftmargin=3em]
+\begin{lstlisting}[language=yaml,caption=Scénario de calcul de 8 gemm indépendants,label=lst:annexe:tool:dgemm,multicols=2,xleftmargin=3em]
 ---
 scenarii:
   data:
-    bs:
+    size:
       type: int
       value: 256
-    a0:
+    a<i>:
+      i: [0, 7, 1]
       type: double*
-      value: 0
-    b0:
+    b<i>:
+      i: [0, 7, 1]
       type: double*
-      value: 0
-    c0:
+    c<i>:
+      i: [0, 7, 1]
       type: double*
-      value: 0
-    a1:
-      type: double*
-      value: 0
-    b1:
-      type: double*
-      value: 0
-    c1:
-      type: double*
-      value: 0
-    a2:
-      type: double*
-      value: 0
-    b2:
-      type: double*
-      value: 0
-    c2:
-      type: double*
-      value: 0
   actions:
-  - kernel: init_blas_bloc
-    core: 0
-    repeat: 1
-    sync: false
-    params:
-    - a0
-    - bs
-  - kernel: init_blas_bloc
-    core: 0
-    repeat: 1
-    sync: false
-    params:
-    - b0
-    - bs
-  - kernel: init_blas_bloc
-    core: 0
-    repeat: 1
-    sync: false
-    params:
-    - c0
-    - bs
-  - kernel: init_blas_bloc
-    core: 1
-    repeat: 1
-    sync: false
-    params:
-    - a1
-    - bs
-  - kernel: init_blas_bloc
-    core: 1
-    repeat: 1
-    sync: false
-    params:
-    - b1
-    - bs
-  - kernel: init_blas_bloc
-    core: 1
-    repeat: 1
-    sync: false
-    params:
-    - c1
-    - bs
-  - kernel: init_blas_bloc
-    core: 2
-    repeat: 1
-    sync: false
-    params:
-    - a2
-    - bs
-  - kernel: init_blas_bloc
-    core: 2
-    repeat: 1
-    sync: false
-    params:
-    - b2
-    - bs
-  - kernel: init_blas_bloc
-    core: 2
-    repeat: 1
-    sync: false
-    params:
-    - c2
-    - bs
-  - kernel: dgemm
-    core: 0
-    repeat: '50'
-    sync: true
-    params:
-    - a0
-    - b0
-    - c0
-    - bs
-  - kernel: dgemm
-    core: 1
-    repeat: '50'
-    sync: true
-    params:
-    - a1
-    - b1
-    - c1
-    - bs
-  - kernel: dgemm
-    core: 2
-    repeat: '50'
-    sync: true
-    params:
-    - a2
-    - b2
-    - c2
-    - bs
-  name: dgemm_256_local_3
+  - for:
+    var: i
+    limits: [0, 7, 1]
+    actions:
+    - for:
+      var: name
+      values: ["a", "b", "c"]
+      actions:
+      - kernel: init_blas_bloc
+        core: <i>
+        params:
+        - <name><i>
+        - size
+  - kernel: barrier
+  - for:
+    var: i
+    limits: [0, 7, 1]
+    actions:
+    - kernel: dgemm
+      core: <i>
+      repeat: '50'
+      params:
+      - a<i>
+      - b<i>
+      - c<i>
+      - size
   watchers:
-    flops_dgemm:
-    - bs
-    time:
-    - time
-    papi:
+  - name: flops_dgemm
+    params:
+    - size
+    kernels:
+    - dgemm
+  - name: papi:
+    params:
     - PAPI_L3_TCM
     - PAPI_L3_DCR
     - PAPI_L3_DCW
+    kernels:
+    - dgemm
 \end{lstlisting}
