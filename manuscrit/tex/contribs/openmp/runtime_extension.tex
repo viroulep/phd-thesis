@@ -1,8 +1,9 @@
 \section{Extension du support exécutif}\label{sec:openmp:runtime}
 
-Cette partie complète la section précédente, puisqu'elle se concentre sur l'exploitation des informations fournies par l'utilisateur, ainsi que sur la prise en compte des architectures NUMA côté support exécutif.
+Cette partie complète la section précédente, elle se concentre sur l'exploitation des informations fournies par l'utilisateur, ainsi que sur la prise en compte des architectures NUMA côté support exécutif.
+Ces travaux ont été publiés à EuroPar 2016~\cite{Virouleau2016b}.
 
-Ces extensions ciblent des supports exécutifs fonctionnant par vol de travail (voir section~\ref{sec:context:runtimes:ws}), et ont été implémentées dans Kaapi ainsi que libKOMP (voir section~\ref{sec:contribs:perf_eval:portage_libkomp}).
+Ces extensions ciblent des supports exécutifs fonctionnant par vol de travail (voir section~\ref{sec:context:runtimes:ws}), et ont été implémentées dans XKaapi ainsi que libKOMP (voir section~\ref{sec:contribs:perf_eval:portage_libkomp}).
 
 \subsection{Hiérarchiser le support exécutif}
 
@@ -17,14 +18,15 @@ Des outils tels que hwloc permettent de donner des informations sur la hiérarch
 
 Nous avons également fait en sorte d'allouer la mémoire manipulée par les différentes files sur le nœud NUMA sur lequel cette file est située.
 
+\begin{todo}
+  dessin queues
+\end{todo}
 
 
 \subsection{Heuristiques basées sur la localité des données}\label{sec:contrib:ws:heuristics}
 
 Comme décrit dans la section~\ref{sec:context:runtimes:ws}, le vol de travail repose sur deux étapes essentielles~: le choix d'une file où placer la tâche lorsqu'elle devient prête, et la sélection d'une file de tâches lors du vol.
-
 Les deux sections suivantes décrivent les modifications que nous avons mises en place dans le support exécutif, dans l'objectif de prendre en compte le côté NUMA de l'architecture.
-Ces travaux ont été publiés à EuroPar 2016~\cite{Virouleau2016b}.
 
 
 \subsubsection{Distribution des tâches prêtes : stratégies de \emph{placement}}
@@ -38,10 +40,10 @@ Deux d'entre elles sont indépendantes des données, alors que les deux autres p
   \item [pLocNum :] la stratégie agie de manière similaire à la précédente, à ceci près que le cœur place celle ci dans la file de son nœud NUMA - \emph{\textbf{p}lacement\textbf{Loc}al\textbf{Num}a}.
   \item [pNumaW :] le cœur responsable du placement de la tâche regarde si une affinité de donnée est spécifiée, si aucune affinité n'est présente, il utilise une des dépendances en écriture de la tâche comme affinité.
 Il détermine ensuite le nœud NUMA sur lequel a été allouée la donnée, et place la tâche dans la file du nœud correspondant.
-  \item [pNumaWLoc :] la stratégie agie de manière similaire à la précédente, mais si le nœud NUMA déterminé correspond au nœud NUMA du cœur courant, alors la tâche est poussée dans la file du cœur directement.
+  \item [pNumaWLoc :] la stratégie agie de manière similaire à la précédente, mais si le nœud NUMA déterminé correspond au nœud NUMA du cœur courant, alors la tâche est poussée dans la file locale du cœur directement.
 \end{description}
 
-Un détail distingue les deux premières stratégies des deuxx secondes : dans le cas des stratégies |pLoc| et |pLocNum|, le placement initial des données n'est pas pris en compte, alors que les stratégies |pNumaW| et |pNumaWLoc| utilisent toutes deux les informations sur l'allocation physiques des données manipulées par la tâche.
+Un détail distingue les deux premières stratégies des deux secondes : dans le cas des stratégies |pLoc| et |pLocNum|, le placement initial des données n'est pas pris en compte, alors que les stratégies |pNumaW| et |pNumaWLoc| utilisent toutes deux les informations sur l'allocation physiques des données manipulées par la tâche.
 
 \subsubsection{Équilibrage de charge dynamique : stratégie de \emph{sélection}}
 \label{sec:openmp:runtime:select}
@@ -70,7 +72,7 @@ Ces deux stratégies pourront servir de base de comparaison avec les stratégies
 \end{figure}
 
 \begin{description}
-  \item [sProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_proc}. Le voleur va visiter dans l'ordre~: sa propre file (1), celle de son nœud NUMA (2), puis va parcourir uniquement les files des cœurs en commençant par ses voisins (3, 4), puis en choisissant au hasard parmi les cœurs distants restants (5, 6).
+  \item [sProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_proc}. Le voleur va visiter dans l'ordre~: sa propre file (1), celle de son nœud NUMA (2), puis va parcourir uniquement les files des cœurs en commençant par ses voisins sur le nœud NUMA (3, 4), puis en choisissant au hasard parmi les cœurs distants restants (5, 6).
   \item [sNuma :] Le voleur commence par visiter son nœud NUMA, puis les files des cœurs de son nœud, puis uniquement les files des nœuds NUMA distant.
   \item [sProcNuma :] Dans un premier temps le cœur voleur visite sa propre file. Si aucune tâche n'est disponible, il va ensuite visiter les files de tâches des cœurs voisins situés sur le même nœud.
     Si cela échoue de nouveau, il ira voler la file de son nœud NUMA.
