@@ -17,10 +17,13 @@ Des outils tels que hwloc permettent de donner des informations sur la hiérarch
 \end{itemize}
 
 Nous avons également fait en sorte d'allouer la mémoire manipulée par les différentes files sur le nœud NUMA sur lequel cette file est située.
+La figure~\ref{fig:openmp:runtime:hierarchical_queues} illustre les queues publiques de la hiérarchie sur un exemple avec deux nœuds NUMA de huit cœurs.
 
-\begin{todo}
-  dessin queues
-\end{todo}
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.8\textwidth]{hierarchical_queues}
+  \caption{Schéma de la hiérarchie des queues publiques, avec 2 nœuds NUMA de 8 cœurs}\label{fig:openmp:runtime:hierarchical_queues}
+\end{figure}
 
 
 \subsection{Heuristiques basées sur la localité des données}\label{sec:contrib:ws:heuristics}
@@ -31,6 +34,9 @@ Les deux sections suivantes décrivent les modifications que nous avons mises en
 
 \subsubsection{Distribution des tâches prêtes : stratégies de \emph{placement}}
 \label{sec:openmp:runtime:push}
+
+Au cours de l'exécution, un thread qui termine une tâche va rendre prête d'autres tâches. L'ordonnancement par vol de travail dans Cilk place ces tâches dans la file locale du thread.
+Compte tenu des informations que nous avons sur les tâches et leurs données, d'autres choix sont possibles pour améliorer la localité des données.
 
 Nous introduisons quatre stratégies différentes pour le placement des tâches prêtes, vis à vis des files de tâches hiérarchiques définies dans la section précédente.
 Deux d'entre elles sont indépendantes des données, alors que les deux autres prennent en compte les informations fournies par l'utilisateur via la clause |affinity| décrite dans la section~\ref{sec:openmp:langage:affinity}, ou à défaut utilisent des informations issues des dépendances de données.
@@ -71,21 +77,24 @@ Ces deux stratégies pourront servir de base de comparaison avec les stratégies
   \caption{Illustration de la stratégie \emph{sNumaProc}, avec l'ordre de visite des files}\label{fig:openmp:runtime:steal_numa_proc}
 \end{figure}
 
+Les quatre stratégies suivantes ont été définies plus ou moins intuitivement~: les deux premières font un usage important d'un seul niveau de hiérarchie, alors que les deux dernières utilisent les deux niveaux de hiérarchie disponibles, en donnant la priorité soit aux files des processeurs, soit aux files des nœuds NUMA.
+
 \begin{description}
   \item [sProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_proc}. Le voleur va visiter dans l'ordre~: sa propre file (1), celle de son nœud NUMA (2), puis va parcourir uniquement les files des cœurs en commençant par ses voisins sur le nœud NUMA (3, 4), puis en choisissant au hasard parmi les cœurs distants restants (5, 6).
   \item [sNuma :] Le voleur commence par visiter son nœud NUMA, puis les files des cœurs de son nœud, puis uniquement les files des nœuds NUMA distant.
-  \item [sProcNuma :] Dans un premier temps le cœur voleur visite sa propre file. Si aucune tâche n'est disponible, il va ensuite visiter les files de tâches des cœurs voisins situés sur le même nœud.
+  \item [sProcNuma :] Dans un premier temps le cœur voleur visite sa propre file. Si aucune tâche n'est disponible, il va ensuite visiter les files de tâches des cœurs voisins situés sur le même nœud (dans l'ordre de leur numérotation).
     Si cela échoue de nouveau, il ira voler la file de son nœud NUMA.
     Si cela également, le reste de la topologie sera parcourue de manière similaire : un nœud sera choisi aléatoirement, les files des cœurs puis celle du nœud seront visitées.
   \item [sNumaProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_numa_proc}~; elle est similaire à la précédente, mais l'ordre de parcours est inversé : après avoir visité sa propre file (1) le voleur regarde d'abord les files des nœuds NUMA (2) avant de regarder les files des cœurs (3, 4). De même que pour la stratégie précédente, le reste de la topologie est parcourue de manière similaire (5, 6, 7).
 \end{description}
+
 
 \subsubsection{Résultats préliminaires~: comparaison des stratégies}
 \label{sec:openmp:runtime:preliminary_results}
 
 Lorsque nous avons proposé ce travail a EuroPar 2016, nous avions implémenté ces stratégies dans XKaapi~\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/xkaapi.git, branche 'public/europar2016'} et effectué nos expériences sur idchire.
 La configuration de la machine et de son environnement était significativement différente de celle présentée dans cette thèse~: à la fois au niveau matériel étant donné que la machine était configurée pour utiliser des \emph{huge pages}, et à la fois au niveau logiciel, les KASTORS et les supports exécutifs ayant subit plusieurs changements depuis.
-Une comparaison directe avec nos résultats récents de la section~\ref{sec:contribs:perf_eval} serait trompeuse, nous faisons donc un point dès maintenant sur comment nos choix ont été guidés.
+Une comparaison directe avec nos résultats récents de la section~\ref{sec:contribs:perf_eval} serait trompeuse, nous faisons donc un point dès maintenant sur comment nos choix ont été guidés, avec les mesures que nous avions fait pour l'article.
 
 \begin{figure}[ht]
   \centering

@@ -3,14 +3,17 @@
 
 Nous avons évalué les différentes améliorations proposées dans les sections~\ref{sec:openmp:langage} et~\ref{sec:openmp:runtime} sur les machines idchire et brunch, décrites en détails dans la section~\ref{sec:contribs:machines}.
 
+Pendant le déroulement de cette thèse, les développeurs de Clang ont décidé d'adopter et d'intégrer officiellement le support exécutif d'Intel open source pour leur support d'OpenMP, et l'ont nommé libOMP.
+Ce support exécutif dispose d'un support complet et robuste de la norme OpenMP~4.0, et utilise du vol de travail décentralisé (contrairement à libGOMP), avec également une découverte de la hiérarchie de la machine via hwloc.
 La section suivante décrit l'implémentation de nos idées dans le support exécutif libOMP, la section~\ref{sec:contribs:perf_eval:logiciels} décrit le reste des logiciels que nous avons utilisés ; et enfin la section~\ref{sec:contribs:perf_eval:resultats} aborde point par point l'impact sur les performances des extensions proposées.
 
 \subsection{Portage dans libOMP}\label{sec:contribs:perf_eval:libkomp}
 
-Pendant le déroulement de cette thèse, les développeurs de Clang ont décidé d'adopter et d'intégrer officiellement le support exécutif d'Intel open source pour leur support d'OpenMP, et l'ont nommé libOMP.
-Ce support exécutif dispose d'un support complet et robuste de la norme OpenMP~4.0, et utilise du vol de travail décentralisé (contrairement à libGOMP), avec également une découverte de la hiérarchie de la machine via hwloc.
 Comme indiqué dans la section~\ref{sec:openmp:runtime:preliminary_results}, nous avions initialement implémenté nos idées dans XKaapi.
-Néanmoins la structure de libOMP nous a semblé être une base favorable pour intégrer nos travaux et favoriser leur diffusion, nous avons donc peu de temps après étendu ce support exécutif avec la plupart des mécanismes présents dans XKaapi, et l'avons nommé libKOMP.
+Néanmoins la structure de libOMP nous a semblé être une base favorable pour intégrer nos travaux et favoriser leur diffusion.
+Cela nous permettait également d'ajouter des extensions directement dans Clang, tout en profitant au passage de la robustesse de son support d'OpenMP.
+Nous avons donc étendu ce support exécutif avec la plupart des mécanismes présents dans XKaapi~: file de tâches T.H.E, file de tâches hiérarchiques, et outils de génération de traces.
+Nous l'avons renommé libKOMP.
 
 \subsubsection{Extensions et options ajoutées}
 \label{sec:contribs:perf_eval:portage_libkomp}
@@ -19,7 +22,7 @@ Le support exécutif libOMP fonctionne, pour les tâches, par vol de travail.
 Chaque threads dispose d'une file de tâches, et les stratégies d'ordonnancement pour le placement et la sélection des files sont les suivantes, respectivement~: les tâches prêtes sont placées dans la file du thread courant~; lorsqu'un thread a besoin de voler du travail, il sélectionne aléatoirement une file de tâche d'un autre thread, s'il réussit un vol il reviendra voler cette victime la prochaine fois qu'il aura besoin de voler du travail.
 
 Dans un premier temps, nous avons donc commencé par ajouter un ensemble de structures de données~: pour chaque nœud NUMA utilisé dans la \emph{team} OpenMP courante, nous avons ajouté une file de tâches, permettant ainsi d'exposer un second niveau de hiérarchie dans l'ordonnancement.
-Nous avons également ajouté une file de tâche privée par thread et par nœud, afin de pouvoir implémenter facilement la notion d'affinité stricte.
+Nous avons également ajouté une file de tâche privée par thread et par nœud, pour implémenter la notion d'affinité stricte.
 
 Dans un second temps, nous avons modifié les fonctions de placement des tâches prêtes et de sélection d'une victime à voler.
 Nous avons directement implémenté la combinaison de stratégies qui obtenait le meilleur niveau de performances parmi celles présentées dans la section~\ref{sec:contrib:ws:heuristics}, à savoir~:
@@ -28,15 +31,16 @@ Nous avons directement implémenté la combinaison de stratégies qui obtenait l
   \item la sélection d'une file de tâche à voler se fait hiérarchiquement, dans l'ordre indiqué par la stratégie \emph{sNumaProc}, défini dans la section~\ref{sec:openmp:runtime:select}.
 \end{itemize}
 
-Dans la suite des expériences, nous ferons référence à ce support exécutif étendu en l'appelant \emph{libKOMP}.
+Dans la suite des expériences, nous ferons référence à ce support exécutif étendu en l'appelant \emph{libKOMP}\footnote{Malgré le nom similaire, il ne fait pas référence à la couche de compatibilité entre OpenMP et XKaapi publiée en 2012 par Broquedis et al.~\cite{Broquedis2012}}.
+
 
 \subsection{Logiciels}\label{sec:contribs:perf_eval:logiciels}
 
 Les logiciels utilisés pour nos expériences peuvent être divisé en trois catégories~:
 \begin{itemize}
-  \item Les applications
-  \item Les supports exécutifs
-  \item Les bibliothèques externes
+  \item Les applications, qui proviennent des KASTORS~;
+  \item Les supports exécutifs~: libGOMP, libOMP, libKOMP~;
+  \item Les bibliothèques externes~: BLAS, hwloc, et numactl.
 \end{itemize}
 
 Certaines applications et supports exécutifs utilisés ont dû subir quelques modifications afin d'incorporer les modifications d'OpenMP proposées.
@@ -47,7 +51,8 @@ Nous n'avons effectué aucune modification aux bibliothèques externes, mais il 
 
 Les applications utilisées pour ces expériences proviennent des KASTORS\footnote{https://gitlab.inria.fr/openmp/kastors, branche 'affinity'}.
 
-Nous avons ajouté une clause \emph{affinity} dans certaines applications~: dans le cas des applications d'algèbre linéaire, les tâches de calculs dépendent d'un ou plusieurs blocs de données. Nous avons ajouté une affinité entre chaque tâche et les données qu'elle écrit.
+Nous avons ajouté une clause \emph{affinity} dans certaines applications~: dans le cas des applications d'algèbre linéaire, les tâches de calculs dépendent d'un ou plusieurs blocs de données.
+Compte tenu des premiers résultats que nous avons observé précédemment~\cite{Virouleau2016a}, nous avons estimé qu'ajouter une affinité entre chaque tâche et les données qu'elle écrit serait avantageux.
 Dans le cas des applications de type stencil, nous avons ajouté une affinité vers un cœur précis pour les tâches successives.
 
 
@@ -80,7 +85,7 @@ Les résultats obtenus sont illustrés ci-dessous, dans trois sections abordant 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{graph_distrib_data_idchire}
-  \caption{Performances des différentes stratégies pour Cholesky en fonction de la distribution de données (N=32768, BS=512)}\label{fig:contribs:perf_eval:distrib-idchire}
+  \caption{Performances, sur les 192 cœurs d'idchire, des différentes stratégies pour Cholesky en fonction de la distribution de données. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:distrib-idchire}
 \end{figure}
 
 
@@ -90,15 +95,15 @@ La distribution \emph{Séquentielle} correspond à l'exécution du programme ori
 La distribution \emph{Numactl} correspond à une distribution des pages des données effectuée de manière cyclique sur les nœuds de la machine à l'aide de \emph{numactl}.
 Toutes les autres stratégies utilisent une initialisation parallèle dans laquelle chaque tâche est responsable de l'initialisation d'un bloc de données.
 
-Parmi celles-ci, la distribution \emph{Parallèle} correspond à une distribution <<naturelle>> des tâches d'initialisation~: aucun contrôle sur le placement des tâches (et donc sur le placement des données, comme expliqué dans la section~\ref{sec:openmp:langage:init}) n'est effectué.
-Néanmoins il y a une certaine distribution des tâches qui est naturellement effectuée~: compte tenu des tailles utilisées, il y a 64 blocs à initialiser et 24 nœuds sur la machine. En fonction de la rapidité d'initialisation du support exécutif et de l'ordre dans lesquels les threads commencent à travailler, cette distribution naturelle peut varier.
+Parmi celles-ci, la distribution \emph{Non guidée} correspond à une distribution des tâches (et donc du placement des données, comme expliqué dans la section~\ref{sec:openmp:langage:init}) sur laquelle aucun contrôle n'a été effectué.
+Néanmoins il y a une certaine distribution des tâches qui est naturellement effectuée~: compte tenu des tailles utilisées, il y a 64 blocs à initialiser et 24 nœuds sur la machine. En fonction de la rapidité d'initialisation du support exécutif et de l'ordre dans lesquels les threads commencent à travailler, cette distribution non guidée peut varier.
 
 La distribution \emph{Nœud unique} correspond au placement de toutes les tâches d'initialisation sur un seul nœud (ce qui revient à faire une initialisation séquentielle).
 Les deux autres distributions, \emph{Cyclique} et \emph{Aléatoire} correspondent aux distributions que nous avons implémentées, et distribuent les tâche de manière cyclique ou aléatoire sur les nœuds de la machine.
 
 La première chose à remarquer est que l'initialisation séquentielle de base (ou l'initialisation sur un nœud unique) propose sans surprise des performances désastreuses.
 
-L'initialisation parallèle sans contrôle se distingue par sa variabilité~: les barres d'erreurs illustrent cette variabilité, due à l'ordre dans lesquels les threads viennent voler les tâches d'initialisation.
+L'initialisation parallèle \emph{Non guidée} se distingue par sa variabilité~: les barres d'erreurs illustrent cette variabilité, due à l'ordre dans lesquels les threads viennent voler les tâches d'initialisation.
 
 Au final l'utilisation de \emph{numactl} permet de contrebalancer les effets de l'initialisation séquentielle et d'atteindre des performances raisonnables.
 
@@ -118,15 +123,25 @@ Nous avons étudié l'impact de l'affinité sous plusieurs angles~:
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_details_qr_cholesky_idchire}
-  \caption{Comparaison des supports exécutifs sur QR et Cholesky sur idchire, en fonction de la taille de matrice}\label{fig:contribs:perf_eval:eval-qr-cholesky}
+  \caption{Comparaison des supports exécutifs sur QR et Cholesky sur idchire, en fonction de la taille de matrice (tailles de bloc données dans le tableau~\ref{tab:perf_eval:blocksizes})}\label{fig:contribs:perf_eval:eval-qr-cholesky}
 \end{figure}
 
-Pour avoir un aperçu général des stratégies que nous avons évaluées sur les factorisations QR et Cholesky, avec des tailles de matrice variant entre 16384 et 65536, en utilisant la meilleure taille de bloc que nous avons pu trouver pour chaque taille de matrice.
+Pour avoir un aperçu général des stratégies que nous avons évaluées sur les factorisations QR et Cholesky, avec des tailles de matrice variant entre 16384 et 65536~; les tailles de blocs correspondantes sont détaillées dans le tableau~\ref{tab:perf_eval:blocksizes}.
+
+\begin{table}[h!]
+\def\arraystretch{1.5}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+  Taille de matrice & 8192 & 16384 & 32768 & 49152 & 65536 \\\hline
+  Taille de bloc & 256 & 256 & 512 & 512 & 512 \\\hline
+\end{tabular}
+\caption{Tableau de correspondance entre taille de matrice et taille de bloc}\label{tab:perf_eval:blocksizes}
+\end{table}
 
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_details_qr_cholesky_brunch}
-  \caption{Comparaison des supports exécutifs sur QR et Cholesky sur brunch, en fonction de la taille de matrice}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
+  \caption{Comparaison des supports exécutifs sur QR et Cholesky sur brunch, en fonction de la taille de matrice (tailles de bloc données dans le tableau~\ref{tab:perf_eval:blocksizes})}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
 \end{figure}
 
 La figure~\ref{fig:contribs:perf_eval:eval-qr-cholesky} montre les résultats obtenus sur idchire, et la figure~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montre les résultats obtenus sur brunch.
@@ -138,7 +153,7 @@ Malgré cela, l'impact de l'affinité est bien visible sur les deux machines, m�
 On peut observer que pour les faibles tailles de matrices, l'intérêt de l'affinité semble limité.
 Plutôt que de regarder la taille de matrice, il faut en fait regarder la taille de bloc pour trouver l'explication de la différence~: pour les tailles de matrice 8192 et 16384 la taille de bloc est de 256, pour les autres elle de 512.
 Les tailles de blocs induisent une différence claire vis à vis du cache L3~: dans le cas des blocs de taille 256 l'ensemble des données de calcul pour chaque noyau de l'application tient dans le cache L3, ce qui n'est pas le cas pour les blocs de taille 512.
-Compte tenu des résultats montrés dans la section~\ref{sec:contribs:apps:cholesky:locality}, il est donc logique d'observer l'amélioration significative des performances pour de grande tailles de blocs (nécessaires pour les grandes tailles de matrices), et une différence relativement faible concernant les tailles de blocs plus petites.
+Compte tenu des résultats montrés dans la section~\ref{sec:contribs:apps:cholesky:locality}, qui ont montré la dégradation très importante des performances lorsque les données ne tenant pas dans le cache sont à distance, il est donc logique d'observer l'amélioration significative des performances pour de grande tailles de blocs (nécessaires pour les grandes tailles de matrices), et une différence relativement faible concernant les tailles de blocs plus petites.
 
 
 \paragraph{Évolution en fonction du nombre de cœurs}
@@ -160,12 +175,12 @@ Pour une grosse taille de bloc en revanche c'est clair et net~: après avoir sui
 \begin{figure}[t!]
   \centering
   \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads}
-  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur idchire}\label{fig:contribs:perf_eval:eval-qr-cholesky-idchire}
+  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur idchire. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-idchire}
 \end{figure}
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads_brunch}
-  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur brunch}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
+  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur brunch. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
 \end{figure}
 
 Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montrent les résultats des factorisations QR et Cholesky (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
@@ -183,16 +198,16 @@ Nous n'avons pas pu faire une étude aussi approfondie de QR que de Cholesky, il
 
 La section~\ref{sec:openmp:langage:affinity} introduit la clause affinité en précisant que l'utilisateur peut spécifier une affinité \emph{stricte}, restreignant ainsi les décisions d'ordonnancement du support exécutif.
 Cette fonctionnalité n'a pas été utilisée pour les applications d'algèbre linéaire, car dans les cas que nous avons étudiés il était plus rentable de payer le coût de transfert des blocs de données plutôt que de se priver du parallélisme disponible.
-Ce n'est évidemment pas le cas pour toutes les applications, et les applications stencil, comme Jacobi, peuvent grandement bénéficier d'une restriction d'affinité aux ressources proches.
+Ce n'est évidemment pas le cas pour toutes les applications, et les applications stencil, comme Jacobi, peuvent grandement bénéficier d'une restriction d'affinité aux ressources proches, du fait de leur faible intensité opérationnelle (dans le cas de Jacobi, elle est en $O(1)$).
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{jacobi_scale_iomp_komp}
-  \caption{Performances de Jacobi en fonction de la version et du support exécutif, avec une taille de matrice de 49152}\label{fig:contribs:perf_eval:eval-jacobi}
+  \caption{Performances de Jacobi en fonction de la version et du support exécutif, avec une taille de matrice de 49152, sur idchire}\label{fig:contribs:perf_eval:eval-jacobi}
 \end{figure}
 
 La figure~\ref{fig:contribs:perf_eval:eval-jacobi} montre les performances de Jacobi sur deux tailles de blocs différentes.
 Une distribution de données a été rajoutée dans l'application, avec également une affinité stricte suivant cette distribution de données sur les itérations successives.
-Cela permet de garantir la réutilisation des données présentes dans le cache L2 (point critique pour cette application), et éviter des migrations de tâches inappropriées.
+Cela permet de garantir la réutilisation des données présentes dans le cache L2 (point critique pour cette application), et éviter des migrations de tâches inappropriées, ce qui est d'autant plus important que l'intensité opérationnelle est faible.
 Les performances obtenues avec les versions à base de boucles sont faibles comparativement aux résultats de l'affinité, néanmoins cela vient du fait qu'il n'y a pas eu d'effort particulier de fait pour que le découpage des itérations correspondent à celui des distributions des données.
 Les performances des deux versions devraient théoriquement être équivalentes~: l'affinité stricte est là pour restreindre la portée du vol de travail qui dégradait les performances, phénomène qui ne devrait pas être présent dans une version à base de boucles.
