@@ -4,8 +4,8 @@ Une analyse préliminaire des architectures et applications a permis de trouver 
 Ce chapitre a montré qu'il était possible d'étendre un modèle de programmation et ses supports exécutifs dans but double~: enrichir le graphe de tâches d'une application avec des informations sur l'affinité entre une tâches et ses données~; et utiliser efficacement ces informations lors de l'ordonnancement de l'application.
 
 Parmi les améliorations possibles, nous avons pu constater que l'impact de la localité des données était directement liée à la quantité de données manipulées.
-On peut également supposer que le type d'opération effectué sur ces données pourrait avoir un impact.
-De plus dans certains cas le compilateur pourrait fournir ce type d'informations au support exécutif.
+On peut également supposer que le type d'opération effectuée sur ces données pourrait avoir un impact.
+De plus dans certains cas le compilateur pourrait fournir ce type d'information au support exécutif.
 Il y a donc une opportunité pour des futurs travaux sur l'amélioration de l'intéraction entre le compilateur et les supports exécutifs.
 
 Se pose aussi la question de la performance du support exécutif~: compte tenu des performances de référence des noyaux, est-ce que la performance obtenue via un ordonnancement par vol de travail est proche du maximum atteignable ?

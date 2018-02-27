@@ -207,7 +207,14 @@ Ce n'est évidemment pas le cas pour toutes les applications, et les application
 \end{figure}
 
 La figure~\ref{fig:contribs:perf_eval:eval-jacobi} montre les performances de Jacobi sur deux tailles de blocs différentes.
-Une distribution de données a été rajoutée dans l'application, avec également une affinité stricte suivant cette distribution de données sur les itérations successives.
-Cela permet de garantir la réutilisation des données présentes dans le cache L2 (point critique pour cette application), et éviter des migrations de tâches inappropriées, ce qui est d'autant plus important que l'intensité opérationnelle est faible.
+Les mesures avec l'affinité ont été effectuées avant le portage dans libOMP, et le support exécutif sous-jacent est donc XKaapi.
+La version à base d'OpenMP |for| utilise un ordonnancement statique, sans contrôle particulier sur la distribution des données.
+Les versions à base de tâches avec dépendances n'utilisent aucun contrôle sur le placement des tâches ou des données.
+Pour la version avec affinité, une distribution de données a été rajoutée dans l'application, avec également une affinité stricte suivant cette distribution de données sur les itérations successives.
+Cette distribution affecte les blocs de données sur une grille la plus carrée possible en fonction des nœuds utilisés.
+L'affinité stricte ajoutée permet de garantir la réutilisation des données présentes dans le cache L2 (point critique pour cette application), et éviter des migrations de tâches inappropriées, ce qui est d'autant plus important que l'intensité opérationnelle est faible.
 Les performances obtenues avec les versions à base de boucles sont faibles comparativement aux résultats de l'affinité, néanmoins cela vient du fait qu'il n'y a pas eu d'effort particulier de fait pour que le découpage des itérations correspondent à celui des distributions des données.
 Les performances des deux versions devraient théoriquement être équivalentes~: l'affinité stricte est là pour restreindre la portée du vol de travail qui dégradait les performances, phénomène qui ne devrait pas être présent dans une version à base de boucles.
+\begin{todo}
+  est-ce que je parle de la version for+affinité, qui matche la version tâche+affinité ?
+\end{todo}
