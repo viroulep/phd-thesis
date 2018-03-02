@@ -184,18 +184,26 @@ Pour ce cas la taille de bloc a été fixée à 256, avec les données allouées
 
 Pour une taille de bloc de 256, la quantité maximale de données utilisée par l'un des noyaux (\gemm) est de 256*256*8*3 = 1.5 Mo. La taille du cache L2 étant de 256 Ko, le jeu de données ne tient pas dans ce cache. Mais avec un nœud de 8 cœurs exécutant 8 exécutions concurrentes, la quantité totale de données utilisée serait au pire de 12.58 Mo, soit environ 50\% des 20Mo de cache L3 disponible.
 On pourrait donc s'attendre à ce que la performance moyenne des noyaux ne soit impactée que par des effets locaux aux nœuds.
-
 Néanmoins les courbes montrent clairement une dégradation des performances de chaque noyaux lorsque la charge de la machine augmente.
 Ce comportement a également été observé pour d'autres tailles de blocs. Sur brunch le comportement a été également observé, avec néanmoins une dégradation moindre.
 
-\begin{todo}
-  faire la mesure via hubstat pour confirmer ou infirmer l'hypothèse de la cohérence.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.95\textwidth]{dgemm_local_miss}
+  \caption{Cache miss au niveau L3 en fonction de la taille de bloc et du nombre d'exécutions concurrentes, pour un \gemm avec des données locales sur idchire}\label{fig:contribs:apps:cholesky:miss-L3-local}
+\end{figure}
 
-  %https://www.researchgate.net/profile/Daniel_Molka/publication/315703632_Performance_Analysis_of_Complex_Shared_Memory_Systems/links/58dd3cf292851cd2d3d9d5d3/Performance-Analysis-of-Complex-Shared-Memory-Systems.pdf
-  %https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
-  % sandy bridge : https://tu-dresden.de/zih/forschung/ressourcen/dateien/abgeschlossene-projekte/benchit/2014_MSPC_authors_version.pdf?lang=en
-  % haswell : https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
-\end{todo}
+La figure~\ref{fig:contribs:apps:cholesky:miss-L3-local} montre l'évolution du nombre moyen de cache miss au niveau L3 par noyau, en fonction du nombre d'exécutions concurrentes et de la taille de bloc.
+Compte tenu du fait qu'il y a 50 répétitions des noyaux, que l'ensemble des données locales manipulées par les \gemm tient théoriquement dans le cache L3, et que le cache n'est pas vidé entre chaque répétition, alors la première exécution devrait rendre le cache L3 <<chaud>> et permettre aux autres exécutions de s'exécuter sans cache miss au niveau L3.
+Nous pouvons voir avec ces mesures que malgré cette supposition théorique, en pratique on observe bien des cache miss au niveau L3 !
+Nous avons pu observer via \emph{hubstats\footnote{hubstats est un outil SGI permettant d'observer certains trafics NUMALink spécifiques, tels que la quantité de données reçues/envoyées liée à la cohérence de cache.}} que ces caches miss entrainaient une augmentation du trafic lié à la cohérence de cache sur l'ensemble des nœuds, ce qui explique donc que la baisse de performance soit généralisée, plutôt que purement locale à un nœud.
+Ces cache miss sont très probablement dus à l'associativité du cache L3 et à des conflits d'adresses.
+
+
+%https://www.researchgate.net/profile/Daniel_Molka/publication/315703632_Performance_Analysis_of_Complex_Shared_Memory_Systems/links/58dd3cf292851cd2d3d9d5d3/Performance-Analysis-of-Complex-Shared-Memory-Systems.pdf
+%https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
+% sandy bridge : https://tu-dresden.de/zih/forschung/ressourcen/dateien/abgeschlossene-projekte/benchit/2014_MSPC_authors_version.pdf?lang=en
+% haswell : https://pdfs.semanticscholar.org/67cf/1189c859d66bac309f9438df434fb651f97a.pdf
 
 \subsubsection{Impact de la localité des accès}\label{sec:contribs:apps:cholesky:locality}
 
@@ -282,8 +290,5 @@ Pour les autres cas, l'impact de la bibliothèque semble concerner principalemen
 \subsection{Bilan et discussions}
 
 La figure~\ref{fig:contribs:apps:cholesky:distrib-overview-8192-224} avait montrée, à l'aide des traces obtenues à partir d'une exécution, que nous pouvions observer une baisse et une dispersion des performances individuelles des noyaux de l'application Cholesky.
-\outil nous a permis d'identifier principalement deux facteurs pouvant être à l'origine de ce phénomène~: tout d'abord une partie de la baisse de performance générale est due à la baisse de performance des noyaux qui accompagne l'augmentation de la charge de la machine.
-\begin{todo}
-  rappeler d'où ça vient quand c'est fait
-\end{todo}
+\outil nous a permis d'identifier principalement deux facteurs pouvant être à l'origine de ce phénomène~: tout d'abord une partie de la baisse de performance générale est due à la baisse de performance des noyaux qui accompagne l'augmentation de la charge de la machine, provenant de l'augmentation du trafic lié à la cohérence de cache, qui est une conséquence des cache miss au niveau L3 liés à l'associativité du cache.
 L'autre partie de cette baisse de performance, ainsi que la dispersion des temps d'exécution, peuvent être attribuées à une absence de contrôle de la localité des données au cours de l'application.
