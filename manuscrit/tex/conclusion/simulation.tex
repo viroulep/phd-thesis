@@ -1,20 +1,6 @@
 \chapter{Vers une amélioration possible du support exécutif à travers la simulation}\label{chap:simulation}
 \chaptertoc
 
-\begin{todo}
-  papier Olivier Beaumont sur ordo optimal
-  tasksim c
-\end{todo}
-
-\begin{todo}
-  blabla figure~\ref{fig:simu:big_picture}
-\end{todo}
-
-\begin{figure}[h!]
-  \centering
-  \includegraphics[width=\textwidth]{big_picture}
-  \caption{Schéma d'interaction des différents programmes}\label{fig:simu:big_picture}
-\end{figure}
 
 Le chapitre~\ref{chap:contrib:characterization} a montré qu'il était possible de caractériser précisément à la fois les machines et les parties critiques d'applications vis à vis de ces machines.
 Cela a pu confirmer et chiffrer l'importance de la localité des données sur les architectures NUMA.
@@ -23,8 +9,13 @@ Le chapitre précédent a montré comment nous avons étendu un modèle de progr
 À partir de là, certaines questions peuvent se poser~: compte tenu des caractéristiques de l'application et des machines, peut on faire mieux ?
 Si oui~: quelle marge reste-t'il à gagner par rapport aux ordonnancements théoriques connus ? Quelles caractéristiques faudrait il prendre en compte ?
 
-Le coût en temps d'un développement de nouvelles analyses ou stratégies dans les compilateurs et supports exécutifs peut être important.
-Afin d'étudier le potentiel de ces améliorations, nous avons développé un simulateur, dans le but de pouvoir apporter une réponse aux questions ci-dessus, sans pour autant impliquer de lourds développements logiciel.
+Le coût en temps d'un développement de nouvelles analyses ou stratégies dans les compilateurs et supports exécutifs peut être important, il est donc logique de se tourner vers la simulation.
+Pour des architectures hétérogènes ou distribuées, plusieurs simulateurs existent déjà~: en particulier SimGrid~\cite{Casanova2001}, qui dispose d'une base d'utilisateurs importante, et TaskSim~\cite{Rico2010}.
+Dans le cadre spécifique de Cholesky, Agullo et al.\cite{Agullo2015} ont étudié les performances réelles de différentes stratégies d'ordonnancement dans StarPU, en ciblant des architectures hétérogènes, et en les comparant à une exécution simulée à travers SimGrid.
+Ils ont montrés que les exécutions simulées pouvaient s'approcher très prêt du maximum théorique de performances~; ils ont également montré que les performances réelles pouvaient se rapprocher de ce maximum théorique, en donnant plus d'informations (obtenues statiquement) au support exécutif à propos des tâches.
+
+Il n'y a pas encore eu de travaux sur SimGrid ou TaskSim concernant spécifiquement les architectures NUMA.
+Nous avons donc développé un prototype de simulateur, dans le but de pouvoir apporter une réponse aux questions ci-dessus, sans pour autant impliquer de lourds développements logiciel.
 
 Ce chapitre est organisé de la façon suivante~: la section~\ref{sec:simulation:archi} décrit l'architecture générale du simulateur.
 La section~\ref{sec:simulation:modeles} fait un point sur les différents modèles envisagés, et la section~\ref{sec:simulation:resultats} montre des résultats préliminaires obtenus avec ces modèles, en apportant des premières pistes de réponses aux questions posées.
@@ -33,8 +24,19 @@ Enfin la section~\ref{sec:simulation:next} décrit quels améliorations du simul
 
 \section{Fonctionnement du simulateur}\label{sec:simulation:archi}
 
-Le simulateur implémente un certain nombre de concepts que nous avons déjà abordés, détaillés ci-après.
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{big_picture}
+  \caption{Schéma d'interaction des différents programmes.\\ *~: partie envisagée mais encore non implémentée.}\label{fig:simu:big_picture}
+\end{figure}
 
+La figure~\ref{fig:simu:big_picture} illustre la place du simulateur par rapport aux autres travaux de cette thèse.
+L'expression d'une application dans le simulateur se fait à travers une API dédiée.
+Elle peut soit se faire directement à l'aide d'une trace d'une exécution réelle (obtenue via libKOMP), soit manuellement en décrivant l'application de manière synthétique.
+Les coûts associés aux tâches peuvent être fournis au simulateur à l'aide de \outil.
+La simulation a lieu en fonction du modèle d'architecture choisi et de la stratégie d'ordonnancement sélectionnée.
+
+Le simulateur implémente un certain nombre de concepts que nous avons déjà abordés, détaillés ci-après.
 
 \paragraph{Données~:} elles sont représentées comme des blocs de taille fixe, qui sont associés à un cœur lors de leur création (pour simuler la politique \emph{first-touch} du système d'exploitation).
 
@@ -61,17 +63,31 @@ Pour le besoin des premières comparaisons, nous avons implémenté deux heurist
 \end{itemize}
 
 
-\paragraph{Modèle~:}
+\paragraph{Modèle de l'architecture~:}
+
 Un modèle fournit des informations cruciales~: il définit la topologie de la machine (nombre de cœurs, de nœuds, ainsi que les associations cœur/nœud), il défini également le coût de chaque opération (exprimé en secondes) en fonction de son type et du type de la tâche effectuant l'opération.
 
+\section{Modèles de coût de tâches envisagés}\label{sec:simulation:modeles}
 
-\section{Modèles envisagés}\label{sec:simulation:modeles}
+Le simulateur décompose le temps de chaque tâche de la manière suivante~:
+$$
+T_{tache} = \sum_{i} T_{lecture}(P_i) + T_{execution} + \sum_{i} T_{ecriture}(P_i)
+$$
+
+Où les $P_i$ sont les paramètres en lecture et écriture de la tâche.
+
+Avant de modéliser précisément l'architecture, nous avons dans un premier temps décidé de considérer les tâches dans leur ensemble.
+À travers \outil il est possible d'obtenir des temps d'exécution des tâches dans lesquels la totalité des opérations est pris en compte~; en jouant sur les conditions d'exécution il est donc possible d'obtenir les $T_{min}$ et $T_{max}$ observés, et borner le temps d'exécution d'une tâche~:
+$$
+T_{min} \leq T_{tache} \leq T_{max}
+$$
+
 
 Nous avons choisi de commencer à étudier l'application qui nous a servi de cas d'étude pour le chapitre~\ref{chap:contrib:characterization}~: Cholesky.
 Les données récoltées à l'aide de \outil nous ont permises de comprendre précisément le comportement de chacun des quatre noyaux impliqués dans la factorisation de Cholesky.
-Nous avons donc implémenté un Cholesky similaire dans le simulateur, et défini plusieurs modèles afin d'évaluer le simulateur et éventuellement les bornes de l'application en terme de performances.
+En particulier nous avons les $T_{min}$ et $T_{max}$ de chaque noyau en fonction de la charge de la machine, et le $T_{tache}$ moyen en fonction du type d'accès aux données (local ou distant).
 
-Comme les données récoltées sur les noyaux incluent la totalité des actions des tâches (lecture, calcul, et écriture), nous avons donc dans un premier temps utilisé un modèle simplifié, où la quantité de données en lecture et écriture est ignorée, mais ou la partie \emph{COMPUTE} inclut ces accès, et dépend du placement du bloc de données sur la machine simulée.
+Nous avons implémenté un Cholesky synthétique correspondant à l'algorithme de l'application dans le simulateur, et considéré plusieurs modèles de coûts afin d'évaluer le simulateur et éventuellement les bornes de l'application en terme de performances.
 
 \begin{table}[t!]
 \def\arraystretch{1.5}
@@ -81,27 +97,31 @@ Comme les données récoltées sur les noyaux incluent la totalité des actions 
     & & Données locales & Données distantes \\ \hline
   \multirow{2}{*}{\potrf}
     & 1 & 11.48 & 11.66 \\ \cline{2-4}
+    & 8 & 11.08 & 11.11 \\ \cline{2-4}
     & 192 & 9.30 & 8.81 \\ \cline{2-4}
   \hline
   \multirow{2}{*}{\trsm}
     & 1 & 14.20 & 14.38 \\ \cline{2-4}
+    & 8 & 13.19 & 12.22 \\ \cline{2-4}
     & 192 & 10.00 & 9.15 \\ \cline{2-4}
   \hline
   \multirow{2}{*}{\syrk}
     & 1 & 16.14 & 16.41 \\ \cline{2-4}
+    & 3 & 13.97 & 13.59 \\ \cline{2-4}
     & 192 & 10.10 & 7.51 \\ \cline{2-4}
   \hline
   \multirow{2}{*}{\gemm}
     & 1 & 16.92 & 17.10 \\ \cline{2-4}
+    & 8 & 16.32 & 14.11 \\ \cline{2-4}
     & 192 & 14.45 & 12.82 \\ \cline{2-4}
   \hline
 \end{tabular}
-\caption{Tableau illustrant les performances (en GFLOPS) de certains noyaux sur des matrices de taille 512, sur idchire}\label{tab:simu:perf-kernels-idchire}
+\caption{Tableau illustrant les performances (en GFLOPS) des noyaux de Cholesky sur des matrices de taille 512, sur idchire}\label{tab:simu:perf-kernels-idchire}
 \end{table}
 
-Afin de pouvoir illustrer les différents modèles que nous avons testés, le tableau~\ref{tab:simu:perf-kernels-idchire} regroupe quelques exemples de performance pour certains noyaux, pour une taille de matrice de 512, en fonction de la charge de la machine (comme décrit dans la section~\ref{sec:contribs:apps:cholesky:scenario}) et du type d'accès.
+Afin de pouvoir illustrer les différents modèles de coût que nous avons testés, le tableau~\ref{tab:simu:perf-kernels-idchire} regroupe quelques exemples de performance pour les noyaux de Cholesky, pour une taille de matrice de 512, en fonction de la charge de la machine (comme décrit dans la section~\ref{sec:contribs:apps:cholesky:scenario}) et du type d'accès.
 
-Cet extrait de performances permet de montrer que si la localité des données n'a pas d'impact positif pour un unique thread, en pleine charge la différence de performance est significative.
+Cet aperçu des performances permet de montrer que si la localité des données n'a pas d'impact positif pour un unique thread, à partir du moment où tous les threads d'un nœud sont utilisés (et donc a fortiori en pleine charge) la différence de performance est significative.
 
 Nous avons donc dégagé plusieurs modèles, décrits ci-dessous.
 
@@ -148,41 +168,37 @@ Les premières observations à faire sur cette figure sont plutôt positives~: l
 \end{tabular}
 \caption{Nombre de lectures et écritures de blocs locaux ou distants en fonction de la stratégie de vol}\label{tab:simu:acces-blocs-idchire}
 \end{table}
-\begin{todo}
-Note : cumul des lectures dans la table différent puisque cache infini : si lecture une fois sur le nœud, c'est gratos après si la version change pas.
-\end{todo}
 
 Cela est confirmé en regardant le nombre de lectures et écritures locales ou distantes, rapportées dans le tableau~\ref{tab:simu:acces-blocs-idchire}.
 Ce tableau montre que le nombre d'accès distants est significativement diminué par l'utilisation d'une stratégie de vol de travail sensible à l'affinité~: le nombre d'écritures distantes est réduit de moitié, tandis que le nombre de lectures distantes est réduit d'environ 25\%.
 
-
-Ces figures sont bien sur issues de simulation~; que valent elles en comparaison aux chiffres obtenus à travers les expériences ?
 
 \begin{figure}[t!]
   \centering
   \includegraphics[width=\textwidth]{simu_affinity_runtime_idchire}
   \caption{Comparaison des certains modèles aux supports exécutifs sur idchire, pour une taille de matrice de 32768 et une taille de bloc de 512}\label{fig:simu:modeles-vs-runtime:idchire}
 \end{figure}
-\begin{figure}[h!]
-  \centering
-  \includegraphics[width=\textwidth]{simu_affinity_avg_runtime_idchire}
-  \caption{Comparaison du modèle \emph{DeuxNiveauxAVG} aux supports exécutifs sur idchire, pour une taille de matrice de 32768 et une taille de bloc de 512}\label{fig:simu:affinityavg-vs-runtime:idchire}
-\end{figure}
+%\begin{figure}[h!]
+  %\centering
+  %\includegraphics[width=\textwidth]{simu_affinity_avg_runtime_idchire}
+  %\caption{Comparaison du modèle \emph{DeuxNiveauxAVG} aux supports exécutifs sur idchire, pour une taille de matrice de 32768 et une taille de bloc de 512}\label{fig:simu:affinityavg-vs-runtime:idchire}
+%\end{figure}
 
 
-La figure~\ref{fig:simu:modeles-vs-runtime:idchire} compare les modèles \emph{Minimum} (avec vol aléatoire) et \emph{DeuxNiveaux} (avec vol hiérarchique) aux supports exécutifs libOMP (qui utilise un vol aléatoire) et libKOMP (qui utilise un vol hiérarchique et l'affinité). libGOMP a été omis pour ne pas surcharger la figure, et parce que son comportement suit celui de libOMP.
-Comme on peut le constater, les performances des deux supports exécutifs sont effectivement supérieures au minimum simulé. En revanche les performances simulées de l'affinité semblent faibles compte tenu des performances réelles.
+Ces figures sont bien sur issues de simulation~; que valent elles en comparaison aux chiffres obtenus à travers les expériences ?
+La figure~\ref{fig:simu:modeles-vs-runtime:idchire} compare les modèles \emph{Minimum} (avec vol aléatoire) et \emph{DeuxNiveaux} (avec vol hiérarchique) aux supports exécutifs libOMP (qui utilise un vol aléatoire) et libKOMP (qui utilise un vol hiérarchique et l'affinité).
+Comme on peut le constater, les performances des deux supports exécutifs sont effectivement supérieures au minimum simulé. En revanche les performances simulées de l'affinité semblent légèrement en retrait compte tenu des performances réelles.
 
 Cette différence pourrait sembler étonnante, mais pourrait être en partie expliquée par le fait que les performances de référence ont été obtenues lorsque les données étaient soit \textit{toutes} locales ou \textit{toutes} distantes.
 Alors que dans la réalité il peut évidemment y avoir plusieurs autres cas quand plusieurs blocs sont en paramètre des noyaux.
 Cela donnerait donc une version <<minimum>> des performances plus pessimistes que la réalité.
-
-Nous avons essayé de prendre la moyenne globale des performances de chaque noyau comme référence, sous le modèle \emph{DeuxNiveauxAVG}.
-Les résultats obtenus sont présentés sur la figure~\ref{fig:simu:affinityavg-vs-runtime:idchire}.
-
-La simulation des deux heuristiques semblent adhérer un peu mieux à la réalité, bien qu'il semble possible de gagner encore en précision.
-
 Ces travaux étant en cours, plusieurs pistes d'amélioration sont envisagées, et sont décrites dans la section~\ref{sec:simulation:next}.
+
+
+%Nous avons essayé de prendre la moyenne globale des performances de chaque noyau comme référence, sous le modèle \emph{DeuxNiveauxAVG}.
+%Les résultats obtenus sont présentés sur la figure~\ref{fig:simu:affinityavg-vs-runtime:idchire}.
+
+%La simulation des deux heuristiques semblent adhérer un peu mieux à la réalité, bien qu'il semble possible de gagner encore en précision.
 
 
 Les résultats obtenus sur les cas favorable à l'utilisation de l'affinité sont assez encourageants.
@@ -191,7 +207,7 @@ Nous avons également appliqué la simulation sur des tailles de bloc plus petit
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{simu_affinity_8k_runtime_idchire}
-  \caption{Comparaison du modèle \emph{DeuxNiveauxAVG} aux supports exécutifs sur idchire, pour une taille de matrice de 8192 et une taille de bloc de 256}\label{fig:simu:affinityavg-8k-vs-runtime:idchire}
+  \caption{Comparaison du modèle \emph{DeuxNiveaux} aux supports exécutifs sur idchire, pour une taille de matrice de 8192 et une taille de bloc de 256}\label{fig:simu:affinityavg-8k-vs-runtime:idchire}
 \end{figure}
 
 %# --------------- Explicit task
@@ -225,16 +241,36 @@ Le nombre de tâches dans une telle configuration peut vite limiter le parallél
   \caption{Comparaison de l'évolution du nombre de requêtes de vol par tâche dans le simulateur, en fonction de la taille de matrice}\label{fig:simu:steals_per_task:idchire}
 \end{figure}
 
-\begin{todo}
-ici donner les chiffres observés via libkomp vs modèle et dire que c'est pas du temps passé dans le runtime, mais peut être que ça perturbe l'exécution des noyaux. pas assez d'xp pour conclure
-\end{todo}
-
-Ce problème est illustré sur la figure~\ref{fig:simu:steals_per_task:idchire}, où l'on voit l'évolution du nombre de requêtes de vol divisé par le nombre de tâches à exécuter.
+Ce phénomène est illustré sur la figure~\ref{fig:simu:steals_per_task:idchire}, où l'on voit l'évolution du nombre de requêtes de vol divisé par le nombre de tâches à exécuter, au sein du simulateur.
 Pour un cas exposant un fort parallélisme, une taille de matrice de 32768 avec une taille de bloc de 512 et donc plus de 45000 tâches, on peut constater que le nombre de requêtes par tâche reste raisonnable.
-En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater que l'évolution du nombre de requêtes de vol par tâche est exponentielle, et qu'il décole un peu après 50 threads, ce qui coïncide avec l'apparition du plateau sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
+En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater que l'évolution du nombre de requêtes de vol par tâche est exponentielle, et qu'il pourrait y avoir une corrélation entre le nombre de requêtes et l'impact sur les performances.
 
-Les requêtes de vol ne sont pas modélisées dans le simulateur, et peuvent générer du trafic sur les bus mémoires~: donc non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent dégrader les performances des threads actifs.
-Cela explique en grande partie la différence entre la simulation et la réalité, et pourrait être une piste d'amélioration du modèle.
+\begin{table}[t!]
+\def\arraystretch{1.5}
+\centering
+\begin{tabular}{|c||c|c|}\hline
+  Noyau & \makecell{Performance minimum attendue\\(GFlops)} & \makecell{Performance moyenne observée\\(GFlops)} \\
+  \hline
+  \potrf & 7.10 & 5.07 \\
+  \hline
+  \trsm & 9.46 & 5.55 \\
+  \hline
+  \syrk & 11.23 & 5.80 \\
+  \hline
+  \gemm & 14.07 & 9.41 \\
+  \hline
+\end{tabular}
+\caption{Comparaison des performances minimum attendues aux performances moyennes observées pour l'exécution de Cholesky sur 192 cœurs, avec une taille de matrice de 8192 et des blocs de taille 256}\label{tab:simu:comparaison-modele-observation}
+\end{table}
+
+
+Pour une taille de matrice de 8192 (taille de bloc 256) et avec 192 cœurs, nous avons observés les temps moyens passés dans chaque tâche, rapportés par les traces de libKOMP.
+Nous les avons comparé aux performances minimum considérées par le simulateur dans le tableau~\ref{tab:simu:comparaison-modele-observation}.
+
+Nous avons constaté une forte différence entre les performances réelles et les coûts de tâches considérés par le simulateur.
+La différence observée sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire} ne semble donc pas venir d'un surcoût d'exécution du support exécutif lié à la quantité de requêtes de vol exécutées.
+En revanche les requêtes de vol peuvent générer du trafic sur les bus mémoires~: non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent dégrader les performances des threads actifs.
+Cela pourrait expliquer en partie la différence observée dans le tableau~\ref{tab:simu:comparaison-modele-observation}, et pourrait être une piste d'amélioration du modèle.
 
 
 %\section{Application d'un ordonnancement théorique}\label{sec:simulation:theorie}
@@ -274,10 +310,13 @@ Les figures~\ref{fig:contribs:machines:idchire:saturation} et~\ref{fig:contribs:
 
 L'objectif serait donc d'introduire un coût d'accès aux blocs mémoires suivant ce modèle.
 
-\subsection{Modélisation des surcouts d'ordonnancement}
+\subsection{Modélisation de l'impact des requêtes de vol}
 
-La figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire} l'a montré, le simulateur manque d'un moyen de modéliser les coûts liés aux fonctions d'ordonnancement du support exécutif.
-Une manière d'aborder cela pourrait être d'associer un très faible coût à chaque requête de vol, et éventuellement de le pondérer par le nombre de threads en train d'effectuer des requêtes, pour modéliser la synchronisation nécessaire.
+Nous avons observé une différence très importante entre la simulation et l'exécution réelle sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
+La figure~\ref{fig:simu:steals_per_task:idchire} et le tableau~\ref{tab:simu:comparaison-modele-observation} ont permis de déduire deux choses~: il pourrait y avoir une corrélation entre le nombre de requêtes de vol et la différence de performance observée, mais elle n'est pas due à un surcoût dans le support exécutif.
+
+Il faudrait donc estimer l'impact des requêtes de vol en fonction de leur nombre sur le temps d'exécution des noyaux.
+Une fois cette perturbation estimée, une manière de prendre cela en compte pourrait être d'associer un très faible coût à chaque requête de vol, et éventuellement de le pondérer par le nombre de threads en train d'effectuer des requêtes.
 
 \subsection{Optimisation de la distribution}
 
