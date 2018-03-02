@@ -34,7 +34,7 @@ ICC est généralement privilégié pour sa capacité à générer du code perfo
 Ce compilateur open source du projet LLVM reçoit des contributions régulières de la part d'entreprises majeures telles que Google, Apple, Intel, ou encore ARM.
 Contrairement à GCC, le support d'OpenMP est assez récent et a été ajouté d'un bloc.
 Des développeurs d'Intel ont d'abord ajouté un support partiel dans un clone de Clang~: \emph{clang-omp}~\footnote{https://clang-omp.github.io/}.
-Il y a ensuite eu un effort d'ingénierie pour l'inclure dans Clang, avec un changement de license pour être compatible avec l'infrastructure LLVM.
+Il y a ensuite eu un effort d'ingénierie pour l'inclure dans Clang, avec un changement de license du support exécutif pour être compatible avec l'infrastructure LLVM.
 Compte tenu de l'implémentation il génère du code utilisant l'ABI du support exécutif d'Intel, qui a par la même occasion été intégré dans le projet LLVM.
 
 Il supporte entièrement la norme OpenMP~4.5 depuis sa version~3.9.
@@ -51,11 +51,12 @@ Pour un programmeur, le moyen le plus pratique de comparer les performances de d
 C'est aussi de l'intérêt des développeurs des supports exécutifs de les rendre le plus accessible possible.
 Il existe donc en fait plusieurs couches de compatibilité, que nous allons décrire ci-après.
 
-Vis à vis des compilateurs décrits dans la section précédente, la compatibilité est quasi totale~: Clang et ICC génèrent du code pour la même ABI, et libOMP implémente une couche de compatibilité entre l'ABI de libGOMP et libOMP.
+Vis-à-vis des compilateurs décrits dans la section précédente, la compatibilité est quasi totale~: Clang et ICC génèrent du code pour la même ABI, et libOMP implémente une couche de compatibilité entre l'ABI de libGOMP et libOMP.
 S'il est impossible d'utiliser libGOMP pour exécuter du code compilé par ICC ou Clang, toutes les autres substitutions sont possibles.
 
 S'agissant des autres supports exécutifs~: OmpSs dispose de son propre compilateur OpenMP source à source, \emph{Mercurium}, pour cibler \emph{Nanos++}.
 \emph{KStar} est un compilateur OpenMP soure à source basé sur le frontend de Clang, permettant de cibler les supports exécutif XKaapi et StarPU.
-Le compilateur a été écrit lorsqu'il n'y avait pas de support officiel d'OpenMP dans Clang, et quand la génération de code pour les tâches avec dépendances n'était pas encore disponible dans le prototype d'Intel.
-Le support de XKaapi à travers KStar a été ensuite abandonné quand Clang a officiellement supporté OpenMP~4.0 en utilisant un support exécutif, basé sur celui d'Intel, libOMP. Ce support a été abandonné au profit de libKOMP, une couche de compatibilité avec les ABI de libGOMP et libOMP, ce qui permet de les substituer juste avant l'exécution d'un programme compilé par Clang, GCC, ou ICC.
-
+Ce dernier a été écrit lorsqu'il n'y avait pas de support officiel d'OpenMP dans Clang, et quand la génération de code pour les tâches avec dépendances n'était pas encore disponible dans le prototype d'Intel.
+Le support de XKaapi à travers KStar a été ensuite abandonné quand Clang a officiellement supporté OpenMP~4.0 en utilisant un support exécutif, basé sur celui d'Intel, libOMP.
+Ce support a été abandonné au profit de libKOMP, une couche de compatibilité avec les ABI de libGOMP et libOMP.
+Elle permet, une fois le programme compilé à l'aide de Clang, ICC, ou GCC, de substituer le support exécutif par défaut pour utiliser libKOMP, en changeant la bibliothèque dynamique chargée.

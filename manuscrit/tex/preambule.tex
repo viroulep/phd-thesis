@@ -14,7 +14,7 @@
 L'évolution du calcul haute performance est aujourd'hui dirigée par les besoins des applications de simulation numérique.
 Ces applications sont exécutées sur des supercalculateurs qui peuvent proposer plusieurs milliers de cœurs, et qui sont découpés en un très grand nombre de nœuds de calcul ayant eux un nombre de cœurs beaucoup plus faible.
 Chacun de ces nœuds de calcul repose sur une architecture à mémoire partagée, dont la mémoire est découpée en plusieurs blocs physiques différents : cela implique un temps d'accès dépendant à la fois de la donnée accédée ainsi que du processeur y accédant.
-On appelle ce genre d'architectures NUMA (pour \emph{Non Uniform Memory Access}).
+On appelle ces architectures NUMA (pour \emph{Non Uniform Memory Access}).
 
 La manière actuelle de les exploiter tend vers l'utilisation d'un modèle de programmation à base de tâches, qui permet de traiter des programmes irréguliers au dela du simple parallélisme de boucle.
 L'exploitation efficace des machines NUMA est critique pour l'amélioration globale des performances des supercalculateurs.

@@ -26,8 +26,9 @@ Cet outil nous a permis de faire des observations préliminaires déjà très po
 XKaapi est principalement utilisé comme prototype de recherche, et a été utilisé pour l'implémentation de certains travaux proches des thématiques de cette thèse, en particulier celle de la localité des données~\cite{Durand2013, Bleuse2014, Lima2015}.
 
 Du point de vue de la compatibilité avec OpenMP, elle a été progressive et plusieurs solutions existent ou ont existé~: KaCC~\cite{Lementec2011} était un compilateur source à source basé sur ROSE~\cite{Quinlan2003} qui implémentait les dépendances par dessus les tâches indépendantes d'OpenMP~3.0, et permettait donc à XKaapi d'exécuter les programmes OpenMP à base de tâches.
-Pour supporter des codes scientifiques tel qu'Europlexus, XKaapi a ensuite supporté les boucles OpenMP~\cite{Gautier2013b}.
+%Pour supporter des codes scientifiques tel qu'Europlexus, XKaapi a ensuite supporté les boucles OpenMP~\cite{Gautier2013b}.
 Lorsqu'Intel a commencé à travailler sur l'implémentation d'OpenMP~4.0 dans Clang, un nouveau compilateur source à source basé sur Clang a vu le jour~: KStar.
+Ce compilateur, supporté par l'ADT Inria du même nom, avait pour but de cibler XKaapi et StarPU à partir des pragmas OpenMP.
 Une fois que le support d'OpenMP dans Clang a été stable, le support d'XKaapi dans KStar a été abandonné.
 
 La manière actuelle de cibler XKaapi est d'utiliser une couche de compatibilité pour OpenMP au niveau binaire, nommée libKOMP~\cite{Broquedis2012}.
@@ -42,10 +43,10 @@ libGOMP~\cite{Novillo2006} est le support exécutif OpenMP fourni avec le compil
 Au niveau des fonctionnalités, il implémente la totalité du standard OpenMP~4.5.
 Comme la majorité des supports exécutifs, libGOMP réutilise les threads qui sont créés entre différentes régions parallèles successives, pour éviter d'avoir à payer le coût de destruction/création d'un thread inutilement.
 Les gestions des constructions à base de boucles et de tâches sont complètement séparées dans le support exécutif.
-Vis à vis de la hiérarchie de l'architecture cible, il n'y a aucune disposition particulière pour essayer de la prendre en compte.
+Vis-à-vis de la hiérarchie de l'architecture cible, il n'y a aucune disposition particulière pour essayer de la prendre en compte.
 
-Pour la gestion des tâches, libGOMP ne dispose que d'une seule file de tâches par \emph{team}, donc une seule file pour l'ensemble des threads, et l'ordonnancement est effectué à travers un algorithme glouton.
-Si fonctionnellemment cette caractéristique n'est pas un problème, cela peut avoir un impact sur les performances compte tenu du fait que tous les threads devront se synchroniser pour accéder à la même struture de données.
+Pour la gestion des tâches, libGOMP ne dispose que d'une seule file de tâches par \emph{team}~\cite{libGOMP7.3}, donc une seule file pour l'ensemble des threads, et l'ordonnancement est effectué à travers un algorithme glouton.
+Si fonctionnellemment cette caractéristique n'est pas un problème, cela peut avoir un impact sur les performances compte tenu du fait que tous les threads devront sérialiser leurs accès à la même struture de données.
 Cela se voit d'ailleurs sur la figure~\ref{fig:context:granularity} illustrant l'impact de la granularité des tâches~: pour des petites tailles de bloc (et donc un grand nombre de tâches), libGOMP est loin derrière à cause du surcoût entrainé par la gestion de la liste de tâches.
 Pour amoindrir ce problème, libGOMP limite le nombre de tâches total dans la file de tâches~: si un thread essaie de pousser une tâche et que cette limite est atteinte, alors la tâche sera invoquée séquentiellement par le thread.
 En pratique le nombre limite de tâches est égal à 64 multiplié par le nombre de threads utilisés.
@@ -81,8 +82,8 @@ OmpSs~\cite{OMPSs} est un modèle de programmation visant à étendre OpenMP, en
 La syntaxe et les détails dans l'utilisation peuvent être légèrement différents, mais les constructions et concepts restent les mêmes.
 OmpSs est composé d'un compilateur, \emph{Mercurium}, et d'un support exécutif \emph{Nanos++}.
 
-Du point de vue de la gestion des tâches, Nanos fonctionne également par vol de travail.
-Par défaut l'ordonnanceur fonctionne à l'aide d'une unique file de tâches à priorité, néanmoins l'interface de base d'un ordonnanceur doit fournir les fonctions |getReadyTask| et |addReadyTask|, qui sont équivalentes aux fonctions de sélection et placement déjà évoquées.
+Du point de vue de la gestion des tâches, Nanos peut fonctionner soit par un algorithme de liste, soit par vol de travail.
+Par défaut l'ordonnanceur fonctionne à l'aide d'une unique file de tâches à priorité, néanmoins certains ordonnanceurs fonctionnent avec une file de tâches par cœur.
 Il ne dispose pas d'ordonnanceur prenant en compte la localité des données, mais certains d'entre eux disposent de files de tâches associées à certains éléments de la hiérarchie (cœur ou nœud NUMA), afin de favoriser le vol de tâche <<proche>>.
 
 
@@ -94,7 +95,7 @@ Concrètement les flots de données peuvent être vus comme des tableaux, et les
 Le support exécutif étudie ensuite l'ordre d'écriture dans les différentes parties d'un flot pour construire un graphe de dépendance des tâches, qui sera ensuite ordonnancé sur la machine.
 
 Ce modèle se rapproche donc très fortement des tâches avec dépendances qui sont apparues dans la version suivante d'OpenMP.
-OpenStream utilise un support exécutif avec des extensions pour les architectures NUMA, nous revenons dessus en détail dans la section~\ref{sec:rw:numa:thread-data}.
+OpenStream utilise un support exécutif avec des extensions pour les architectures NUMA, nous l'avons présenté plus en détails dans la section~\ref{sec:rw:numa:thread-data}.
 
 \subsection{StarPU}
 

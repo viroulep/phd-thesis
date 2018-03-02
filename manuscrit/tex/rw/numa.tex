@@ -2,6 +2,7 @@
 
 
 La problématique de la localité des données a été étudiée de manière extensive par la communauté, en particulier dans le contexte des architectures NUMA.
+Elle est essentielle car elle permet de limiter les transferts de données entre nœuds, d'améliorer le temps d'accès aux données, et donc d'améliorer les performances.
 Parmi les nombreuses publications sur le sujet, deux d'entre elles font l'effort d'en présenter une synthèse didactique, énumérant un certain nombre de bonnes pratiques à adopter s'agissant de l'exécution de tâches en contexte NUMA.
 
 %NUMA-aware scheduling for both memory- and compute-bound tasks
@@ -9,20 +10,21 @@ Parmi les nombreuses publications sur le sujet, deux d'entre elles font l'effort
 
 L'auteur distingue principalement deux types de tâches : compute-bound et memory-bound.
 Si certaines des 8 recommandations sont très spécifiques aux types de tâches, d'autres décrivent bien les points qu'il faut avoir en tête lorsque l'on cible les architectures NUMA.
-Il indique notamment l'importance de la distribution des données de l'application sur l'ensemble des nœuds NUMA, l'importance de la localité des données, ainsi que l'importance de garder les tâches et leur données ensemble lors du vol de travail.
+Il indique notamment l'importance de la distribution des données de l'application sur l'ensemble des nœuds NUMA, et l'importance de conserver la localité des données, lors du vol de travail.
 
 Dans le cadre spécifique des tâches OpenMP, \textbf{Terboven et al.~\cite{Terboven2012}} ont fait une étude du comportement général des tâches sur les architectures NUMA, et donnent des indications assez générales sur les bases pour aborder le problème, comme par exemple assurer le placement fixe d'un thread sur cœur de calcul, ou encore les types d'ordonnancement prévus dans le standard qui sont les plus efficaces dans ce cas.
+Cela a eu pour conséquence l'apparition dans OpenMP~4.0 des \emph{places} et des stratégies de placement des threads (\emph{proc bind}).
 
 
 
 \subsection{Groupement des calculs ensemble}
 
 Les techniques utilisées par les travaux suivants ont toutes en commun le groupement des calculs sur des éléments topologiquement proches dans la hiérarchie.
-L'objectif derrière cette idée est de "cloisonner" la charge de travail (par exemple les itérations de boucles) afin de limiter les accès distants et encourager la réutilisation du cache.
+L'objectif derrière cette idée est de "cloisonner" la distribution du travail (par exemple les itérations de boucles) afin de limiter les accès distants et encourager la réutilisation du cache.
 
 %OpenMP task scheduling strategies for multicore NUMA systems
 \paragraph{Olivier et al.~\cite{Olivier2012, Olivier2013}} font l'état des problèmes se posant lors de l'équilibrage de charge sur les architectures NUMA.
-Ils notent en particulier que s'il permet de limiter l'inactivité de certains cœurs, il entraine aussi une augmentation des cache miss ainsi qu'une augmentation des accès distants, plus coûteux.
+Ils notent en particulier que s'il permet de limiter l'inactivité de certains cœurs, il entraine aussi une augmentation des cache miss ainsi qu'une augmentation des accès distants, plus coûteux, et donc une augmentation du temps d'exécution des tâches.
 
 Leur principale contribution s'oriente autour d'une stratégie d'ordonnancement prenant en compte la hiérarchie de la mémoire au sein de l'architecture.
 Ils définissent un domaine de voisinage, qu'ils appellent \emph{shepherd}, qui regroupe un ensemble de cœurs voisins dans la hiérarchie.
@@ -33,7 +35,7 @@ Au sein d'un \emph{shepherd}, le travail est réparti entre les threads associé
 
 
 %Evaluation of OpenMP Task Scheduling Algorithms for Large NUMA Architectures
-\paragraph{Clet-Ortega et al.~\cite{Clet2014}} présentent des techniques de vol de travail favorisant les vols locaux plutôt que distants.
+\paragraph{Clet-Ortega et al.~\cite{Clet2014}} proposent des techniques de vol de travail favorisant les vols locaux plutôt que distants.
 Ils constatent qu'une file centralisée introduit un fort coût de gestion compte tenu du fait que le nombre de tâches créées peut être élevé, et proposent l'utilisation d'une file de tâches par thread du support exécutif pour pallier ce problème.
 Cela introduit du même coup une vision décentralisée de la gestion des tâches, et en couplant ça avec une analyse de la topologie via hwloc, ils introduisent la notion de voisins pour un thread.
 
@@ -43,10 +45,10 @@ Cette approche est reprise par Tahan et al.~\cite{Tahan2014}. Chaque thread disp
 
 
 
-\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des extensions au support exécutif ciblant spécifiquement les architectures NUMA et les applications itératives.
+\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des extensions au support exécutif Charm++~\cite{Kale1993} ciblant spécifiquement les architectures NUMA et les applications itératives.
 À chaque pas de temps, leur ordonnanceur va tenter de corriger un déséquilibre de charge en déplaçant des tâches d'un cœur à un autre.
 Pour évaluer si une tâche devrait être déplacée sur un autre cœur, ils prennent en compte plusieurs facteurs : la charge du cœur, la quantité de communication que la tâche effectue avec d'autres tâches du cœur, le facteur NUMA entre les deux cœurs, et la quantité de communication locale que la tâche effectuerait sur son cœur actuel.
-Ils ont effectué ces extensions dans Charm++~\cite{Kale1993} qui à l'avantage de leur fournir directement des informations sur les performances des tâches aux précédents pas de temps.
+Charm++ a l'avantage de leur fournir directement des informations sur les performances des tâches aux précédents pas de temps.
 Pour résumer ils vont favoriser le rééquilibrage de charge sur des cœurs voisins, et considérer un équilibrage sur un cœur distant si les caractéristiques de la tâche le permettent.
 
 
@@ -59,8 +61,7 @@ Cette approche assez naturelle vise d'une part à réduire la contention au sein
 Cette extension de Fortran 90 ne concerne pas du tout les architectures NUMA, mais les concepts qui y sont développés ont servi d'inspiration pour nos travaux décrits dans le chapitre~\ref{chap:contrib:openmp}.
 
 Le principe de cette extension est de distribuer la \emph{possession} de chaque élément des tableaux manipulés sur les différents cœurs, et de répartir la charge de travail (les instructions ou groupes d'instructions) sur les cœurs qui possèdent les éléments que ces instructions manipulent.
-
-Ils proposaient un ensemble complet de fonctionnalités pour contrôler le découpage des données, qui pour certaines n'ont jamais été implémentées par les compilateurs du fait de leur complexité.
+Ils proposaient également un ensemble complet de fonctionnalités pour contrôler le découpage des données.
 
 %Memory Affinity for Hierarchical Shared Memory Multiprocessors
 \paragraph{Pousa Ribeiro et al.~\cite{Pousa2009}} propose une bibliothèque externe pour contrôler l'allocation de données sur les différents nœuds NUMA.
@@ -74,7 +75,7 @@ Ils proposent plusieurs types de mécanismes :
 Contrairement à \emph{numactl}, cette bibliothèque permet d'avoir une distribution basée sur les blocs de données effectivement manipulés par l'application.
 Elle peut s'utiliser soit via une modification du code, soit via un compilateur source à source.
 
-\paragraph{Gautier et al.~\cite{Gautier2007}} propose un ordonnancement dynamique d'un graphe de tâches avec dépendances en deux étapes~: dans un premier temps le graphe est partitionné et réparti sur la machine, et dans un second temps l'équilibrage de charge est fait à l'aide du vol de travail.
+\paragraph{Gautier et al.~\cite{Gautier2007}} propose un ordonnancement dynamique d'un graphe de tâches avec dépendances en deux étapes~: dans un premier temps le graphe est partitionné et réparti sur le cluster, et dans un second temps l'équilibrage de charge est fait à l'aide du vol de travail.
 Une approche similaire, mais dans le cadre d'une approche purement \emph{offline}, est utilisée par \textbf{Gustedt et al.~\cite{Gustedt2017}} qui proposent une extension à ORWL~\cite{Clauss2010}.
 Cette extension permet d'utiliser les informations sur l'application et la topologie de l'architecture pour d'une part déterminer une matrice de communication entre les tâches, et d'autre part déterminer une affectation automatique des ressources et des calculs associés sur la topologie.
 
@@ -129,7 +130,7 @@ Dans notre proposition l'affinité est un indice de placement que le support ex�
 %Design and analysis of scheduling strategies for multi-CPU and multi-GPU architectures
 \paragraph{En contexte hétérogène} plusieurs travaux s'attaquent à l'ordonnancement de tâches en ciblant plusieurs GPU.
 Le problème de localité des données que l'on rencontre sur les architectures NUMA est encore plus critique lorsque l'on cible ce type d'accélérateur.
-Plusieurs travaux~\cite{Lima2015, StarPU} utilisent une approche dérivée de HEFT, en utilisant des informations sur les performances estimées des tâches à ordonnancer pour guider le placement dynamique de ces tâches sur CPU ou sur GPU.
+Plusieurs travaux~\cite{Hermann2010,Lima2015, StarPU} utilisent une approche dérivée de HEFT, en utilisant des informations sur les performances estimées des tâches à ordonnancer pour guider le placement dynamique de ces tâches sur CPU ou sur GPU.
 
 Bleuse et al.~\cite{Bleuse2014} proposent un algorithme d'ordonnancement hétérogène prenant en compte l'affinité entre une tâche et ses données.
 Pour décider du placement d'une tâche prête, ils considèrent les données déjà présentes sur les différents GPUs, et placent la tâche dans la file du GPU sur lequel le plus de données sont présentes.
@@ -162,8 +163,8 @@ Ils montrent des gains significatifs de performance et une réduction de la cont
 
 %Topology-Aware and Dependence-Aware Scheduling and Memory Allocation for Task-Parallel Languages
 \paragraph{Drebes et al.~\cite{Drebes2014}} ont implémenté des stratégies d'ordonnancement ciblant les architectures NUMA dans OpenStream.
-Le support exécutif fonctionne par vol de travail (avec une file de tâches par cœur), et récupère des informations sur la hiérarchie mémoire via hwloc lors de son initialisation.
-Les tâches expriment leurs dépendances de données sur des \emph{buffers}, dans lesquels plusieurs d'entre elles peuvent écrire ou lire des données.
+Le support exécutif fonctionne par vol de travail (avec une file de tâches par cœur), et récupère des informations sur la hiérarchie mémoire lors de son initialisation.
+Les tâches expriment leurs dépendances de données sur des \emph{streams} (implémentés par des \emph{buffers}), dans lesquels plusieurs d'entre elles peuvent écrire ou lire des données.
 Ces dépendances permettent non seulement de déterminer l'ordre d'exécution des différentes tâches, mais également de connaître précisément l'ensemble des données manipulées par plusieurs tâches, ainsi que leur taille.
 
 Leurs stratégies visent à améliorer la localité et la distribution des données au cours de l'exécution en jouant sur plusieurs facteurs.
