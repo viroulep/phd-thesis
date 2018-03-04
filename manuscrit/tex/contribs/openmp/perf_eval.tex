@@ -10,10 +10,11 @@ La section suivante décrit l'implémentation de nos idées dans le support exé
 \subsection{Portage dans libOMP}\label{sec:contribs:perf_eval:libkomp}
 
 Comme indiqué dans la section~\ref{sec:openmp:runtime:preliminary_results}, nous avions initialement implémenté nos idées dans XKaapi.
-Néanmoins la structure de libOMP nous a semblé être une base favorable pour intégrer nos travaux et favoriser leur diffusion.
+La structure de libOMP nous a semblé être une base favorable pour intégrer nos travaux et favoriser leur diffusion.
 Cela nous permettait également d'ajouter des extensions directement dans Clang, tout en profitant au passage de la robustesse de son support d'OpenMP.
-Nous avons donc étendu ce support exécutif avec la plupart des mécanismes présents dans XKaapi~: file de tâches T.H.E, file de tâches hiérarchiques, et outils de génération de traces.
+Nous avons donc étendu ce support exécutif avec la plupart des mécanismes présents dans XKaapi~: file de tâches non bornées (T.H.E), file de tâches hiérarchiques, et outils de génération de traces.
 Nous l'avons renommé libKOMP.
+Il s'agit là de la seconde version, bien différente de la version initiale publiée en 2012 par Broquedis et al.~\cite{Broquedis2012}.
 
 \subsubsection{Extensions et options ajoutées}
 \label{sec:contribs:perf_eval:portage_libkomp}
@@ -31,7 +32,10 @@ Nous avons directement implémenté la combinaison de stratégies qui obtenait l
   \item la sélection d'une file de tâche à voler se fait hiérarchiquement, dans l'ordre indiqué par la stratégie \emph{sNumaProc}, défini dans la section~\ref{sec:openmp:runtime:select}.
 \end{itemize}
 
-Dans la suite des expériences, nous ferons référence à ce support exécutif étendu en l'appelant \emph{libKOMP}\footnote{Malgré le nom similaire, il ne fait pas référence à la couche de compatibilité entre OpenMP et XKaapi publiée en 2012 par Broquedis et al.~\cite{Broquedis2012}}.
+Dans la suite des expériences, nous ferons référence à ce support exécutif étendu en l'appelant \emph{libKOMP}.
+\begin{todo}
+  libKOMPv2 dans toutes les courbes ?
+\end{todo}
 
 
 \subsection{Logiciels}\label{sec:contribs:perf_eval:logiciels}
@@ -50,7 +54,6 @@ Nous n'avons effectué aucune modification aux bibliothèques externes, mais il 
 \subsubsection{Applications utilisées}
 
 Les applications utilisées pour ces expériences proviennent des KASTORS\footnote{https://gitlab.inria.fr/openmp/kastors, branche 'affinity'}.
-
 Nous avons ajouté une clause \emph{affinity} dans certaines applications~: dans le cas des applications d'algèbre linéaire, les tâches de calculs dépendent d'un ou plusieurs blocs de données.
 Compte tenu des premiers résultats que nous avons observé précédemment~\cite{Virouleau2016a}, nous avons estimé qu'ajouter une affinité entre chaque tâche et les données qu'elle écrit serait avantageux.
 Dans le cas des applications de type stencil, nous avons ajouté une affinité vers un cœur précis pour les tâches successives.
@@ -96,7 +99,7 @@ La distribution \emph{Numactl} correspond à une distribution des pages des donn
 Toutes les autres stratégies utilisent une initialisation parallèle dans laquelle chaque tâche est responsable de l'initialisation d'un bloc de données.
 
 Parmi celles-ci, la distribution \emph{Non guidée} correspond à une distribution des tâches (et donc du placement des données, comme expliqué dans la section~\ref{sec:openmp:langage:init}) sur laquelle aucun contrôle n'a été effectué.
-Néanmoins il y a une certaine distribution des tâches qui est naturellement effectuée~: compte tenu des tailles utilisées, il y a 64 blocs à initialiser et 24 nœuds sur la machine. En fonction de la rapidité d'initialisation du support exécutif et de l'ordre dans lesquels les threads commencent à travailler, cette distribution non guidée peut varier.
+Néanmoins il y a une certaine distribution des tâches qui est naturellement effectuée~: compte tenu des tailles utilisées (64 blocs de largeur) et de la symétrie de la matrice, il y a 2080 blocs à initialiser et 24 nœuds sur la machine. En fonction de la rapidité d'initialisation du support exécutif, de la taille des files (si bornées), et de l'ordre dans lesquels les threads commencent à travailler, cette distribution non guidée peut varier.
 
 La distribution \emph{Nœud unique} correspond au placement de toutes les tâches d'initialisation sur un seul nœud (ce qui revient à faire une initialisation séquentielle).
 Les deux autres distributions, \emph{Cyclique} et \emph{Aléatoire} correspondent aux distributions que nous avons implémentées, et distribuent les tâche de manière cyclique ou aléatoire sur les nœuds de la machine.
@@ -107,7 +110,7 @@ L'initialisation parallèle \emph{Non guidée} se distingue par sa variabilité~
 
 Au final l'utilisation de \emph{numactl} permet de contrebalancer les effets de l'initialisation séquentielle et d'atteindre des performances raisonnables.
 
-La différence entre \emph{Numactl} et une distribution \emph{Aléatoire} peut être expliquée par le fait que \emph{numactl} distribue les \emph{pages} de manière aléatoire, alors qu'une distribution aléatoire des tâches d'initialisation distribue des \emph{blocs de données}, composés de plusieurs pages.
+La différence entre \emph{Numactl} et une distribution \emph{Aléatoire} peut être expliquée par le fait que \emph{numactl} distribue les \emph{pages} de manière aléatoire, alors qu'une distribution aléatoire des tâches d'initialisation distribue des \emph{blocs de données}, composés de plusieurs pages, ici 512 pages par bloc.
 
 Ajouter une distribution de données spécifique assure que la distribution des tâches ne repose pas sur l'ordonnancement par défaut du support exécutif, et l'ordre parfois non contrôlé dans lequel les threads viennent voler du travail.
 Bien que la différence ne soit que de quelques dizaines de GFlops, la distribution \emph{Cyclique} sur l'ensemble des nœuds NUMA semble être plus avantageuse que la distribution \emph{Aléatoire} sur l'ensemble des stratégies d'ordonnancement testé, et c'est celle qu'on a retenu pour les expériences des sections suivantes.
@@ -123,10 +126,10 @@ Nous avons étudié l'impact de l'affinité sous plusieurs angles~:
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_details_qr_cholesky_idchire}
-  \caption{Comparaison des supports exécutifs sur QR et Cholesky sur idchire, en fonction de la taille de matrice (tailles de bloc données dans le tableau~\ref{tab:perf_eval:blocksizes})}\label{fig:contribs:perf_eval:eval-qr-cholesky}
+  \caption{Comparaison des supports exécutifs sur Cholesky et QR sur idchire, en fonction de la taille de matrice (tailles de bloc données dans le tableau~\ref{tab:perf_eval:blocksizes})}\label{fig:contribs:perf_eval:eval-qr-cholesky}
 \end{figure}
 
-Pour avoir un aperçu général des stratégies que nous avons évaluées sur les factorisations QR et Cholesky, avec des tailles de matrice variant entre 16384 et 65536~; les tailles de blocs correspondantes sont détaillées dans le tableau~\ref{tab:perf_eval:blocksizes}.
+Pour avoir un aperçu général des stratégies que nous avons évaluées sur les factorisations Cholesky et QR, avec des tailles de matrice variant entre 16384 et 65536~; les tailles de blocs correspondantes sont détaillées dans le tableau~\ref{tab:perf_eval:blocksizes}.
 
 \begin{table}[h!]
 \def\arraystretch{1.5}
@@ -141,7 +144,7 @@ Pour avoir un aperçu général des stratégies que nous avons évaluées sur le
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_details_qr_cholesky_brunch}
-  \caption{Comparaison des supports exécutifs sur QR et Cholesky sur brunch, en fonction de la taille de matrice (tailles de bloc données dans le tableau~\ref{tab:perf_eval:blocksizes})}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
+  \caption{Comparaison des supports exécutifs sur Cholesky et QR sur brunch, en fonction de la taille de matrice (tailles de bloc données dans le tableau~\ref{tab:perf_eval:blocksizes})}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
 \end{figure}
 
 La figure~\ref{fig:contribs:perf_eval:eval-qr-cholesky} montre les résultats obtenus sur idchire, et la figure~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montre les résultats obtenus sur brunch.
@@ -175,15 +178,15 @@ Pour une grosse taille de bloc en revanche c'est clair et net~: après avoir sui
 \begin{figure}[t!]
   \centering
   \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads}
-  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur idchire. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-idchire}
+  \caption{Performance de Cholesky et QR en fonction du nombre de cœurs sur idchire. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-idchire}
 \end{figure}
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads_brunch}
-  \caption{Performance de QR et Cholesky en fonction du nombre de cœurs sur brunch. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
+  \caption{Performance de Cholesky et QR en fonction du nombre de cœurs sur brunch. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
 \end{figure}
 
-Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montrent les résultats des factorisations QR et Cholesky (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
+Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montrent les résultats des factorisations Cholesky et QR (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
 Comparer les mêmes instances sur les deux machines donne des résultats intéressants~: leurs caractéristiques ne changent pas l'allure général des courbes, en revanche le faible facteur NUMA de brunch fait bien sentir que l'affinité n'est rentable que lorsque la machine est chargée à partir d'un seuil élevé (environ 75\%).
 Alors que sur idchire la différence se voit dès une trentaine de cœur (qui correspond d'ailleurs à 4 nœuds NUMA).
 

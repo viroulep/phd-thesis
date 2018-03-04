@@ -3,7 +3,7 @@
 Cette partie complète la section précédente, elle se concentre sur l'exploitation des informations fournies par l'utilisateur, ainsi que sur la prise en compte des architectures NUMA côté support exécutif.
 Ces travaux ont été publiés à EuroPar 2016~\cite{Virouleau2016b}.
 
-Ces extensions ciblent des supports exécutifs fonctionnant par vol de travail (voir section~\ref{sec:context:runtimes:ws}), et ont été implémentées dans XKaapi ainsi que libKOMP (voir section~\ref{sec:contribs:perf_eval:portage_libkomp}).
+Ces extensions ciblent des supports exécutifs fonctionnant par vol de travail (voir section~\ref{sec:context:runtimes:ws}), et ont été implémentées dans XKaapi ainsi que dans la nouvelle version de libKOMP (voir section~\ref{sec:contribs:perf_eval:portage_libkomp}).
 
 \subsection{Hiérarchiser le support exécutif}
 
@@ -12,12 +12,12 @@ La modification la plus importante consiste à hiérarchiser les files de tâche
 Des outils tels que hwloc permettent de donner des informations sur la hiérarchie, nous avons donc des informations précises sur quel cœur est placé physiquement au sein de quel nœud NUMA, et nous avons donc pu mettre en place une hiérarchie dans les files de tâches :
 
 \begin{itemize}
-  \item Chaque cœur possède deux files de tâches : une publique, dans laquelle les autres cœurs peuvent venir voler ; et une privée, dans laquelle tout le monde peut venir ajouter des tâches, mais seul le cœur propriétaire peut venir voler.
+  \item Chaque cœur possède deux files de tâches : une publique, dans laquelle les autres cœurs peuvent venir voler ; et une privée, dans laquelle tout le monde peut venir ajouter des tâches, mais seul le cœur propriétaire peut venir voler (illustré sur la figure~\ref{fig:openmp:runtime:hierarchical_queues}).
   \item Chaque nœud possède également deux files de tâches, suivant le même principe que précédemment. Pour la file privée, seuls les cœurs situés sur le nœud NUMA propriétaire peuvent venir voler des tâches.
 \end{itemize}
 
 Nous avons également fait en sorte d'allouer la mémoire manipulée par les différentes files sur le nœud NUMA sur lequel cette file est située.
-La figure~\ref{fig:openmp:runtime:hierarchical_queues} illustre les queues publiques de la hiérarchie sur un exemple avec deux nœuds NUMA de huit cœurs.
+La figure~\ref{fig:openmp:runtime:hierarchical_queues} illustre la hiérarchie des files sur un exemple avec deux nœuds NUMA de huit cœurs (les files privées des cœurs ont été omises pour ne pas surcharger la figure).
 
 \begin{figure}[h!]
   \centering
@@ -77,7 +77,7 @@ Ces deux stratégies pourront servir de base de comparaison avec les stratégies
   \caption{Illustration de la stratégie \emph{sNumaProc}, avec l'ordre de visite des files}\label{fig:openmp:runtime:steal_numa_proc}
 \end{figure}
 
-Les quatre stratégies suivantes ont été définies plus ou moins intuitivement~: les deux premières font un usage important d'un seul niveau de hiérarchie, alors que les deux dernières utilisent les deux niveaux de hiérarchie disponibles, en donnant la priorité soit aux files des processeurs, soit aux files des nœuds NUMA.
+Les quatre stratégies suivantes ont été définies~: les deux premières font un usage important d'un seul niveau de hiérarchie, alors que les deux dernières utilisent les deux niveaux de hiérarchie disponibles, en donnant la priorité soit aux files des processeurs, soit aux files des nœuds NUMA.
 
 \begin{description}
   \item [sProc :] Cette stratégie est illustrée sur la figure~\ref{fig:openmp:runtime:steal_proc}. Le voleur va visiter dans l'ordre~: sa propre file (1), celle de son nœud NUMA (2), puis va parcourir uniquement les files des cœurs en commençant par ses voisins sur le nœud NUMA (3, 4), puis en choisissant au hasard parmi les cœurs distants restants (5, 6).
@@ -94,7 +94,7 @@ Les quatre stratégies suivantes ont été définies plus ou moins intuitivement
 
 Lorsque nous avons proposé ce travail a EuroPar 2016, nous avions implémenté ces stratégies dans XKaapi~\footnote{https://scm.gforge.inria.fr/anonscm/git/kaapi/xkaapi.git, branche 'public/europar2016'} et effectué nos expériences sur idchire.
 La configuration de la machine et de son environnement était significativement différente de celle présentée dans cette thèse~: à la fois au niveau matériel étant donné que la machine était configurée pour utiliser des \emph{huge pages}, et à la fois au niveau logiciel, les KASTORS et les supports exécutifs ayant subit plusieurs changements depuis.
-Une comparaison directe avec nos résultats récents de la section~\ref{sec:contribs:perf_eval} serait trompeuse, nous faisons donc un point dès maintenant sur comment nos choix ont été guidés, avec les mesures que nous avions fait pour l'article.
+Une comparaison directe avec nos résultats récents de la section~\ref{sec:contribs:perf_eval} serait trompeuse, nous faisons donc un point dès maintenant sur comment nos choix ont été guidés, avec les mesures que nous avions fait pour l'article en 2016. À titre indicatif, le pic de performance obtenu actuellement est légèrement au delà de 2300 GFlops, contre à peine 2000 GFlops en 2016.
 
 \begin{figure}[ht]
   \centering

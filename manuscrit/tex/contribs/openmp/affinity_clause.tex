@@ -15,15 +15,15 @@ Nous avons donc introduit deux types de constructions dans OpenMP~: d'une part u
 \subsection{Contrôle de la distribution des données}\label{sec:openmp:langage:init}
 
 Utiliser une initialisation séquentielle des données de son application peut avoir des conséquences dramatiques sur les performances, tout spécialement lorsque l'on cible des machines NUMA.
-Les données se retrouvent dans ce cas sur un unique nœud, dont le bus mémoire va être complètement saturé lorsque les cœurs de tous les autres nœuds vont avoir besoin des données.
+Les données se retrouvent dans ce cas sur un unique nœud, dont le bus mémoire va être complètement saturé lorsque les cœurs de tous les autres nœuds vont accéder aux données.
 
-Classiquement les programmeurs effectuent l'allocation et l'initialisation des données de manière séquentielle, et utilisent \emph{numactl} pour en faire la distribution.
+Classiquement les programmeurs effectuent l'allocation et l'initialisation des données de manière séquentielle, et utilisent \emph{numactl} pour en faire la distribution. L'efficacité de cette méthode reste très moyenne, comme nous l'avons montré dans~\cite{Virouleau2016a}.
 
-Ici on va supposer que, de la même manière que le programmeur exprime le parallélisme de son application à base de tâches, il initialise également les données de son application à l'aide de tâches (qu'il est raisonnable de supposer indépendantes) dans une région parallèle séparée.
+Ici on va supposer que, de la même manière que le programmeur exprime le parallélisme de son application à base de tâches, il initialise également les données de son application à l'aide de tâches dans une région parallèle séparée.
 
 Dans la plupart des applications que nous avons utilisées nous avons constaté que l'initialisation des données suivait un schéma où l'allocation et l'initialisation de chacun des blocs est fait au fur et à mesure des besoins ou de la construction des structures de données de l'application.
 
-L'initialisation des données devant être groupées ensemble a donc lieu dans une même tâche.
+L'initialisation des données devant être groupées a donc lieu dans une même tâche.
 Les solutions de l'état de l'art consistent à allouer, ou migrer, les données initialisées par ces tâches.
 Plutôt que d'utiliser une technique similaire, nous allons nous baser sur le principe portable du \emph{first-touch}, décrit dans la section~\ref{sec:context:os}.
 
@@ -38,7 +38,7 @@ Pour pouvoir indiquer au support exécutif quelles tâches marquer comme "tâche
 init(random | cyclic | cyclicnuma)
 \end{lstlisting}
 
-Elle indique à l'ordonnanceur de tâches que pour la région parallèle courante les tâches prêtes devraient être distribuées sur la machine en suivant une stratégie :
+Elle indique à l'ordonnanceur de tâches que pour la région parallèle courante les tâches prêtes sans dépendances devraient être distribuées sur la machine en suivant une stratégie :
 
 \begin{description}
   \item [random :]
@@ -86,7 +86,7 @@ Cette extension visant les constructions de type tâche, elle a été implément
 affinity([node | thread | data]: expr[, strict])
 \end{lstlisting}
 
-Dans tous les cas l'expression |expr| est un entier naturel, mais en fonction du type d'affinité l'entier est interprété d'une manière spécifique :
+Dans tous les cas l'expression |expr| est un entier naturel ou un pointeur, qui est interprété d'une manière spécifique :
 
 \begin{description}
   \item [thread :]
@@ -100,7 +100,7 @@ Dans tous les cas l'expression |expr| est un entier naturel, mais en fonction du
     |expr| est interprétée comme un id de nœud NUMA. Comme pour le cas précédent, la notion d'id est définie relativement aux places de la \textit{team} OpenMP courante.
     En reprenant l'exemple précédent, supposons que les cœurs 2,5,8, et 9 sont physiquement situés sur 2 nœuds NUMA différents. Il y aura alors 2 nœuds NUMA déduits des places, et les ids utilisés pourront être 0 ou 1.
   \item [data :]
-    |expr| est interprétée comme une adresse mémoire. Si le nœud NUMA associé à la donnée ne peut être déterminé, le nœud utilisé par défaut est le nœud local.
+    |expr| est une adresse mémoire. Si le nœud NUMA associé à la donnée ne peut être déterminé, le nœud utilisé par défaut est le nœud local.
 \end{description}
 
 Si |expr| désigne une ressource hors limites, la valeur considérée par le support exécutif est prise modulo le nombre de ressources correspondantes.
@@ -122,7 +122,7 @@ int omp_get_node_num(void);
 int omp_get_node_from_data(void *ptr);
 \end{lstlisting}
 
-Ces fonctions retournant des informations spécifiques à une \emph{team} OpenMP, elles ne peuvent être appelées qu'au sein d'une région parallèle.
+Ces fonctions retournent des informations spécifiques à la \emph{team} d'une région région parallèle OpenMP.
 Sur les machines sans support NUMA, nous considérons que tous les threads sont sur un unique nœud NUMA.
 
 Nous avons également rendu accessible l'ajout d'affinité sur une tâche à une fonction de l'API :

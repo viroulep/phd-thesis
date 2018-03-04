@@ -5,37 +5,35 @@ Cette section présente KASTORS, une suite de benchmarks spécifiquement créée
 \subsection{Motivation pour une nouvelle suite de benchmarks}
 
 Le support pour les applications à base de flots de données dans OpenMP est arrivé avec la version 4.0.
-Kurzak et al.~\cite{Kurzak2010} ont montrés l'intérêt en terme de performances des synchronisations point à point par dépendances de données par rapport aux synchronisations globales.
-Cette comparaison a eu lieu entre des applications exprimés dans un modèle de programmation par flot de données (SMPsS~\cite{BSC2008}), et les mêmes applications exprimées en Cilk.
+Kurzak et al.~\cite{Kurzak2010} ont montré l'intérêt en terme de performances des synchronisations point à point par dépendances de données par rapport aux synchronisations globales.
+Cette comparaison a eu lieu entre des applications exprimés dans deux modèles de programmation à base de tâche~: Cilk, où les synchronisations sont explicites, et SMPsS~\cite{BSC2008}, où les synchronisations sont exprimées à l'aide des dépendances de données.
 
 La version~4.0 d'OpenMP est sortie au démarrage de cette thèse, nous n'avions donc pas d'applications de référence utilisant les dépendances de données à travers OpenMP, et nous avons décidé d'introduire une suite de benchmarks - les KASTORS~\cite{Virouleau2014} - spécifiquement orientée vers cette fonctionnalité.
-Elle regroupe des applications utilisées dans le HPC~: des algorithmes d'algèbre linéaire dense, un stencil, et un algorithme d'algèbre linéaire creux.
+Elle regroupe des applications utilisées dans le HPC~: des algorithmes d'algèbre linéaire dense, un stencil, et une factorisation LU d'une matrice creuse.
 
 Il existe évidemment plusieurs suites de benchmarks à destination des architectures à mémoire partagée~: PARSEC~\cite{Bienia2008}, SPECOMP~\cite{Aslot2001}, Rodinia~\cite{Rodinia2010}, ou encore les NAS~\cite{Bailey1994} sont des suites de benchmarks basées sur des versions antérieures d'OpenMP~(2.0, 3.0), et donc utilisant principalement des boucles parallèles.
 La Barcelona OpenMP Task Suite~\cite{Duran2009} (BOTS) propose des applications à base de tâches OpenMP~3.0 afin d'évaluer les implémentations existantes d'OpenMP en fonction de la manière de générer les tâches et de la répartition de la charge de travail.
 
 Certaines applications que nous avons inclues dans KASTORS proviennent de différents benchmarks ou bibliothèques existantes.
-Deux applications, SparseLU et Strassen, ont été tirées des BOTS et adaptées pour utiliser des tâches avec dépendances.
+Deux applications, SparseLU et Strassen, ont été tirées des BOTS et adaptées pour ne plus utiliser de synchronisations globales.
 Trois applications d'algèbre linéaire dense, Cholesky, QR, et LU, ont été tirées des PLASMA~\cite{Kurzak2013}, une bibliothèque développée à ICL/UTK quit met à disposition un grand nombre d'algorithmes d'algèbre linéaire dense, optimisés pour les architectures multi-cœurs.
 
 Nous avions donc assez d'éléments de base pour construire un ensemble d'applications, avec en tête les objectifs suivants~:
 \begin{itemize}
   \item Rassembler et proposer une suite d'applications exploitant les dépendances introduites avec OpenMP~4.0~;
   \item Comparer la version utilisant des synchronisations point à point (via des dépendances) à la version utilisant des synchronisations globales. Le but étant de montrer que le support exécutif peut gérer les synchronisations plus finement, et par conséquent améliorer les performances sans changer l'algorithme~;
-  \item Permettre d'expérimenter les extensions présentées dans les sections~\ref{sec:openmp:langage} et~\ref{sec:openmp:runtime}.
+  \item Permettre d'expérimenter des extensions à OpenMP, dont celles présentées dans les sections~\ref{sec:openmp:langage} et~\ref{sec:openmp:runtime}.
 \end{itemize}
-
-Les sections suivantes décrivent les différentes applications de la suite : d'où elles viennent et comment nous les avons étendus pour utiliser les dépendances de données.
-
+%demonstrating the in- terest of task dependencies compared to taskwait-based approaches.
 
 \subsection{Description des applications}
 
-KASTORS est constitué de 6 applications~: Cholesky, QR, LU, Jacobi, SparseLU, et Strassen, décrites ci-après.
+Les sections suivantes décrivent les six applications de la suite : d'où elles viennent et comment nous les avons étendus pour utiliser les dépendances de données.
 
 \subsubsection{Factorisations de Cholesky, QR, et LU}
 
 Ces trois applications ont été extraites des PLASMA, version 2.6~\cite{PLASMA2.6}.
-Dans les PLASMA, chaque algorithme est écrit dans différents modèles de programmation~: il existe une version parallélisée statiquement, et une autre basée sur QUARK~\cite{YarKhan2011}, un modèle de programmation par flot de données, et utilisant un ordonnancement dynamique.
+Dans les PLASMA, chaque algorithme est écrit dans différents modèles de programmation~: il existe une version parallélisée statiquement utilisant les threads POSIX, et une autre basée sur QUARK~\cite{YarKhan2011}, un modèle de programmation par flot de données, et utilisant un ordonnancement dynamique.
 
 Les trois algorithmes que nous avons sélectionnés sont les factorisations de Cholesky, QR, et LU, respectivement nommés DPOTRF, DGEQRF, et DGETRF dans les BLAS.
 Ils opèrent tous sur des matrices de nombres flottants à double précision (type |double|).
@@ -44,7 +42,7 @@ Nous avons adapté l'implémentation originale de PLASMA pour retirer plusieurs 
 Les listings~\ref{lst:kastors:dyn} et~\ref{lst:kastors:dyn-omp} montrent respectivement la version dynamique originale, et les transformations que l'on a faites pour porter le code en OpenMP~4.0.
 
 \begin{lstlisting}[caption=Format de l'algorithme dynamique,label=lst:kastors:dyn]
-wrapper_algorithm_dynamic_call(matrice_description, plasma_specific_args...) {
+wrapper_algorithm_call(matrice_description, plasma_specific_args...) {
   // code séquentiel
   for (...) {
     // packing des paramètres
@@ -77,9 +75,9 @@ algorithm_call(matrice_description) {
 
 \subsubsection{Jacobi}
 
-Jacobi est un algorithme itératif, et à chaque itération les différents éléments d'un tableau sont mis à jour en suivant la même formule dépendant des éléments voisins (Stencil).
+Jacobi est un algorithme itératif pour résoudre un système linéaire d'équations. À chaque itération les différents éléments d'un tableau sont mis à jour en suivant la même formule dépendant des éléments voisins (Stencil).
 
-En pratique cet méthode résout l'équation de Poisson sur le carré unitaire [0,1]x[0,1], qui est divisé en une grille de NxN points espacés régulièrement.
+En pratique cette méthode résout l'équation de Poisson sur le carré unitaire [0,1]x[0,1], qui est divisé en une grille de NxN points espacés régulièrement.
 Le noyau de calcul principal est un Stencil à 5 points, en 2 dimensions.
 Ce noyau est appliqué successivement jusqu'à ce qu'une convergence soit détectée.
 
@@ -262,6 +260,11 @@ Cela a pu confirmer que les supports exécutifs pouvaient gérer les synchronisa
   \includegraphics[width=\textwidth]{jacobi_scale_noaff}
   \caption{Comparaison des performances de Jacobi sur idchire, avec une taille de matrice de 49152 et une taille de bloc de 2048}\label{fig:contribs:openmp:kastors:jacobi-motiv}
 \end{figure}
+\begin{todo}
+  description pourquoi différence de perf
+
+  il y a pas d'affinité dans ces courbes, explication probable : distribution initiale en carton pour libomp...
+\end{todo}
 
 D'autres part, certaines de nos expériences ont permis de mettre en évidence d'autres limitations des tâches OpenMP.
 La figure~\ref{fig:contribs:openmp:kastors:jacobi-motiv} regroupe une comparaison de l'application de jacobi, en fonction de la version implémentée (à base de boucles ou de tâches avec dépendances) et du support exécutif, effectuée sur idchire.
@@ -270,10 +273,10 @@ Jacobi est une application stencil, et chacune des tâches successives (ou group
 
 \subsection{Discussions et perspectives}
 
-Le problème évoqué pour l'application Jacobi vient du fait que plusieurs tâches s'exécutent loin de leurs données. Une solution possible pourrait être d'exprimer une \emph{affinité} entre une tâche et un cœur de la machine, par exemple.
+Le problème évoqué pour l'application Jacobi vient du fait que l'ordonnanceur n'est pas conscient du lien fort qui existe entre une tâche et ses données, et qu'il permet à plusieurs tâches de s'exécuter loin de leurs données. Une solution possible pourrait être d'attacher les données à des bancs NUMA, et d'exprimer une \emph{contrainte} entre une tâche et un cœur de la machine.
 
 Les résultats de la section~\ref{sec:contribs:apps:cholesky:carton} ont également montrés l'importance de la proximité des données pour les différents noyaux de Cholesky.
-Il semble donc très intéressant de pouvoir introduire une clause permettant l'expression d'une \emph{affinité} entre une tâche et ses données, qui pourrait en fait bénéficier toutes les applications d'algèbre linéaire des KASTORS.
+Il semble donc très intéressant de pouvoir introduire une clause permettant l'expression d'une \emph{contrainte} entre une tâche et ses données, qui pourrait en fait bénéficier toutes les applications d'algèbre linéaire des KASTORS.
 
 La section suivante aborde ce point, et la section~\ref{sec:contribs:perf_eval} décrit les résultats obtenus à partir des KASTORS étendus avec nos propositions.
 
