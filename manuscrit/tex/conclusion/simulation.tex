@@ -9,13 +9,17 @@ Le chapitre précédent a montré comment nous avons étendu un modèle de progr
 À partir de là, certaines questions peuvent se poser~: compte tenu des caractéristiques de l'application et des machines, peut on faire mieux ?
 Si oui~: quelle marge reste-t'il à gagner par rapport aux ordonnancements théoriques connus ? Quelles caractéristiques faudrait il prendre en compte ?
 
+%Dans le cadre spécifique de Cholesky, Agullo et al.\cite{Agullo2015} ont étudié les performances réelles de différentes stratégies d'ordonnancement dans StarPU, en ciblant des architectures hétérogènes, et en les comparant à une exécution simulée à travers SimGrid.
+%Ils ont montrés que les exécutions simulées pouvaient s'approcher très prêt du maximum théorique de performances~; ils ont également montré que les performances réelles pouvaient se rapprocher de ce maximum théorique, en donnant plus d'informations (obtenues statiquement) au support exécutif à propos des tâches.
 Le coût en temps d'un développement de nouvelles analyses ou stratégies dans les compilateurs et supports exécutifs peut être important, il est donc logique de se tourner vers la simulation.
-Pour des architectures hétérogènes ou distribuées, plusieurs simulateurs existent déjà~: en particulier SimGrid~\cite{Casanova2001}, qui dispose d'une base d'utilisateurs importante, et TaskSim~\cite{Rico2010}.
-Dans le cadre spécifique de Cholesky, Agullo et al.\cite{Agullo2015} ont étudié les performances réelles de différentes stratégies d'ordonnancement dans StarPU, en ciblant des architectures hétérogènes, et en les comparant à une exécution simulée à travers SimGrid.
-Ils ont montrés que les exécutions simulées pouvaient s'approcher très prêt du maximum théorique de performances~; ils ont également montré que les performances réelles pouvaient se rapprocher de ce maximum théorique, en donnant plus d'informations (obtenues statiquement) au support exécutif à propos des tâches.
-
-Il n'y a pas encore eu de travaux sur SimGrid ou TaskSim concernant spécifiquement les architectures NUMA.
+Pour des architectures hétérogènes ou distribuées, plusieurs simulateurs existent déjà~: par exemple SimGrid~\cite{Casanova2001}, qui dispose d'une base d'utilisateurs importante, ou TaskSim~\cite{Rico2010}.
+Stanisic et al.~\cite{Stanisic2015} ont étudié la simulation de supports exécutifs dynamiques à base de tâches sur des architectures hétérogènes.
+Ils expliquent leur démarche pour porter StarPU par dessus SimGrid (et donc pouvoir émuler l'exécution du code réel), et présentent leurs résultats à la fois sur des architectures hétérogènes et sur des architectures NUMA.
+Leur modélisation précise des communications vers les GPUs leur permettent d'obtenir des simulations très précises pour les architectures hétérogènes.
+En revanche ils expliquent ne pas tenir compte des phénomènes NUMA pour des raisons de difficultés de modélisation~: ils montrent donc des simulations précises pour la taille d'un nœud, mais qui s'éloignent complètement de l'exécution réelle lors de l'utilisation de plusieurs nœuds.
+À notre connaissance il n'y a pas eu plus de travaux sur SimGrid ou TaskSim concernant spécifiquement les architectures NUMA.
 Nous avons donc développé un prototype de simulateur, dans le but de pouvoir apporter une réponse aux questions ci-dessus, sans pour autant impliquer de lourds développements logiciel.
+% je pense que dans le papier il n'y a pas de modélisation des comms sur NUMA, vu que le cout de la tache est donné par la calibration starpu (et donc inclu la comm pour la mémoire partagée).
 
 Ce chapitre est organisé de la façon suivante~: la section~\ref{sec:simulation:archi} décrit l'architecture générale du simulateur.
 La section~\ref{sec:simulation:modeles} fait un point sur les différents modèles envisagés, et la section~\ref{sec:simulation:resultats} montre des résultats préliminaires obtenus avec ces modèles, en apportant des premières pistes de réponses aux questions posées.
@@ -84,7 +88,7 @@ $$
 
 
 Nous avons choisi de commencer à étudier l'application qui nous a servi de cas d'étude pour le chapitre~\ref{chap:contrib:characterization}~: Cholesky.
-Les données récoltées à l'aide de \outil nous ont permises de comprendre précisément le comportement de chacun des quatre noyaux impliqués dans la factorisation de Cholesky.
+Les données récoltées à l'aide de \outil nous ont permis de comprendre précisément le comportement de chacun des quatre noyaux impliqués dans la factorisation de Cholesky.
 En particulier nous avons les $T_{min}$ et $T_{max}$ de chaque noyau en fonction de la charge de la machine, et le $T_{tache}$ moyen en fonction du type d'accès aux données (local ou distant).
 
 Nous avons implémenté un Cholesky synthétique correspondant à l'algorithme de l'application dans le simulateur, et considéré plusieurs modèles de coûts afin d'évaluer le simulateur et éventuellement les bornes de l'application en terme de performances.
@@ -107,7 +111,7 @@ Nous avons implémenté un Cholesky synthétique correspondant à l'algorithme d
   \hline
   \multirow{2}{*}{\syrk}
     & 1 & 16.14 & 16.41 \\ \cline{2-4}
-    & 3 & 13.97 & 13.59 \\ \cline{2-4}
+    & 8 & 13.97 & 13.59 \\ \cline{2-4}
     & 192 & 10.10 & 7.51 \\ \cline{2-4}
   \hline
   \multirow{2}{*}{\gemm}
@@ -116,7 +120,7 @@ Nous avons implémenté un Cholesky synthétique correspondant à l'algorithme d
     & 192 & 14.45 & 12.82 \\ \cline{2-4}
   \hline
 \end{tabular}
-\caption{Tableau illustrant les performances (en GFLOPS) des noyaux de Cholesky sur des matrices de taille 512, sur idchire}\label{tab:simu:perf-kernels-idchire}
+\caption{Tableau illustrant les performances réelles (en GFLOPS) des noyaux de Cholesky sur des matrices de taille 512, sur idchire}\label{tab:simu:perf-kernels-idchire}
 \end{table}
 
 Afin de pouvoir illustrer les différents modèles de coût que nous avons testés, le tableau~\ref{tab:simu:perf-kernels-idchire} regroupe quelques exemples de performance pour les noyaux de Cholesky, pour une taille de matrice de 512, en fonction de la charge de la machine (comme décrit dans la section~\ref{sec:contribs:apps:cholesky:scenario}) et du type d'accès.
@@ -125,11 +129,13 @@ Cet aperçu des performances permet de montrer que si la localité des données 
 
 Nous avons donc dégagé plusieurs modèles, décrits ci-dessous.
 
-\paragraph{Modèle "Minimum"~:} ce modèle a pour but d'estimer la performance minimum que l'on est en droit d'attendre d'un support exécutif implémentant une stratégie de vol de travail naïve.
-Pour se faire, nous avons considéré seulement les performances minimales de chacun des noyaux pour le coût de chaque tâche (il est généralement atteint pour une charge équivalente au maximum de cœurs, avec des accès aux données distants), et ceci quelque soit le vrai type d'accès au cours de la simulation.
+\paragraph{Modèle "Minimum"~:} ce modèle a pour but d'estimer la performance minimum que l'on est a priori en droit d'attendre d'un support exécutif implémentant une stratégie de vol de travail naïve.
+Pour se faire, nous avons considéré seulement la performance minimale de chacun des noyaux pour le coût de chaque tâche, parmi les expériences que nous avions effectuées avec \outil.
+En terme de scénario, sur idchire, cela revient à exécuter 192 noyaux simultanément, avec leurs données placées sur un nœud distant, de manière similaire à ce que nous avons effectué pour la figure~\ref{fig:contribs:apps:cholesky:perf-512-remote-idchire}.
 
 \paragraph{Modèle "Maximum"~:} à l'inverse l'objectif de ce modèle est de donner une borne supérieure pour les performances du support exécutif.
-Nous avons donc considéré seulement les performances maximales de chacun des noyaux pour le coût de chaque tâche, et ceci quelque soit le vrai type d'accès au cours de la simulation.
+Nous avons donc considéré seulement la performance a priori maximale de chacun des noyaux pour le coût de chaque tâche.
+En terme de scénario, cela revient à exécuter une instance du noyau avec ses données locales.
 
 \paragraph{Modèle "DeuxNiveaux"~:} l'objectif de ce modèle est d'essayer de simuler au plus près le comportement des noyaux, en utilisant deux niveaux de coût~: soit celui correspondant à l'exécution avec des données locales, soit celui correspondant à l'exécution avec des données distantes.
 La simulation étant lancée sur un nombre de cœurs connus, nous avons utilisé les performances de référence des noyaux correspondant à la charge de la machine simulée, que nous avons obtenues à travers les scénarios exécutés par \outil.
@@ -269,8 +275,13 @@ Nous les avons comparé aux performances minimum considérées par le simulateur
 
 Nous avons constaté une forte différence entre les performances réelles et les coûts de tâches considérés par le simulateur.
 La différence observée sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire} ne semble donc pas venir d'un surcoût d'exécution du support exécutif lié à la quantité de requêtes de vol exécutées.
-En revanche les requêtes de vol peuvent générer du trafic sur les bus mémoires~: non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent dégrader les performances des threads actifs.
-Cela pourrait expliquer en partie la différence observée dans le tableau~\ref{tab:simu:comparaison-modele-observation}, et pourrait être une piste d'amélioration du modèle.
+En revanche les requêtes de vol peuvent générer du trafic sur les bus mémoires~: non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent participer à la saturation de la bande passante et donc dégrader les performances des threads actifs.
+Cela pourrait expliquer en partie la différence observée dans le tableau~\ref{tab:simu:comparaison-modele-observation}, et pourrait être prise en compte lors de la modélisation des coûts de communication.
+
+\subsection*{Évaluation du temps de simulation}
+
+Un autre avantage de la simulation est qu'il n'y a pas besoin d'exécuter réellement les noyaux d'exécution, seulement de considérer le temps qu'ils prendraient.
+Bien qu'une étude détaillée n'ait pas été réalisée, le temps nécessaire pour simuler les plus gros cas (comme la figure~\ref{fig:simu:modeles-vs-runtime:idchire}) est de seulement quelques secondes, contre plusieurs heures qui seraient nécessaires pour générer les même courbes.
 
 
 %\section{Application d'un ordonnancement théorique}\label{sec:simulation:theorie}
@@ -306,17 +317,18 @@ L'une des améliorations nécessaires pour augmenter la précision du modèle se
 \subsection{Modélisation de la bande passante}
 
 Le chapitre~\ref{chap:contrib:characterization} nous a permis d'étudier en détail le comportement de nos deux machines expérimentales.
-Les figures~\ref{fig:contribs:machines:idchire:saturation} et~\ref{fig:contribs:machines:idchire:saturation-output} permettent de conclure par exemple que la bande passante d'idchire se comporte d'une manière assez proche d'un modèle \emph{roofline}, où elle augmente linéairement avant d'atteindre un <<plafond>>.
-
+Les figures~\ref{fig:contribs:machines:idchire:saturation} et~\ref{fig:contribs:machines:idchire:saturation-output} permettent de conclure par exemple que la bande passante d'idchire se comporte d'une manière assez proche d'un modèle de réseau limité.
 L'objectif serait donc d'introduire un coût d'accès aux blocs mémoires suivant ce modèle.
 
 \subsection{Modélisation de l'impact des requêtes de vol}
 
 Nous avons observé une différence très importante entre la simulation et l'exécution réelle sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
 La figure~\ref{fig:simu:steals_per_task:idchire} et le tableau~\ref{tab:simu:comparaison-modele-observation} ont permis de déduire deux choses~: il pourrait y avoir une corrélation entre le nombre de requêtes de vol et la différence de performance observée, mais elle n'est pas due à un surcoût dans le support exécutif.
+Ces requêtes de vol sont due au parallélisme limité des cas étudiés, et elles peuvent contribuer à la saturation de la bande passante.
 
-Il faudrait donc estimer l'impact des requêtes de vol en fonction de leur nombre sur le temps d'exécution des noyaux.
-Une fois cette perturbation estimée, une manière de prendre cela en compte pourrait être d'associer un très faible coût à chaque requête de vol, et éventuellement de le pondérer par le nombre de threads en train d'effectuer des requêtes.
+Il faudrait donc pouvoir estimer l'impact des requêtes de vol sur le trafic mémoire.
+Cela semble assez compliqué à exprimer à l'aide d'un scénario de \outil, mais cela pourrait sûrement se faire au sein de libKOMP~: il devrait être possible de faire exécuter des tâches sur les threads d'un unique nœud via une affinité stricte, et d'augmenter progressivement le nombre de requêtes de vols en ajoutant des threads en dehors de ce nœud (qui ne pourrait pas voler de tâche avec succès à cause de l'affinité stricte).
+
 
 \subsection{Optimisation de la distribution}
 

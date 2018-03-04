@@ -46,7 +46,7 @@ Au delà de la simulation mentionnée dans la section précédente, cette thèse
 
 La première et la plus importante semble être \textbf{l'amélioration de la collaboration entre le compilateur et le support exécutif}.
 Le compilateur peut dans certains cas avoir accès à des informations critiques concernant les différentes tâches.
-En supposant qu'il ait accès au code complet correspondant à une tâche, il peut alors connaître la taille des données manipulées, ainsi que le type d'opérations effectuées sur ces données.
+En supposant qu'il ait accès à toute l'application, il peut alors connaître la taille des données manipulées en fonction de l'instance de l'application considérée, ainsi que le type d'opérations effectuées sur ces données.
 Transmettre ces informations au support exécutif pourrait lui permettre de prendre de meilleures décisions quand au placement des tâches.
 Une piste que nous n'avons pas eu le temps d'explorer concerne l'\emph{intensité opérationnelle} des tâches (le nombre d'instructions effectuées par rapport aux données utilisées)~: a priori une tâche avec une grande intensité serait plus <<rentable>> à voler qu'une tâche de faible intensité, où la performance est complètement dirigée par le temps d'accès à ses données.
 
@@ -57,5 +57,6 @@ Les idées développées au cours de cette thèse pourraient être étendues pou
 Enfin les architectures vont continuer à évoluer, et les fabricants eux même ne sont pas toujours sûr de la manière de se préparer à l'exascale.
 Après avoir sorti en 2012 le \emph{Xeon Phi}, un processeur multicœurs sous forme d'accélérateur avec une soixantaine de cœurs physiques, Intel a rapidement annoncé une deuxième mouture du processeur montée sur socket l'année suivante, et a finalement annoncé l'abandon des nouvelles versions sous forme d'accélérateur en Août 2017.
 Les deux gammes de produits proposées par Intel et ciblées HPC sont donc maintenant les \emph{Xeon Phi} sur socket et les \emph{Xeon Scalable}, et ils viennent s'intégrer dans une solution complète pour le HPC (Intel Scalable System Framework), où ils sont associés aux autres solutions qu'Intel propose pour chacun des composants critiques (disques durs, interconnexion).
+Le simulateur que nous avons développé peut donc ici répondre à un besoin de tester les nouvelles architectures~: il peut permettre de donner un aperçu des performances des applications compte tenu des algorithmes d'ordonnancement connu, et peut également servir pour prototyper de nouveaux algorithmes d'ordonnancement.
 
-On constate donc des changements fréquent en terme de topologie des machines, et les propositions qui ont été faites au cours de cette thèse constituent une bonne base pour permettre aux supports exécutifs de s'adapter au nouveau matériel.
+Compte tenu des changements fréquent en terme de topologie des machines, les propositions qui ont été faites au cours de cette thèse constituent une bonne base pour permettre aux supports exécutifs de s'adapter au nouveau matériel.
