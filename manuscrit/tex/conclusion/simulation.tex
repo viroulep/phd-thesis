@@ -243,7 +243,7 @@ Les résultats obtenus sont présentés sur la figure~\ref{fig:simu:affinityavg-
 Comme on a pu le constater sur les expériences réelles, la simulation ne montre également aucune différence de performances avec ou sans l'utilisation de l'affinité.
 
 En revanche, passé un certain nombre de cœurs, les performances des deux supports exécutifs sont assez loin de celles a priori atteignables !
-Le nombre de tâches dans une telle configuration peut vite limiter le parallélisme exposé, ce qui va donc entrainer une augmentation importante du nombre de requêtes de vol émises par les threads inactifs.
+Le nombre de tâches dans une telle configuration peut vite limiter le parallélisme exposé, ce qui va donc naturellement entrainer une augmentation importante du nombre de requêtes de vol émises par les threads inactifs.
 
 \begin{figure}[h!]
   \centering
@@ -253,7 +253,7 @@ Le nombre de tâches dans une telle configuration peut vite limiter le parallél
 
 Ce phénomène est illustré sur la figure~\ref{fig:simu:steals_per_task:idchire}, où l'on voit l'évolution du nombre de requêtes de vol divisé par le nombre de tâches à exécuter, au sein du simulateur.
 Pour un cas exposant un fort parallélisme, une taille de matrice de 32768 avec une taille de bloc de 512 et donc plus de 45000 tâches, on peut constater que le nombre de requêtes par tâche reste raisonnable.
-En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater une 'évolution du nombre de requêtes de vol par tâche est exponentielle, et qu'il pourrait y avoir une corrélation entre le nombre de requêtes et l'impact sur les performances.
+En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater que l'évolution du nombre de requêtes de vol par tâche est exponentielle, ce qui pourrait avoir un impact sur les performances.
 
 \begin{table}[t!]
 \def\arraystretch{1.5}
@@ -329,8 +329,8 @@ L'objectif serait donc d'introduire un coût d'accès aux blocs mémoires suivan
 \subsection{Modélisation de l'impact des requêtes de vol}
 
 Nous avons observé une différence très importante entre la simulation et l'exécution réelle sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
-La figure~\ref{fig:simu:steals_per_task:idchire} et le tableau~\ref{tab:simu:comparaison-modele-observation} ont permis de déduire deux choses~: il pourrait y avoir une corrélation entre le nombre de requêtes de vol et la différence de performance observée, mais elle n'est pas due à un surcoût dans le support exécutif.
-Ces requêtes de vol sont due au parallélisme limité des cas étudiés, et elles peuvent contribuer à la saturation de la bande passante.
+La figure~\ref{fig:simu:steals_per_task:idchire} et le tableau~\ref{tab:simu:comparaison-modele-observation} ont permis de déduire que si les requêtes de vol n'entrainent pas de surcoût dans le support exécutif, elles pourraient néanmoins avoir un impact sur les performances des noyaux.
+Ces requêtes sont due au parallélisme limité des cas étudiés, et elles peuvent contribuer à la saturation de la bande passante.
 
 Il faudrait donc pouvoir estimer l'impact des requêtes de vol sur le trafic mémoire.
 Cela semble assez compliqué à exprimer à l'aide d'un scénario de \outil, mais cela pourrait sûrement se faire au sein de libKOMP~: il devrait être possible de faire exécuter des tâches sur les threads d'un unique nœud via une affinité stricte, et d'augmenter progressivement le nombre de requêtes de vols en ajoutant des threads en dehors de ce nœud (qui ne pourrait pas voler de tâche avec succès à cause de l'affinité stricte).
