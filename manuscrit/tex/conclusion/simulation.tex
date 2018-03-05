@@ -127,15 +127,19 @@ Afin de pouvoir illustrer les différents modèles de coût que nous avons test�
 
 Cet aperçu des performances permet de montrer que si la localité des données n'a pas d'impact positif pour un unique thread, à partir du moment où tous les threads d'un nœud sont utilisés (et donc a fortiori en pleine charge) la différence de performance est significative.
 
-Nous avons donc dégagé plusieurs modèles, décrits ci-dessous.
+Nous avons donc dégagé plusieurs modèles de coûts des tâches.
+Ces modèles se basent sur les expériences que nous avons pu faire avec \outil.
+Au cours de ces expériences, nous avons fait varier deux paramètres qui peuvent avoir un impact majeur sur les performances~: l'emplacement des données du noyau, et la charge de la machine.
+En faisant varier ces deux paramètres de manière extrème, nous avons pu obtenir un profil a priori complet des noyaux, pour nourir les modèles de coût ci-dessous.
 
 \paragraph{Modèle "Minimum"~:} ce modèle a pour but d'estimer la performance minimum que l'on est a priori en droit d'attendre d'un support exécutif implémentant une stratégie de vol de travail naïve.
 Pour se faire, nous avons considéré seulement la performance minimale de chacun des noyaux pour le coût de chaque tâche, parmi les expériences que nous avions effectuées avec \outil.
+En pratique cela correspond à un cas extrème pour l'emplacement des données~: toutes les données à distance, et à une charge complète de la machine.
 En terme de scénario, sur idchire, cela revient à exécuter 192 noyaux simultanément, avec leurs données placées sur un nœud distant, de manière similaire à ce que nous avons effectué pour la figure~\ref{fig:contribs:apps:cholesky:perf-512-remote-idchire}.
 
 \paragraph{Modèle "Maximum"~:} à l'inverse l'objectif de ce modèle est de donner une borne supérieure pour les performances du support exécutif.
 Nous avons donc considéré seulement la performance a priori maximale de chacun des noyaux pour le coût de chaque tâche.
-En terme de scénario, cela revient à exécuter une instance du noyau avec ses données locales.
+Cela correspond à l'autre extrème en terme de distribution de données~: toutes les données locale, et à une exécution non perturbée par d'autres noyaux.
 
 \paragraph{Modèle "DeuxNiveaux"~:} l'objectif de ce modèle est d'essayer de simuler au plus près le comportement des noyaux, en utilisant deux niveaux de coût~: soit celui correspondant à l'exécution avec des données locales, soit celui correspondant à l'exécution avec des données distantes.
 La simulation étant lancée sur un nombre de cœurs connus, nous avons utilisé les performances de référence des noyaux correspondant à la charge de la machine simulée, que nous avons obtenues à travers les scénarios exécutés par \outil.
@@ -249,7 +253,7 @@ Le nombre de tâches dans une telle configuration peut vite limiter le parallél
 
 Ce phénomène est illustré sur la figure~\ref{fig:simu:steals_per_task:idchire}, où l'on voit l'évolution du nombre de requêtes de vol divisé par le nombre de tâches à exécuter, au sein du simulateur.
 Pour un cas exposant un fort parallélisme, une taille de matrice de 32768 avec une taille de bloc de 512 et donc plus de 45000 tâches, on peut constater que le nombre de requêtes par tâche reste raisonnable.
-En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater que l'évolution du nombre de requêtes de vol par tâche est exponentielle, et qu'il pourrait y avoir une corrélation entre le nombre de requêtes et l'impact sur les performances.
+En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}, une taille de matrice de 8192 avec une taille de bloc de 256 et donc un peu moins de 6000 tâches, on peut constater une 'évolution du nombre de requêtes de vol par tâche est exponentielle, et qu'il pourrait y avoir une corrélation entre le nombre de requêtes et l'impact sur les performances.
 
 \begin{table}[t!]
 \def\arraystretch{1.5}
@@ -257,13 +261,13 @@ En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-
 \begin{tabular}{|c||c|c|}\hline
   Noyau & \makecell{Performance minimum attendue\\(GFlops)} & \makecell{Performance moyenne observée\\(GFlops)} \\
   \hline
-  \potrf & 7.10 & 5.07 \\
+  \potrf & 5.88 & 5.07 \\
   \hline
-  \trsm & 9.46 & 5.55 \\
+  \trsm & 7.22 & 5.55 \\
   \hline
-  \syrk & 11.23 & 5.80 \\
+  \syrk & 7.51 & 5.80 \\
   \hline
-  \gemm & 14.07 & 9.41 \\
+  \gemm & 11.61 & 9.41 \\
   \hline
 \end{tabular}
 \caption{Comparaison des performances minimum attendues aux performances moyennes observées pour l'exécution de Cholesky sur 192 cœurs, avec une taille de matrice de 8192 et des blocs de taille 256}\label{tab:simu:comparaison-modele-observation}
@@ -277,6 +281,8 @@ Nous avons constaté une forte différence entre les performances réelles et le
 La différence observée sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire} ne semble donc pas venir d'un surcoût d'exécution du support exécutif lié à la quantité de requêtes de vol exécutées.
 En revanche les requêtes de vol peuvent générer du trafic sur les bus mémoires~: non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent participer à la saturation de la bande passante et donc dégrader les performances des threads actifs.
 Cela pourrait expliquer en partie la différence observée dans le tableau~\ref{tab:simu:comparaison-modele-observation}, et pourrait être prise en compte lors de la modélisation des coûts de communication.
+
+Cela signifie également qu'il faudrait revoir la manière dont nous avons construit les coût pour le modèle \emph{Minimum}~: la charge maximale de la machine consiste en des noyaux s'exécutant indépendamment, il faudrait ici utiliser \outil pour venir ajouter une perturbation réaliste sur les ressources utilisées, afin de retrouver un pire cas d'exécution tel que constaté dans le tableau~\ref{tab:simu:comparaison-modele-observation}.
 
 \subsection*{Évaluation du temps de simulation}
 
