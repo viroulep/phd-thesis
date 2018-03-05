@@ -238,7 +238,7 @@ Nous avons également appliqué la simulation sur des tailles de bloc plus petit
 Les résultats obtenus sont présentés sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
 Comme on a pu le constater sur les expériences réelles, la simulation ne montre également aucune différence de performances avec ou sans l'utilisation de l'affinité.
 
-En revanche les performances des deux supports exécutifs sont assez loin de celles a priori atteignables !
+En revanche, passé un certain nombre de cœurs, les performances des deux supports exécutifs sont assez loin de celles a priori atteignables !
 Le nombre de tâches dans une telle configuration peut vite limiter le parallélisme exposé, ce qui va donc entrainer une augmentation importante du nombre de requêtes de vol émises par les threads inactifs.
 
 \begin{figure}[h!]
