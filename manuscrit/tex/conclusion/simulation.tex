@@ -239,6 +239,31 @@ Nous avons également appliqué la simulation sur des tailles de bloc plus petit
 % dpotrf : 5.07 glops
 
 
+%32k
+% min considérés
+% dgemm: 12.8287
+% dpotrf: 8.79767
+% dsyrk: 7.51399
+% dtrsm: 9.15424
+% FLOPS pour bloc 512
+% flops dpotrf: 4.48704e+07
+% flops dtrsm: 1.34218e+08
+% flops dsyrk: 1.3448e+08
+% flops dgemm: 2.68435e+08
+
+% Exec sur 192 coeurs
+% init      24576   1.6844e+03   6.8539e-02         -nan
+% dpotrf        384   1.9712e+00   5.1334e-03   5.7866e-05
+% dtrsm      12096   1.6175e+02   1.3372e-02   1.6512e-04
+% dsyrk      12096   1.3712e+02   1.1336e-02   9.2796e-05
+% dgemm     249984   4.6654e+03   1.8663e-02         -nan
+
+% soit en flops moyen :
+% dgemm : 14.38 gflops
+% dtrsm : 9.76 gflops
+% dsyrk : 11.85 gflops
+% dpotrf : 8.74 glops
+
 Les résultats obtenus sont présentés sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:idchire}.
 Comme on a pu le constater sur les expériences réelles, la simulation ne montre également aucune différence de performances avec ou sans l'utilisation de l'affinité.
 
@@ -258,16 +283,17 @@ En revanche pour le cas étudié dans la figure~\ref{fig:simu:affinityavg-8k-vs-
 \begin{table}[t!]
 \def\arraystretch{1.5}
 \centering
-\begin{tabular}{|c||c|c|}\hline
-  Noyau & \makecell{Performance minimum attendue\\(GFlops)} & \makecell{Performance moyenne observée\\(GFlops)} \\
+\begin{tabular}{|c||c|c|c|c|}\hline
+  Noyau & \multicolumn{2}{c|}{\makecell{Performance minimum attendue\\(GFlops)}} & \multicolumn{2}{c|}{\makecell{Performance moyenne observée\\(GFlops)}} \\\cline{2-5}
+        & 8192 (256) & 32768 (512) & 8192 (256) & 32768 (512) \\
   \hline
-  \potrf & 5.88 & 5.07 \\
+  \potrf & 6.55 & 8.79 & 5.07 & 8.74 \\
   \hline
-  \trsm & 7.22 & 5.55 \\
+  \trsm & 7.82 & 9.15 & 5.55 & 9.76 \\
   \hline
-  \syrk & 7.51 & 5.80 \\
+  \syrk & 9.25 & 7.51 &  5.80 & 11.85 \\
   \hline
-  \gemm & 11.61 & 9.41 \\
+  \gemm & 12.19 & 12.82 & 9.41 & 14.38 \\
   \hline
 \end{tabular}
 \caption{Comparaison des performances minimum attendues aux performances moyennes observées pour l'exécution de Cholesky sur 192 cœurs, avec une taille de matrice de 8192 et des blocs de taille 256}\label{tab:simu:comparaison-modele-observation}
