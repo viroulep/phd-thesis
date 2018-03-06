@@ -28,17 +28,29 @@ Cette seconde partie a été évaluée sur différentes applications, ce qui a p
 
 \textbf{Mots-clés} : NUMA, support exécutif, OpenMP, tâches, caractérisation, simulation
 
-%\begin{center}\textbf{\large TODO }
+\begin{center}\textbf{\large Studying and improving the use of NUMA architectures through runtime systems }
 
-%\quad
+\quad
 
-%\textbf{Abstract}
-%\end{center}
+\textbf{Abstract}
+\end{center}
 
 
-%\quad
+Nowadays the evolution of High Performance Computing follows the needs of numerical simulations.
+These applications are executed on supercomputers which can offer several thousands of cores, split into a large number of computing nodes, which possess a relatively low number of cores.
+Each of these nodes consists of a shared memory architecture, in which the memory is physically split into several distinct blocks: this implies that the memory access time depends both on which data is accessed, and on which core tries to access it.
+These architectures are named NUMA (for \emph{Non Uniform Memory Access}).
 
-%\textbf{Keywords} : stuff
+The current way to exploit them tends to be through a tasks-based programming model, which can handle irregular applications beyond a simple loop-based parallelism.
+Efficient use of NUMA architectures is critical for the overall performance improvements of supercomputers.
+This thesis has been targetted at improving common techniques for their exploitation: it proposes an answer to the tradeoff that has to be made between data locality and load balancing, that are two critical aspects of applications scheduling.
+Contributions of this thesis can be split into two parts: the first part is dedicated to providing the programmer with means to understand, analyze, and better characterize the behavior of their applications' critical parts, and the second part is dedicated to several improvements made to the runtime systems.
+This last part has been evaluated on various applications, and has shown some significant performance gains.
+
+
+\quad
+
+\textbf{Keywords}: NUMA, runtime systems, OpenMP, tasks, characterization, simulation
 
 %\begin{savequote}[8cm]
 %<< Une thèse sans théorème ce n'est pas une thèse >>
