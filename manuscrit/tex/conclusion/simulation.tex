@@ -130,16 +130,17 @@ Cet aperçu des performances permet de montrer que si la localité des données 
 Nous avons donc dégagé plusieurs modèles de coûts des tâches.
 Ces modèles se basent sur les expériences que nous avons pu faire avec \outil.
 Au cours de ces expériences, nous avons fait varier deux paramètres qui peuvent avoir un impact majeur sur les performances~: l'emplacement des données du noyau, et la charge de la machine.
-En faisant varier ces deux paramètres de manière extrème, nous avons pu obtenir un profil a priori complet des noyaux, pour nourir les modèles de coût ci-dessous.
+En faisant varier ces deux paramètres de manière extrême, nous avons pu obtenir un profil a priori complet des noyaux, pour nourrir les modèles de coût ci-dessous.
 
-\paragraph{Modèle "Minimum"~:} ce modèle a pour but d'estimer la performance minimum que l'on est a priori en droit d'attendre d'un support exécutif implémentant une stratégie de vol de travail naïve.
-Pour se faire, nous avons considéré seulement la performance minimale de chacun des noyaux pour le coût de chaque tâche, parmi les expériences que nous avions effectuées avec \outil.
-En pratique cela correspond à un cas extrème pour l'emplacement des données~: toutes les données à distance, et à une charge complète de la machine.
+\paragraph{Modèle "Distant"~:} ce modèle a pour but d'estimer la performance observée que l'on est a priori en droit d'attendre d'un support exécutif implémentant une stratégie de vol de travail naïve sur une architecture NUMA.
+%Pour se faire, nous avons considéré seulement la performance minimale de chacun des noyaux pour le coût de chaque tâche, parmi les expériences que nous avions effectuées avec \outil.
+L'idée est de prendre un cas extrême pour l'exécution de chaque noyau, avec un cas extrême pour l'emplacement des données (toutes les données à distance), et une charge complète de la machine.
 En terme de scénario, sur idchire, cela revient à exécuter 192 noyaux simultanément, avec leurs données placées sur un nœud distant, de manière similaire à ce que nous avons effectué pour la figure~\ref{fig:contribs:apps:cholesky:perf-512-remote-idchire}.
+Pour les différentes tailles de blocs, en pleine charge de la machine, nous avons pris le minimum observé parmi les placements de données effectués.
 
 \paragraph{Modèle "Maximum"~:} à l'inverse l'objectif de ce modèle est de donner une borne supérieure pour les performances du support exécutif.
-Nous avons donc considéré seulement la performance a priori maximale de chacun des noyaux pour le coût de chaque tâche.
-Cela correspond à l'autre extrème en terme de distribution de données~: toutes les données locale, et à une exécution non perturbée par d'autres noyaux.
+Nous avons donc considéré seulement la performance a priori maximale de chacun des noyaux pour le coût de chaque tâche, et va donc permettre d'obtenir une borne supérieure pour les performances globales de l'application.
+Cela correspond à l'autre extrême en terme de distribution de données~: toutes les données locale, et à une exécution non perturbée par d'autres noyaux.
 
 \paragraph{Modèle "DeuxNiveaux"~:} l'objectif de ce modèle est d'essayer de simuler au plus près le comportement des noyaux, en utilisant deux niveaux de coût~: soit celui correspondant à l'exécution avec des données locales, soit celui correspondant à l'exécution avec des données distantes.
 La simulation étant lancée sur un nombre de cœurs connus, nous avons utilisé les performances de référence des noyaux correspondant à la charge de la machine simulée, que nous avons obtenues à travers les scénarios exécutés par \outil.
@@ -162,7 +163,7 @@ Les résultats des simulations avec les différents modèles sont montrés sur l
 \end{figure}
 
 
-Les premières observations à faire sur cette figure sont plutôt positives~: les performances affichées semblent réalistes, le modèle \emph{DeuxNiveaux} est correctement encadré par les modèles \emph{Minimum} et \emph{Maximum}, et au sein du modèle \emph{DeuxNiveaux}, il y a bien une différence claire entre un vol de travail <<naïf>> --- \emph{RandLoc} --- et un vol de travail hiérarchique et sensible à l'affinité --- \emph{Affinity}.
+Les premières observations à faire sur cette figure sont plutôt positives~: les performances affichées semblent réalistes, le modèle \emph{DeuxNiveaux} est correctement encadré par les modèles \emph{Distant} et \emph{Maximum}, et au sein du modèle \emph{DeuxNiveaux}, il y a bien une différence claire entre un vol de travail <<naïf>> --- \emph{RandLoc} --- et un vol de travail hiérarchique et sensible à l'affinité --- \emph{Affinity}.
 
 \begin{table}[h!]
 \def\arraystretch{1.5}
@@ -196,7 +197,7 @@ Ce tableau montre que le nombre d'accès distants est significativement diminué
 
 
 Ces figures sont bien sur issues de simulation~; que valent elles en comparaison aux chiffres obtenus à travers les expériences ?
-La figure~\ref{fig:simu:modeles-vs-runtime:idchire} compare les modèles \emph{Minimum} (avec vol aléatoire) et \emph{DeuxNiveaux} (avec vol hiérarchique) aux supports exécutifs libOMP (qui utilise un vol aléatoire) et libKOMP (qui utilise un vol hiérarchique et l'affinité).
+La figure~\ref{fig:simu:modeles-vs-runtime:idchire} compare les modèles \emph{Distant} et \emph{DeuxNiveaux} (avec vol hiérarchique) aux supports exécutifs libOMP (qui utilise un vol aléatoire) et libKOMP (qui utilise un vol hiérarchique et l'affinité).
 Comme on peut le constater, les performances des deux supports exécutifs sont effectivement supérieures au minimum simulé. En revanche les performances simulées de l'affinité semblent légèrement en retrait compte tenu des performances réelles.
 
 Cette différence pourrait sembler étonnante, mais pourrait être en partie expliquée par le fait que les performances de référence ont été obtenues lorsque les données étaient soit \textit{toutes} locales ou \textit{toutes} distantes.
@@ -308,7 +309,6 @@ La différence observée sur la figure~\ref{fig:simu:affinityavg-8k-vs-runtime:i
 En revanche les requêtes de vol peuvent générer du trafic sur les bus mémoires~: non seulement les threads ne participent plus activement à l'exécution du programme, mais en plus ils peuvent participer à la saturation de la bande passante et donc dégrader les performances des threads actifs.
 Cela pourrait expliquer en partie la différence observée dans le tableau~\ref{tab:simu:comparaison-modele-observation}, et pourrait être prise en compte lors de la modélisation des coûts de communication.
 
-Cela signifie également qu'il faudrait revoir la manière dont nous avons construit les coût pour le modèle \emph{Minimum}~: la charge maximale de la machine consiste en des noyaux s'exécutant indépendamment, il faudrait ici utiliser \outil pour venir ajouter une perturbation réaliste sur les ressources utilisées, afin de retrouver un pire cas d'exécution tel que constaté dans le tableau~\ref{tab:simu:comparaison-modele-observation}.
 
 \subsection*{Évaluation du temps de simulation}
 
@@ -324,16 +324,17 @@ Bien qu'une étude détaillée n'ait pas été réalisée, le temps nécessaire 
 
 %\cite{Stanisic2016}, Fast and Accurate Simulation of Multithreaded Sparse Linear Algebra Solvers
 
-%\begin{todo}
-%GRAPHE : courbes Julien sur Cholesky sélectionnés
-
-%+mettre la section dans un endroit approprié, probablement après la description du modèle histoire de dire "ça c'est ce qu'on peut faire au mieux".
-%\end{todo}
 
 \section{Discussions et améliorations possibles}\label{sec:simulation:next}
 
 Nos travaux sur la simulation sont très récents et encore en cours de développement.
 Afin de généraliser la portée du simulateur et améliorer sa précision, nous évoquons ici les différentes pistes en cours d'étude.
+
+\subsection{Modèle \emph{Minimum}}
+
+Pour venir en complément de notre modèle \emph{Maximum}, nous souhaiterions construire un modèle de coûts \emph{Minimum} qui nous permettrait de donner une borne inférieure pour les performances de notre applications.
+Pour construire notre modèle de coûts \emph{Distant}, nous avons considéré une charge de la machine avec des noyaux s'exécutant indépendamment, qui n'est pas assez représentatif des <<pires>> conditions réelles dans lesquelles peut se retrouver un noyau.
+Il faudrait donc utiliser \outil pour venir ajouter des perturbations réalistes sur les ressources utilisées pendant l'exécution d'un noyau, afin de retrouver un pire cas d'exécution tel que constaté dans le tableau~\ref{tab:simu:comparaison-modele-observation}.
 
 \subsection{Modélisation du cache L3}
 
