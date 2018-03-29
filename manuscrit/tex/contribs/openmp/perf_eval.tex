@@ -180,10 +180,10 @@ Pour une grosse taille de bloc en revanche c'est clair et net~: après avoir sui
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{graph_qr_cholesky_vs_threads_brunch}
-  \caption{Performance de Cholesky et QR en fonction du nombre de cœurs sur brunch. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-qr-cholesky-brunch}
+  \caption{Performance de Cholesky et QR en fonction du nombre de cœurs sur brunch. Taille de matrice~: 32768, taille de bloc~: 512}\label{fig:contribs:perf_eval:eval-cores-qr-cholesky-brunch}
 \end{figure}
 
-Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-qr-cholesky-brunch} montrent les résultats des factorisations Cholesky et QR (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
+Les figures~\ref{fig:contribs:perf_eval:eval-qr-cholesky-idchire} et~\ref{fig:contribs:perf_eval:eval-cores-qr-cholesky-brunch} montrent les résultats des factorisations Cholesky et QR (taille de matrice 32768, taille de bloc 512) en fonction du nombre de threads sur idchire et brunch, respectivement.
 Comparer les mêmes instances sur les deux machines donne des résultats intéressants~: leurs caractéristiques ne changent pas l'allure général des courbes, en revanche le faible facteur NUMA de brunch fait bien sentir que l'affinité n'est rentable que lorsque la machine est chargée à partir d'un seuil élevé (environ 75\%).
 Alors que sur idchire la différence se voit dès une trentaine de cœur (qui correspond d'ailleurs à 4 nœuds NUMA).
 
