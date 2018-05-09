@@ -719,6 +719,70 @@ Deux supports exécutifs grand public :
 \end{frame}
 
 \begin{frame}
+  \frametitle{Composants du simulateur}
+  Données
+    blocs
+
+  Tâches
+    read,write,compute
+
+  Modèle d'exécution
+    vol de travail
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Modélisation}
+  Basique : un coût associé à une tâche dans son ensemble, en fonction de son contexte d'exécution (données locale ou distante, charge de la machine)
+
+  Alimenté par les résultats obtenus avec CarToN
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Stratégies implémentée}
+  Similaires au runtime
+
+  Différents modèle de coût :
+  Maximum (perf max sur les expériences via carton)
+  Distant (min perf distante)
+  Deux niveau (perf dépendant du contexte d'exécution de la tâche dans le simulateur)
+
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Évaluation}
+  32K/512
+  \begin{figure}
+    \only<1>{%
+      \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire_0.pdf}%
+    }%
+    \only<2>{%
+      \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire.pdf}%
+    }%
+  \end{figure}
+
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Évaluation}
+  8k/256
+  \begin{figure}
+    \only<1>{%
+      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire_0.pdf}%
+    }%
+    \only<2>{%
+      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire.pdf}%
+    }%
+  \end{figure}
+
+
+\end{frame}
+
+
+\begin{frame}
   \frametitle{Conclusions simu}
 
   TODO
