@@ -63,7 +63,6 @@
   morestring=[b]',
   morestring=[b]",
   literate =    {---}{{\ProcessThreeDashes}}3
-                {>}{{\textcolor{red}\textgreater}}1     
                 {|}{{\textcolor{red}\textbar}}1 
                 {\ -\ }{{\mdseries\ -\ }}3,
 }
@@ -105,7 +104,7 @@
 	numbersep=5pt,
 % OMP define
 emph={\#,pragma, taskwait, omp, task, depend, affinity, firstprivate, shared}, emphstyle=\color{RoyalBlue}\bfseries,
-emph={[2]in,inout,out,cw,node,thread,data}, emphstyle={[2]\color{BrickRed}\bfseries},
+emph={[2]in,inout,out,cw,node,thread,data, actions,watchers}, emphstyle={[2]\color{BrickRed}\bfseries},
 emph={[3]tied,untied}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
 emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
@@ -383,30 +382,125 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{frame}
 
 
-\subsection*{Existant pour bencher des trucs}
 \begin{frame}
-\frametitle{Related work}
+\frametitle{Travaux existants}
 
-microbenchmark, boast, rien de spéfiquement
+Objectif : pouvoir exécuter des portions de code arbitraire, avec une connaissance et un contrôle sur le placement des données manipulées.
+
+\begin{itemize}
+  \item Benchmarks, microbenchmarks
+    
+    \emph{beaucoup} de travaux existants, mais aucun adapté
+
+  \item Autres outils
+
+    BOAST : autotuning de noyaux applicatifs.
+\end{itemize}
 
 \end{frame}
-
-\subsection*{Introduction générale}
 
 \begin{frame}
   \frametitle{CarToN : Characterization Tool for NUMA architectures}
 
-Décrire motivation, fonctionnement général
- - données
- - actions
- - observations
+  \begin{block}{Objectifs et motivations}
+    \begin{itemize}
+      \item Observer et comprendre le comportement d'un noyau applicatif arbitraire
+      \item Pas (peu) d'interférence liée à l'exécution
+    \end{itemize}
+  \end{block}
+
+  \begin{block}{Éléments de base}
+    Un "scénario" décrivant :
+    \begin{itemize}
+      \item Données (ex: matrice A, B)
+      \item Actions (ex: B=A+B)
+      \item Paramètres à observer (ex: flops, cache miss, ...)
+    \end{itemize}
+  \end{block}
+
+  \begin{block}{Modèle d'exécution}
+    Une queue FIFO par coeurs, création et enfilement des tâches à la lecture du scénario.
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Exemple de scénario : exécution de 8 GEMM indépendant}
+
+\hspace{0.1cm}
+\begin{minipage}[t]{0.38\linewidth}
+  Déclaration des données
+  \begin{lstlisting}[language=yaml]
+data:
+  size:
+    type: int
+    value: 256
+  a<i>:
+    i: [0, 7, 1]
+    type: double*
+  b<i>:
+    i: [0, 7, 1]
+    type: double*
+  c<i>:
+    i: [0, 7, 1]
+    type: double*
+  \end{lstlisting}
+\begin{uncoverenv}<3->
+  Paramètres à observer
+  \begin{lstlisting}[language=yaml]
+watchers:
+- name: flops_dgemm
+  params:
+  - size
+  kernels:
+  - dgemm
+  \end{lstlisting}
+\end{uncoverenv}
+\end{minipage}
+\hspace{0.3cm}
+\begin{uncoverenv}<2->
+\begin{minipage}[t]{0.54\linewidth}
+  Déclaration des actions
+  \begin{lstlisting}[language=yaml]
+actions:
+- for:
+  var: i
+  limits: [0, 7, 1]
+  actions:
+  - for:
+    var: name
+    values: ["a", "b", "c"]
+    actions:
+    - kernel: init_blas_bloc
+      core: <i>
+      params: "<name><i>", "size"
+- kernel: barrier
+- for:
+  var: i
+  limits: [0, 7, 1]
+  actions:
+  - kernel: dgemm
+    core: <i>
+    repeat: '50'
+    params: ["a<i>", "b<i>", "c<i>", "size"]
+  \end{lstlisting}
+\end{minipage}
+\end{uncoverenv}
 
 \end{frame}
 
 \begin{frame}
-\frametitle{CarToN}
+\frametitle{Applications aux noyaux de Cholesky}
 
-Un exemple de scénario : 8 dgemms en même temps ?
+\begin{block}{Objectif}
+  Analyser le comportement des quatres noyaux de l'application (\potrf, \trsm, \syrk, \gemm).
+
+  Conditions d'expérience :
+  \begin{itemize}
+    \item exécutions sur des données \emph{indépendantes}
+    \item placement des données (locales, distantes)
+    \item charge de la machine (nombre d'exécutions concurrentes)
+  \end{itemize}
+\end{block}
 
 \end{frame}
 
@@ -713,47 +807,85 @@ Deux supports exécutifs grand public :
 
 \begin{frame}[fragile]
   \frametitle{Motivation pour la simulation}
-  slide pour décrire la motivation (prédire, tester des trucs sans l'implém couteuse).
-  Comparer le réel au théoriquement obtenable
+
+  \begin{itemize}
+    \item Développer dans un support exécutif réel à un coût.
+
+      Simulation => expérimentations et développement rapides
+
+    \item Pouvoir prendre les meilleures décisions
+
+      On a "le temps" pour les prendre
+
+    \item Utilisation des caractéristiques des tâches
+
+      Positionnement du support exécutif par rapport aux performances attendues.
+  \end{itemize}
+
 
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
   \frametitle{Composants du simulateur}
-  Données
-    blocs
+  \begin{itemize}
+    \item Données
 
-  Tâches
-    read,write,compute
+      Blocs de taille fixe, associés à un noeud (\emph{first-touch})
 
-  Modèle d'exécution
-    vol de travail
+    \item Tâches
+
+      Décomposées en un ensemble d'action de trois types \verb/read/, \verb/write/, \verb/compute/
+
+    \item Modèle d'exécution
+
+      Vol de travail
+  \end{itemize}
 
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
   \frametitle{Modélisation}
-  Basique : un coût associé à une tâche dans son ensemble, en fonction de son contexte d'exécution (données locale ou distante, charge de la machine)
 
-  Alimenté par les résultats obtenus avec CarToN
+  Modèle de coût basique :
+
+  \begin{itemize}
+    \item Une tâche (\verb/read/+\verb/write/+\verb/compute/) = un coût unique
+  \end{itemize}
+
+  Coûts déterminés par les données de CarToN, en fonction du contexte d'exécution
+  \begin{itemize}
+    \item Accès local/distant
+    \item Charge de la machine
+  \end{itemize}
 
 \end{frame}
 
 \begin{frame}
-  \frametitle{Stratégies implémentée}
-  Similaires au runtime
+  \frametitle{Stratégies et modèles considérés}
 
-  Différents modèle de coût :
-  Maximum (perf max sur les expériences via carton)
-  Distant (min perf distante)
-  Deux niveau (perf dépendant du contexte d'exécution de la tâche dans le simulateur)
+  \begin{block}{Vol de travail}
+    Stratégies similaires à celles implémentées dans le support exécutif :
+    \begin{itemize}
+      \item Aléatoire
+      \item Hiérarchique avec affinité.
+    \end{itemize}
+  \end{block}
 
+  \begin{block}{Coûts des tâches}
+    \begin{itemize}
+      \item Maximum : meilleure performance observée de la tâche
+      \item Distant : moins bonne performance distante observée
+      \item Deux niveaux : utilisation du contexte d'exécution pour choisir le coût adapté
+    \end{itemize}
+  \end{block}
+
+  Objectif : essayer de borner l'exécution réelle.
 \end{frame}
 
 
 \begin{frame}
   \frametitle{Évaluation}
-  32K/512
+  Matrice N=32768, BS=512 (~45000 tâches)
   \begin{figure}
     \only<1>{%
       \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire_0.pdf}%
@@ -768,7 +900,7 @@ Deux supports exécutifs grand public :
 
 \begin{frame}
   \frametitle{Évaluation}
-  8k/256
+  Matrice N=8192, BS=256 (~6000 tâches)
   \begin{figure}
     \only<1>{%
       \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire_0.pdf}%
@@ -783,33 +915,39 @@ Deux supports exécutifs grand public :
 
 
 \begin{frame}
-  \frametitle{Conclusions simu}
+  \frametitle{Discussions}
 
-  TODO
-\end{frame}
-
-\begin{frame}
-  \frametitle{Plan}
-
-  TODO slide plan synthèse
+  \begin{block}{Conclusion des premières expériences}
+    \begin{itemize}
+      \item Résultat assez réaliste compte tenu de l'existant
+      \item Bémol sur les cas à "faible" parallélisme
+    \end{itemize}
+  \end{block}
+  \begin{block}{Perspectives}
+    \begin{itemize}
+      \item Utilisation de coûts plus précis
+      \item Modélisation de la machine (caches, bande passante)
+      \item Amélioration des distributions de données
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 \begin{frame}
   \frametitle{Synthèse}
 
-  \begin{block}{Processus complet pour une application}
-    \begin{itemize}
-      \item Observations générales et détaillées de l'application
-      \item Exécution prenant en compte les caractéristiques importantes
-      \item Ajustement des heuristiques d'ordonnancement via simulateur
-    \end{itemize}
-  \end{block}
-  TODO improve
-
+    \includegraphics[width=\textwidth]{graph/big_picture.pdf}
+  %\begin{block}{Processus complet pour une application}
+    %\begin{itemize}
+      %\item Observations générales et détaillées de l'application
+      %\item Exécution prenant en compte les caractéristiques importantes
+      %\item Ajustement des heuristiques d'ordonnancement via simulateur
+    %\end{itemize}
+  %\end{block}
 \end{frame}
 
+
 \begin{frame}
-  \frametitle{Perspectives}
+  \frametitle{Perspectives de la thèse}
 
   TODO
 
