@@ -505,46 +505,91 @@ actions:
 \end{frame}
 
 \begin{frame}
+\frametitle{Matériel}
+
+\begin{block}{idchire}
+    \begin{itemize}
+\item Intel Xeon E5-4640 @ 2.4 GHz, Sandy Bridge
+\item 24 noeuds NUMA, 8 coeurs par noeud, 192 coeurs.
+\item Cache L3 : 20 Mo
+    \end{itemize}
+\end{block}
+
+\begin{block}{brunch}
+  Plus récente, et topologie plus simple :
+  \begin{itemize}
+    \item Intel Xeon E7-8890 @ 2.2 GHz, Broadwell
+    \item 4 noeuds NUMA, 24 coeurs par noeud, 96 coeurs
+    \item Cache L3 : 60 Mo (similaire à idchire, 2.5 Mo par coeur)
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+
+\begin{frame}
 \frametitle{Applications aux noyaux de Cholesky}
 
-Présenter les deux cas de base (faire varier la localité et la charge de la machine)
+Performance en fonction du nombre d'exécutions concurrentes (données locales)
+
+Taille des matrices manipulées : 256x256
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{graph/kernel_256_local_idchire.pdf}
+\end{figure}
 
 \end{frame}
 
 \begin{frame}
 \frametitle{Applications aux noyaux de Cholesky}
 
-Présenter les deux cas de base (faire varier la localité et la charge de la machine)
+Impact de la localité.
+
+Taille des matrices manipulées : 512x512
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{graph/kernel_512_remote_idchire.pdf}
+\end{figure}
+
 
 \end{frame}
+
 
 \begin{frame}
 \frametitle{Applications aux noyaux de Cholesky}
 
-eval de perf 1 (comparaison noyaux, impact de la charge)
+Impact de la topologie (expérience similaire sur brunch).
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{graph/kernel_512_remote_brunch.pdf}
+\end{figure}
+
 
 \end{frame}
+
 
 \begin{frame}
 \frametitle{Applications aux noyaux de Cholesky}
 
-eval de perf 2 (local vs distant, +impact sortie du cache)
+Placement aléatoire de chacune des opérandes, taille 224.
+(FIXME/NOTE : à comparer avec les distribs en situation réelle du slide 11, c'est le même cas !)
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{graph/distrib_random_tool.pdf}
+\end{figure}
 
 \end{frame}
 
-\begin{frame}
-\frametitle{Applications aux noyaux de Cholesky}
-
-eval de perf 3 : distrib des temps noyaux avec init "random" => TODO !
-
-\end{frame}
 
 \begin{frame}
   \frametitle{Conclusion}
   \begin{block}{Remarques}
     Triple effet sur les performances :
     \begin{itemize}
-      \item Baisse linéaire des perfs. (débit limité, concurrence sur les caches ?)
+      \item Baisse linéaire des perfs. (Corrélée aux caches miss L3)
       \item Différence local vs distant.
       \item Différence d'impact de la localité 256 vs 512 (données ne tiennent pas dans le L3 pour 512).
     \end{itemize}
@@ -559,9 +604,19 @@ eval de perf 3 : distrib des temps noyaux avec init "random" => TODO !
 \begin{frame}
 \frametitle{Synthèse}
 
-on a de quoi tout bien définir, on peut :
-- partir sur la localité dans le runtime direct
-- nourrir un simulateur
+
+Données conséquentes sur les noyaux et leur comportement
+
+\begin{itemize}
+  \item possibilité de modéliser la performance attendue de l'application globale (simulation)
+\end{itemize}
+
+Identification de sources de variation de performances
+
+\begin{itemize}
+  \item Défauts de cache (liés aux Blas et au noyau)
+  \item Placement des données : favoriser le rapprochement des tâches et des données dans le support exécutif
+\end{itemize}
 
 \end{frame}
 
@@ -720,19 +775,6 @@ Deux supports exécutifs grand public :
 
 
 \begin{frame}
-\frametitle{Matériel}
-
-\begin{block}{Machine : idchire}
-    \begin{itemize}
-\item Intel Xeon E5-4640 @ 2.4 GHz, Sandy Bridge
-\item 24 noeuds NUMA, 8 coeurs par noeud, 192 coeurs.
-\item Cache L3 : 20 Mo
-    \end{itemize}
-\end{block}
-
-\end{frame}
-
-\begin{frame}
   \frametitle{Comparaison des supports exécutif}
   Cholesky, en fonction de la taille de matrice, sur idchire
   \includegraphics[width=0.9\textwidth]{graph/graph_details_cholesky_idchire.pdf}
@@ -759,20 +801,6 @@ Deux supports exécutifs grand public :
       \item Machine "favorable" : 24 noeuds NUMA, avec un facteur NUMA important.
     \end{itemize}
   \end{alertblock}
-\end{frame}
-
-\begin{frame}
-\frametitle{Deuxième machine}
-
-\begin{block}{Machine : brunch}
-  Plus récente, et topologie plus simple :
-  \begin{itemize}
-    \item Intel Xeon E7-8890 @ 2.2 GHz, Broadwell
-    \item 4 noeuds NUMA, 24 coeurs par noeud, 96 coeurs
-    \item Cache L3 : 60 Mo (similaire à idchire, 2.5 Mo par coeur)
-  \end{itemize}
-\end{block}
-
 \end{frame}
 
 \begin{frame}
