@@ -103,11 +103,15 @@
 	numberstyle=\tiny,
 	numbersep=5pt,
 % OMP define
-emph={\#,pragma, taskwait, omp, task, depend, affinity, firstprivate, shared}, emphstyle=\color{RoyalBlue}\bfseries,
+emph={\#,pragma, for, taskwait, omp, task, depend, affinity, firstprivate, shared}, emphstyle=\color{RoyalBlue}\bfseries,
 emph={[2]in,inout,out,cw,node,thread,data, actions,watchers}, emphstyle={[2]\color{BrickRed}\bfseries},
 emph={[3]tied,untied}, emphstyle={[3]\color{Gray}\bfseries},
 emph={[4]lu0,fwd,bdiv,bmod}, emphstyle={[4]\color{DarkGreen}\bfseries},
-emph={[5]cw}, emphstyle={[5]\color{DarkViolet}\bfseries},
+emph={[5]cw, int, define}, emphstyle={[5]\color{DarkViolet}\bfseries},
+emph={[6]POTRF}, emphstyle={[6]\color{Goldenrod}\bfseries},
+emph={[7]TRSM}, emphstyle={[7]\color{blue}\bfseries},
+emph={[8]SYRK}, emphstyle={[8]\color{red}\bfseries},
+emph={[9]GEMM}, emphstyle={[9]\color{ForestGreen}\bfseries},
 }
 \setbeamertemplate{itemize item}[circle]
 \setbeamertemplate{section in toc}[circle]
@@ -143,11 +147,8 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 % carton + 8
 % runtime + 12
 % simu+conclusion + 10
-%TODO : à chaque fin de parties : point positionnement
 
-%TODO: T=#inst * cycle/#inst * 1/freq
 %algo, vector,numa, hardware
-%TODO: carton, dgemm avec distribution random sur au moins 16 et 192 (pour : plot distribution et regarder les pics, et comparer au min perf du simu)
 
 
 % Je pense partir sur un plan similaire à ma thèse :
@@ -213,7 +214,13 @@ $$ A = L*L^T$$
 \begin{itemize}
 \item Très utilisée pour la résolution de systèmes d'équations.
 
-\item Plusieurs versions : choix d'une version parallèle par bloc.
+\item Plusieurs versions
+
+  \begin{itemize}
+    \item Linpack
+    \item Lapack (bloc ligne/colonne)
+    \item "à la Plasma" -> parallèle par blocs
+  \end{itemize}
 \end{itemize}
 
 \end{frame}
@@ -256,31 +263,129 @@ TODO : faire une présentation des tâches avec dépendances d'openmp ?
 
 \end{frame}
 
-\begin{frame}
-\frametitle{Cholesky : premières observations}
+\begin{frame}[fragile]
+\frametitle{Expression dans un modèle de programmation : OpenMP}
 
-Conditions d'expérience :
-\begin{itemize}
-  \item Version OpenMP par bloc de Cholesky (KASTORS, tâches avec dépendances)
-  \item Support exécutif libKOMP
-  \item Machine à mémoire partagée de 192 coeurs
-\end{itemize}
+\begin{minipage}[t]{0.52\linewidth}
+  \vspace{0.3cm}
+  \begin{onlyenv}<1>
+  \begin{lstlisting}[language=c]
+#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));
 
-Observations :
-\begin{itemize}
-  \item Performances brutes
-  \item Déroulement de l'application
-  \item Statistiques sur les différents types de tâches
-\end{itemize}
+  //...
+}
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<2>
+  \begin{lstlisting}[language=c]
+#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));
 
-Choix arbitraire d'un cas particulier : matrice de largeur 8192, avec une bonne taille de bloc pour ce cas : 224.
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }
+
+  //...
+}
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<3>
+  \begin{lstlisting}[language=c]
+#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    //...
+  }
+}
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<4->
+  \begin{lstlisting}[language=c]
+#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(m,k), A(n,k))
+                       depend(inout:A(m,n))
+      GEMM(A(n, k), A(m, k), A(m, n));
+    }
+  }
+}
+  \end{lstlisting}
+\end{onlyenv}
+\end{minipage}
+\begin{minipage}[t]{0.46\linewidth}
+  \vspace{-0.3cm}
+\begin{figure}
+  \only<1>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-1.pdf}%
+  }%
+  \only<2>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-2.pdf}%
+  }%
+  \only<3>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-3.pdf}%
+  }%
+  \only<4>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-4.pdf}%
+  }%
+  \only<5>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-5.pdf}%
+  }%
+  \only<6>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-6.pdf}%
+  }%
+  \only<7>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-7.pdf}%
+  }%
+  \only<8>{%
+    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-8.pdf}%
+  }%
+\end{figure}
+\end{minipage}
+
 
 \end{frame}
+
 
 \begin{frame}
   \frametitle{Cholesky : performances brutes (8192, 224)}
 
-  Évolution de la performance (Gflops) en fonction du nombre de coeurs.
+  Évolution de la performance (Gflops) en fonction du nombre de coeurs.\\
+  Exécution via libKOMP sur une machine à 192 coeurs.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_8192_224.pdf}
@@ -331,15 +436,16 @@ Aperçu d'un diagramme de Gantt sur 64 threads
   \end{block}
 
   \begin{block}{Leviers possibles}
+    D'un point de vue support exécutif :
     \begin{itemize}
       \uncover<2->{
-	\item Algorithme : fixe, non modifiable.
+	\item Algorithme : fixe
       }
       \uncover<3->{
-	\item Fréquence : fixe, non modifiable.
+	\item Fréquence : fixe
       }
       \uncover<4>{
-	\item Vectorisation : dépendante du compilateur, non modifiable.
+	\item Vectorisation : dépendante du compilateur, fixe.
 	\item Localité des données : clé du problème.
       }
     \end{itemize}
@@ -370,6 +476,27 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 
 \end{frame}
 
+\begin{frame}
+  \frametitle{Récapitulatif}
+
+  \begin{block}{Observations (outils "classiques")}
+    \begin{itemize}
+      \item Performances brutes
+      \item Utilisation des resources (Gantt)
+      \item Analyse statistique
+    \end{itemize}
+    => Mise en évidence d'un problème
+  \end{block}
+
+  \begin{block}{Questions en suspens}
+    \begin{itemize}
+      \item Comment identifier les facteurs responsables ?
+      \item Comment chiffrer l'impact de ces facteurs ?
+      \item Comment diminuer l'impact de ces facteurs ?
+      \item Peut on prévoir les performances ?
+    \end{itemize}
+  \end{block}
+\end{frame}
 
 \begin{frame}
   \frametitle{Méthodologie pour l'amélioration d'une application}
@@ -378,21 +505,36 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 
 \begin{frame}
   \frametitle{Plan}
-  \includegraphics[width=0.8\textwidth]{graph/big_picture-part1.pdf}
+  \only<1,4> {%
+    \includegraphics[width=0.8\textwidth]{graph/big_picture-part1.pdf}%
+  }%
+  \only<2> {%
+    \includegraphics[width=0.8\textwidth]{graph/big_picture-part1-2.pdf}%
+  }%
+  \only<3> {%
+    \includegraphics[width=0.8\textwidth]{graph/big_picture-part1-3.pdf}%
+  }%
 \end{frame}
 
 
 \begin{frame}
-\frametitle{Travaux existants}
+\frametitle{Approches existantes}
 
-Objectif : pouvoir exécuter des portions de code arbitraire, avec une connaissance et un contrôle sur le placement des données manipulées.
-
+Problématiques :
 \begin{itemize}
-  \item Benchmarks, microbenchmarks
-    
-    \emph{beaucoup} de travaux existants, mais aucun adapté
+  \item exécution de portions de code arbitraire
+  \item connaissance et contrôle sur le placement des données manipulées
+  \item intéractions entre différentes portions de codes (coéxécution)
+  \item rejeu et observation
+\end{itemize}
 
-  \item Autres outils
+Approches existantes :
+\begin{itemize}
+  \item Benchmarks, microbenchmarks en quantité
+
+    STREAM, EPCC, NAS, ...
+
+  \item Utilisant du code utilisateur arbitraire
 
     BOAST : autotuning de noyaux applicatifs.
 \end{itemize}
@@ -489,7 +631,7 @@ actions:
 \end{frame}
 
 \begin{frame}
-\frametitle{Applications aux noyaux de Cholesky}
+\frametitle{Application aux noyaux de Cholesky}
 
 \begin{block}{Objectif}
   Analyser le comportement des quatres noyaux de l'application (\potrf, \trsm, \syrk, \gemm).
@@ -529,7 +671,7 @@ actions:
 
 
 \begin{frame}
-\frametitle{Applications aux noyaux de Cholesky}
+\frametitle{Application aux noyaux de Cholesky}
 
 Performance en fonction du nombre d'exécutions concurrentes (données locales)
 
@@ -542,14 +684,13 @@ Taille des matrices manipulées : 256x256
 \end{frame}
 
 \begin{frame}
-\frametitle{Applications aux noyaux de Cholesky}
+\frametitle{Application aux noyaux de Cholesky}
 
-Impact de la localité.
+Impact de la localité pour \gemm, en fonction de la taille des données manipulées et du nombre d'exécutions concurrentes.
 
-Taille des matrices manipulées : 512x512
 \begin{figure}
   \centering
-  \includegraphics[width=0.9\textwidth]{graph/kernel_512_remote_idchire.pdf}
+  \includegraphics[width=0.9\textwidth]{graph/kernel_dgemm_remote_idchire.pdf}
 \end{figure}
 
 
@@ -557,29 +698,15 @@ Taille des matrices manipulées : 512x512
 
 
 \begin{frame}
-\frametitle{Applications aux noyaux de Cholesky}
+\frametitle{Application aux noyaux de Cholesky}
 
 Impact de la topologie (expérience similaire sur brunch).
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.9\textwidth]{graph/kernel_512_remote_brunch.pdf}
+  \includegraphics[width=0.9\textwidth]{graph/kernel_dgemm_remote_brunch.pdf}
 \end{figure}
 
-
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Applications aux noyaux de Cholesky}
-
-Placement aléatoire de chacune des opérandes, taille 224.
-(FIXME/NOTE : à comparer avec les distribs en situation réelle du slide 11, c'est le même cas !)
-
-\begin{figure}
-  \centering
-  \includegraphics[width=0.8\textwidth]{graph/distrib_random_tool.pdf}
-\end{figure}
 
 \end{frame}
 
@@ -591,7 +718,7 @@ Placement aléatoire de chacune des opérandes, taille 224.
     \begin{itemize}
       \item Baisse linéaire des perfs. (Corrélée aux caches miss L3)
       \item Différence local vs distant.
-      \item Différence d'impact de la localité 256 vs 512 (données ne tiennent pas dans le L3 pour 512).
+      \item Différence d'impact de la localité en fonction du jeu de données (ne tient pas dans le L3 pour 512).
     \end{itemize}
   \end{block}
 
@@ -625,6 +752,13 @@ Identification de sources de variation de performances
   \includegraphics[width=0.8\textwidth]{graph/big_picture-part2.pdf}
 \end{frame}
 
+
+\begin{frame}
+\frametitle{Travaux existant}
+
+TODO : point état de l'art (Olivier (vol hiérarchique), ForestGOMP (placement de tâche "proches" et migration de données), OpenStream (distribution, placement en fonction des buffers)))
+
+\end{frame}
 
 \begin{frame}
 \frametitle{Fonctionnement}
@@ -940,6 +1074,26 @@ Deux supports exécutifs grand public :
 
 
 \end{frame}
+
+\begin{frame}
+\frametitle{TODO}
+
+TODO : où placer ce slide ?
+
+dgemm indépendant via l'outil, avec placement aléatoire de chacune des opérandes.
+On constate qu'il y a deux bosses pour le cas 192, et que la bosse "min" est bien inférieure au minimum envisagé pour le cas précédent dans le simu.
+
+Placement aléatoire de chacune des opérandes, taille 224.
+(FIXME/NOTE : à comparer avec les distribs en situation réelle du slide 11, c'est le même cas !)
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{graph/distrib_random_tool.pdf}
+\end{figure}
+
+\end{frame}
+
+
 
 
 \begin{frame}
