@@ -45,7 +45,7 @@ Cette approche est reprise par Tahan et al.~\cite{Tahan2014}. Chaque thread disp
 
 
 
-\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des extensions au support exécutif Charm++~\cite{Kale1993} ciblant spécifiquement les architectures NUMA et les applications itératives.
+\paragraph{Pilla et al.~\cite{Pilla2014}} proposent des extensions au support exécutif du modèle de programmation Charm++~\cite{Kale1993}, ciblant spécifiquement les architectures NUMA et les applications itératives.
 À chaque pas de temps, leur ordonnanceur va tenter de corriger un déséquilibre de charge en déplaçant des tâches d'un cœur à un autre.
 Pour évaluer si une tâche devrait être déplacée sur un autre cœur, ils prennent en compte plusieurs facteurs : la charge du cœur, la quantité de communication que la tâche effectue avec d'autres tâches du cœur, le facteur NUMA entre les deux cœurs, et la quantité de communication locale que la tâche effectuerait sur son cœur actuel.
 Charm++ a l'avantage de leur fournir directement des informations sur les performances des tâches aux précédents pas de temps.
