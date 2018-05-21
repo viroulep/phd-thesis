@@ -189,20 +189,75 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 
 \begin{frame}
 \frametitle{Contexte}
-blabla appli simulation jolie image
+
+  Calcul Haute Performance (HPC), nécessaire pour la simulation numérique.
+  \begin{figure}
+    \includegraphics[width=\textwidth]{graph/simulation.pdf}
+  \end{figure}
+
+  Vaste champ d'applications~: météorologie, aéronautique, applications militaires, ...
 \end{frame}
 
 \begin{frame}
 \frametitle{Contexte}
-blabla schéma supercalculateur, zoom sur un noeud du cluster
+  Un supercalculateur 
+  \uncover<2> {
+    = plusieurs centaines (milliers) de noeuds !
+  }
+  \begin{figure}
+    \only<1>{%
+      \includegraphics[width=\textwidth]{graph/supercomputer.pdf}%
+    }%
+    \only<2>{%
+      \includegraphics[width=\textwidth]{graph/supercomputer_with_node.pdf}%
+    }%
+  \end{figure}
 \end{frame}
 
 \begin{frame}
 \frametitle{Contexte}
-blabla péage (caisse, voitures plus ou moins lente à passer, donc faudrait pouvoir les bouger)
-=> analogie en remplaçant les caisses par des coeurs, les voitures par des taches
+  \begin{figure}
+    \only<1>{%
+      \includegraphics[width=\textwidth]{graph/peage.pdf}%
+    }%
+    \only<2>{%
+      \includegraphics[width=\textwidth]{graph/peage-x.pdf}%
+    }%
+    \only<3>{%
+      \includegraphics[width=\textwidth]{graph/peage-wtf.pdf}%
+    }%
+  \end{figure}
+\end{frame}
 
-=> transition application à base de tâche
+\begin{frame}
+\frametitle{Contexte}
+  Dans un ordinateur
+  \begin{figure}
+    \only<1>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie.pdf}%
+    }%
+    \only<2>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie1.pdf}%
+    }%
+    \only<3>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie2.pdf}%
+    }%
+    \only<4>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie3.pdf}%
+    }%
+    \only<5>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie4.pdf}%
+    }%
+    \only<6>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie5.pdf}%
+    }%
+    \only<7>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie6.pdf}%
+    }%
+    \only<8>{%
+      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie7.pdf}%
+    }%
+  \end{figure}
 \end{frame}
 
 \begin{frame}
@@ -258,7 +313,6 @@ Exprimée dans un langage par flot de données, et représentation de l'applicat
 \begin{figure}
   \includegraphics[width=0.4\textwidth]{graph/cholesky-dag-5.pdf}
 \end{figure}
-TODO : faire une présentation des tâches avec dépendances d'openmp ?
 
 
 \end{frame}
@@ -722,9 +776,9 @@ Impact de la topologie (expérience similaire sur brunch).
     \end{itemize}
   \end{block}
 
-  \begin{block}{Motivation}
-    Régler le plus gros problème : la localité.
-  \end{block}
+  %\begin{block}{Motivation}
+    %Régler le plus gros problème : la localité.
+  %\end{block}
 
 \end{frame}
 
@@ -754,11 +808,35 @@ Identification de sources de variation de performances
 
 
 \begin{frame}
-\frametitle{Travaux existant}
+  \frametitle{Travaux existant}
+  \begin{block}{Groupement des calculs}
+    Olivier et al., Clet-Ortega et al., Pilla et al.
+    \begin{itemize}
+      \item Partitionnement de la machine en "groupes"
+      \item Équilibrage de charge favorisant les voisins dans le groupe
+    \end{itemize}
+  \end{block}
 
-TODO : point état de l'art (Olivier (vol hiérarchique), ForestGOMP (placement de tâche "proches" et migration de données), OpenStream (distribution, placement en fonction des buffers)))
+  \begin{block}{Distribution des données, et placement des calculs}
+    HPF ;  StarPU, XKaapi (hétérogène) ; X10, Kaapi (distribué)
+    %\begin{itemize}
+      %\item HPF. Distribution de la \emph{possession} d'une donnée (OCR).
+      %\item StarPU, XKaapi, ... -> Approche à la HEFT en hétérogène.
+      %\item X10, Kaapi -> système distribué, prise en compte de la localité
+    %\end{itemize}
+  \end{block}
+
+  \begin{block}{Migration dynamique des données, et conservation de la localité}
+    OpenStream, ForestGOMP (support exécutif), Diener et al. (noyau)
+    %\begin{itemize}
+      %\item OpenStream. Placement des \emph{buffers} et des tâches.
+      %\item ForestGOMP. Placement et migration de \emph{bulles}.
+      %\item Diener et al. Observation (noyau) du comportement des threads, migration des pages et des threads.
+    %\end{itemize}
+  \end{block}
 
 \end{frame}
+
 
 \begin{frame}
 \frametitle{Fonctionnement}
@@ -816,15 +894,6 @@ Donner le moyen au programmeur de passer des informations au support exécutif.
 
 \end{frame}
 
-\begin{frame}
-\frametitle{Support exécutif : maintient des tâches prêtes}
-
-  Le support exécutif possède une file de tâches prêtes par élément de la hiérarchie.
-
-\begin{figure}
-  \includegraphics[width=0.8\textwidth]{graph/hierarchical_queues.pdf}
-\end{figure}
-\end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Support exécutif : le vol de travail}
@@ -845,6 +914,16 @@ Donner le moyen au programmeur de passer des informations au support exécutif.
 \end{frame}
 
 \begin{frame}
+\frametitle{Support exécutif : maintient des tâches prêtes}
+
+  Le support exécutif possède une file de tâches prêtes par élément de la hiérarchie.
+
+\begin{figure}
+  \includegraphics[width=0.8\textwidth]{graph/hierarchical_queues.pdf}
+\end{figure}
+\end{frame}
+
+\begin{frame}
 \frametitle{Exemple de stratégies d'ordonnancement}
 
 \vspace{0.3cm}
@@ -855,7 +934,9 @@ Sélection d'une queue pour le placement d'une tâche prête
 \end{itemize}
 \vspace{0.5cm}
 
+\uncover<2->{
 Sélection d'une queue pour le vol
+}
 \begin{figure}
   \only<2> {%
     \includegraphics[width=0.6\textwidth]{graph/steal_strategies_anim_1.pdf}%
@@ -955,7 +1036,8 @@ Deux supports exécutifs grand public :
 
   \uncover<2>{
     \begin{block}{Intuition générale}
-      Affinité assez simple à mettre en place, rentable lorsque les dataset manipulés par les tâches sortent du L3.
+      %Affinité assez simple à mettre en place,
+      rentable lorsque les dataset manipulés par les tâches sortent du L3.
     \end{block}
   }
 \end{frame}
@@ -975,7 +1057,7 @@ Deux supports exécutifs grand public :
 
       Simulation => expérimentations et développement rapides
 
-    \item Pouvoir prendre les meilleures décisions
+    \item Améliorer les décisions
 
       On a "le temps" pour les prendre
 
@@ -1075,25 +1157,6 @@ Deux supports exécutifs grand public :
 
 \end{frame}
 
-\begin{frame}
-\frametitle{TODO}
-
-TODO : où placer ce slide ?
-
-dgemm indépendant via l'outil, avec placement aléatoire de chacune des opérandes.
-On constate qu'il y a deux bosses pour le cas 192, et que la bosse "min" est bien inférieure au minimum envisagé pour le cas précédent dans le simu.
-
-Placement aléatoire de chacune des opérandes, taille 224.
-(FIXME/NOTE : à comparer avec les distribs en situation réelle du slide 11, c'est le même cas !)
-
-\begin{figure}
-  \centering
-  \includegraphics[width=0.8\textwidth]{graph/distrib_random_tool.pdf}
-\end{figure}
-
-\end{frame}
-
-
 
 
 \begin{frame}
@@ -1131,9 +1194,54 @@ Placement aléatoire de chacune des opérandes, taille 224.
 \begin{frame}
   \frametitle{Perspectives de la thèse}
 
-  TODO
+  \begin{itemize}
+    \item Amélioration/Rafinement de la simulation
+
+    \item Meilleure collaboration entre le compilateur et le support exécutif
+
+    \item Application à d'autres matériels (GPU, matériel à venir)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Questions}
+
+  Questions
 
 \end{frame}
+
+\begin{frame}
+  \frametitle{backup1}
+
+  miss L3
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{backup2}
+
+  requete de vol/coeur
+
+\end{frame}
+
+\begin{frame}
+\frametitle{TODO}
+
+TODO : où placer ce slide ?
+
+dgemm indépendant via l'outil, avec placement aléatoire de chacune des opérandes.
+On constate qu'il y a deux bosses pour le cas 192, et que la bosse "min" est bien inférieure au minimum envisagé pour le cas précédent dans le simu.
+
+Placement aléatoire de chacune des opérandes, taille 224.
+(FIXME/NOTE : à comparer avec les distribs en situation réelle du slide 11, c'est le même cas !)
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{graph/distrib_random_tool.pdf}
+\end{figure}
+
+\end{frame}
+
 
 
 %\begin{frame}[fragile]
