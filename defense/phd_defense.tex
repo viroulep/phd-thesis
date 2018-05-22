@@ -63,7 +63,7 @@
   morestring=[b]',
   morestring=[b]",
   literate =    {---}{{\ProcessThreeDashes}}3
-                {|}{{\textcolor{red}\textbar}}1 
+                {|}{{\textcolor{red}\textbar}}1
                 {\ -\ }{{\mdseries\ -\ }}3,
 }
 
@@ -188,21 +188,25 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 %\maketitle
 
 \begin{frame}
-\frametitle{Contexte}
+\frametitle{Thématiques}
 
   Calcul Haute Performance (HPC), nécessaire pour la simulation numérique.
-  \begin{figure}
-    \includegraphics[width=\textwidth]{graph/simulation.pdf}
-  \end{figure}
 
   Vaste champ d'applications~: météorologie, aéronautique, applications militaires, ...
+
+  \begin{figure}
+    \includegraphics[width=0.9\textwidth]{graph/simulation.pdf}
+  \end{figure}
+
+
+  Modélisation de phénomènes physiques => opération sur des matrices.
 \end{frame}
 
 \begin{frame}
-\frametitle{Contexte}
-  Un supercalculateur 
+\frametitle{Ressources pour la simulation numérique}
+  Un supercalculateur
   \uncover<2> {
-    = plusieurs centaines (milliers) de noeuds !
+    = plusieurs centaines (milliers) de nœuds !
   }
   \begin{figure}
     \only<1>{%
@@ -215,23 +219,22 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 \end{frame}
 
 \begin{frame}
-\frametitle{Contexte}
+\frametitle{La barrière de péage}
   \begin{figure}
-    \only<1>{%
+    %\only<1>{%
       \includegraphics[width=\textwidth]{graph/peage.pdf}%
-    }%
-    \only<2>{%
-      \includegraphics[width=\textwidth]{graph/peage-x.pdf}%
-    }%
-    \only<3>{%
-      \includegraphics[width=\textwidth]{graph/peage-wtf.pdf}%
-    }%
+    %}%
+    %\only<2>{%
+      %\includegraphics[width=\textwidth]{graph/peage-x.pdf}%
+    %}%
+    %\only<3>{%
+      %\includegraphics[width=\textwidth]{graph/peage-wtf.pdf}%
+    %}%
   \end{figure}
 \end{frame}
 
 \begin{frame}
-\frametitle{Contexte}
-  Dans un ordinateur
+\frametitle{Analogie avec l'ordinateur}
   \begin{figure}
     \only<1>{%
       \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie.pdf}%
@@ -263,7 +266,7 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 \begin{frame}
 \frametitle{Une application omniprésente : Cholesky}
 
-Factorisation d'une matrice symétrique positive définie $A$ : 
+Factorisation d'une matrice symétrique positive définie $A$ :
 $$ A = L*L^T$$
 
 \begin{itemize}
@@ -438,15 +441,15 @@ for (int k = 0; k < N_BLOCS; k++) {
 \begin{frame}
   \frametitle{Cholesky : performances brutes (8192, 224)}
 
-  Évolution de la performance (Gflops) en fonction du nombre de coeurs.\\
-  Exécution via libKOMP sur une machine à 192 coeurs.
+  Évolution de la performance (Gflops) en fonction du nombre de cœurs.\\
+  Exécution via libKOMP sur une machine à 192 cœurs.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_8192_224.pdf}
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
-    Peu de conclusion à tirer : bon speedup jusqu'à ~70 coeurs, puis plateau potentiellement du au parallélisme limité.
+    Peu de conclusion à tirer : bon speedup jusqu'à ~70 cœurs, puis plateau potentiellement dû au parallélisme limité.
   \end{block}
 }
 
@@ -493,14 +496,14 @@ Aperçu d'un diagramme de Gantt sur 64 threads
     D'un point de vue support exécutif :
     \begin{itemize}
       \uncover<2->{
-	\item Algorithme : fixe
+	\item Algorithme : donné en entrée
       }
       \uncover<3->{
-	\item Fréquence : fixe
+	\item Fréquence : governor \textit{performance}
       }
       \uncover<4>{
 	\item Vectorisation : dépendante du compilateur, fixe.
-	\item Localité des données : clé du problème.
+	\item \textbf{Localité des données : clé du problème.}
       }
     \end{itemize}
   \end{block}
@@ -518,8 +521,8 @@ Aperçu d'un diagramme de Gantt sur 64 threads
   \begin{block}{Description}
     \begin{itemize}
       \item Mémoire partagée
-      \item Machine = plusieurs noeuds
-      \item Noeud = plusieurs coeurs + une sous partie de la RAM
+      \item Machine = plusieurs nœuds
+      \item Nœud = plusieurs cœurs + une sous partie de la RAM
     \end{itemize}
   \end{block}
 
@@ -570,28 +573,48 @@ Aperçu d'un diagramme de Gantt sur 64 threads
   }%
 \end{frame}
 
+\begin{frame}
+\frametitle{Caractérisation des noyaux de Cholesky}
+
+\begin{block}{Objectif}
+  Analyser le comportement des quatre noyaux de l'application (\potrf, \trsm, \syrk, \gemm).
+
+  Conditions d'expérience :
+  \begin{itemize}
+    \item exécutions sur des données \emph{indépendantes}
+    \item placement des données (locales, distantes)
+    \item charge de la machine (nombre d'exécutions concurrentes)
+  \end{itemize}
+\end{block}
+
+\end{frame}
+
+
+
 
 \begin{frame}
-\frametitle{Approches existantes}
+  \frametitle{Quel outil pour notre besoin ?}
 
-Problématiques :
-\begin{itemize}
-  \item exécution de portions de code arbitraire
-  \item connaissance et contrôle sur le placement des données manipulées
-  \item intéractions entre différentes portions de codes (coéxécution)
-  \item rejeu et observation
-\end{itemize}
+  Ce que l'on cherche à faire~:
+  \begin{itemize}
+    \item exécution de portions de code arbitraire
+    \item connaissance et contrôle sur le placement des données manipulées
+    \item intéractions entre différentes portions de codes (coéxécution)
+    \item rejeu et observation
+  \end{itemize}
 
-Approches existantes :
-\begin{itemize}
-  \item Benchmarks, microbenchmarks en quantité
+  Ressources existantes~:
+  \begin{itemize}
+    \item Benchmarks, microbenchmarks en quantité
 
-    STREAM, EPCC, NAS, ...
+      STREAM, EPCC, NAS, ...
 
-  \item Utilisant du code utilisateur arbitraire
+    \item Utilisant du code utilisateur arbitraire
 
-    BOAST : autotuning de noyaux applicatifs.
-\end{itemize}
+      BOAST : autotuning de noyaux applicatifs.
+  \end{itemize}
+
+  \textbf{Pas d'outil existant répondant à notre besoin précis !}
 
 \end{frame}
 
@@ -601,7 +624,7 @@ Approches existantes :
   \begin{block}{Objectifs et motivations}
     \begin{itemize}
       \item Observer et comprendre le comportement d'un noyau applicatif arbitraire
-      \item Pas (peu) d'interférence liée à l'exécution
+      %\item Pas (peu) d'interférence liée à l'exécution
     \end{itemize}
   \end{block}
 
@@ -613,14 +636,10 @@ Approches existantes :
       \item Paramètres à observer (ex: flops, cache miss, ...)
     \end{itemize}
   \end{block}
-
-  \begin{block}{Modèle d'exécution}
-    Une queue FIFO par coeurs, création et enfilement des tâches à la lecture du scénario.
-  \end{block}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Exemple de scénario : exécution de 8 GEMM indépendant}
+\frametitle{Exemple de scénario : exécution de N \gemm indépendants}
 
 \hspace{0.1cm}
 \begin{minipage}[t]{0.38\linewidth}
@@ -631,13 +650,16 @@ data:
     type: int
     value: 256
   a<i>:
-    i: [0, 7, 1]
+    i: [0, N, 1]
+    mapping: i
     type: double*
   b<i>:
-    i: [0, 7, 1]
+    i: [0, N, 1]
+    mapping: i
     type: double*
   c<i>:
-    i: [0, 7, 1]
+    i: [0, N, 1]
+    mapping: i
     type: double*
   \end{lstlisting}
 \begin{uncoverenv}<3->
@@ -660,7 +682,7 @@ watchers:
 actions:
 - for:
   var: i
-  limits: [0, 7, 1]
+  limits: [0, N, 1]
   actions:
   - for:
     var: name
@@ -672,7 +694,7 @@ actions:
 - kernel: barrier
 - for:
   var: i
-  limits: [0, 7, 1]
+  limits: [0, N, 1]
   actions:
   - kernel: dgemm
     core: <i>
@@ -685,40 +707,25 @@ actions:
 \end{frame}
 
 \begin{frame}
-\frametitle{Application aux noyaux de Cholesky}
+  \frametitle{Matériel}
 
-\begin{block}{Objectif}
-  Analyser le comportement des quatres noyaux de l'application (\potrf, \trsm, \syrk, \gemm).
-
-  Conditions d'expérience :
-  \begin{itemize}
-    \item exécutions sur des données \emph{indépendantes}
-    \item placement des données (locales, distantes)
-    \item charge de la machine (nombre d'exécutions concurrentes)
-  \end{itemize}
-\end{block}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{Matériel}
-
-\begin{block}{idchire}
+  \begin{block}{idchire (2012)}
+    Machine LIG
     \begin{itemize}
-\item Intel Xeon E5-4640 @ 2.4 GHz, Sandy Bridge
-\item 24 noeuds NUMA, 8 coeurs par noeud, 192 coeurs.
-\item Cache L3 : 20 Mo
+      \item Intel Xeon E5-4640 @ 2.4 GHz, Sandy Bridge
+      \item 24 nœuds NUMA, 8 cœurs par nœud, 192 cœurs.
+      \item Cache L3 : 20 Mo
     \end{itemize}
-\end{block}
+  \end{block}
 
-\begin{block}{brunch}
-  Plus récente, et topologie plus simple :
-  \begin{itemize}
-    \item Intel Xeon E7-8890 @ 2.2 GHz, Broadwell
-    \item 4 noeuds NUMA, 24 coeurs par noeud, 96 coeurs
-    \item Cache L3 : 60 Mo (similaire à idchire, 2.5 Mo par coeur)
-  \end{itemize}
-\end{block}
+  \begin{block}{brunch (2016)}
+    Machine LIP-ENS de Lyon, plus récente, et topologie plus simple :
+    \begin{itemize}
+      \item Intel Xeon E7-8890 @ 2.2 GHz, Broadwell
+      \item 4 nœuds NUMA, 24 cœurs par nœud, 96 cœurs
+      \item Cache L3 : 60 Mo (similaire à idchire, 2.5 Mo par cœur)
+    \end{itemize}
+  \end{block}
 
 \end{frame}
 
@@ -808,7 +815,7 @@ Identification de sources de variation de performances
 
 
 \begin{frame}
-  \frametitle{Travaux existant}
+  \frametitle{Travaux existants}
   \begin{block}{Groupement des calculs}
     Olivier et al., Clet-Ortega et al., Pilla et al.
     \begin{itemize}
@@ -875,20 +882,27 @@ Rappel : application représentée sous forme de DAG
 \begin{frame}[fragile]
 \frametitle{Influencer la localité des données : l'affinité}
 
-Donner le moyen au programmeur de passer des informations au support exécutif.
-
-\begin{block}{Introduction d'une clause OpenMP pour l'affinité}
-  Clause attachée à une tâche :
-  \begin{lstlisting}[numbers=none, basicstyle=\normalsize]
-  affinity([node | thread | data]: expr[, strict])
+\begin{block}{Clause affinité pour les \textit{tâches}}
+  \begin{lstlisting}[language=c, numbers=none, basicstyle=\scriptsize]
+#pragma omp task depend(in:A(k,k))
+                 depend(inout:A(m,k))
+                 affinity(data: A(m,k))
+  TRSM(A(k, k), A(m, k));
   \end{lstlisting}
 \end{block}
-\begin{block}{À quoi \texttt{expr} fait référence}
+
+
+\begin{block}{Définition de la clause}
+  \begin{lstlisting}[numbers=none, basicstyle=\scriptsize]
+  affinity([node | thread | data]: expr[, strict])
+  \end{lstlisting}
+  Interprétation de \texttt{expr}~:
   \begin{itemize}
-    \item \texttt{thread} -> indice d'un thread
-    \item \texttt{node} -> indice d'un noeud NUMA
+    \item \texttt{thread} -> indice d'un thread dans les \verb/OMP_PLACES/
+    \item \texttt{node} -> indice d'un nœud NUMA (déduit des \verb/OMP_PLACES/)
     \item \texttt{data} -> adresse mémoire
   \end{itemize}
+  \texttt{strict}~: la tâche \textbf{doit} s'exécuter sur la ressource.
 \end{block}
 
 
@@ -929,8 +943,8 @@ Donner le moyen au programmeur de passer des informations au support exécutif.
 \vspace{0.3cm}
 Sélection d'une queue pour le placement d'une tâche prête
 \begin{itemize}
-  \item Si affinité : placement sur le noeud possédant la donnée, ou dans la queue du coeur si celui si est sur le noeud
-  \item Sinon placement dans la queue du coeur locale
+  \item Si affinité : placement sur le nœud possédant la donnée, ou dans la queue du cœur si celui si est sur le nœud
+  \item Sinon placement dans la queue du cœur locale
 \end{itemize}
 \vspace{0.5cm}
 
@@ -964,25 +978,31 @@ Sélection d'une queue pour le vol
 \end{frame}
 
 \begin{frame}
-\frametitle{Éléments de comparaison}
+  \frametitle{Éléments de comparaison}
 
-Deux supports exécutifs grand public :
+  \begin{block}{libGOMP}
+    \begin{itemize}
+      \item Livré avec GCC
+      \item Pas de vision hiérarchique de la machine
+      \item Queue centralisé, algorithme glouton
+    \end{itemize}
+  \end{block}
 
-\begin{block}{libGOMP}
-  \begin{itemize}
-    \item Livré avec GCC
-    \item Pas de vision hiérarchique de la machine
-    \item Pas de vol de travail (algorithme glouton avec une queue centralisée)
-  \end{itemize}
-\end{block}
+  \begin{block}{libOMP}
+    \begin{itemize}
+      \item Livré avec Clang (Intel)
+      \item Pas de vision hiérarchique de la machine
+      \item 1 queue par cœur, sélection aléatoire, placement local
+    \end{itemize}
+  \end{block}
 
-\begin{block}{libOMP}
-  \begin{itemize}
-    \item Livré avec Clang (Intel)
-    \item Vol de travail classique (une queue par coeur)
-    \item Sélection aléatoire, placement local
-  \end{itemize}
-\end{block}
+  \begin{block}{libKOMP}
+    \begin{itemize}
+      \item libOMP étendue
+      \item Queues hiérarchiques
+      \item Vol hiérarchique, prise en compte de l'affinité
+    \end{itemize}
+  \end{block}
 
 \end{frame}
 
@@ -992,7 +1012,10 @@ Deux supports exécutifs grand public :
 \begin{frame}
   \frametitle{Comparaison des supports exécutif}
   Cholesky, en fonction de la taille de matrice, sur idchire
-  \includegraphics[width=0.9\textwidth]{graph/graph_details_cholesky_idchire.pdf}
+  \begin{figure}
+    \includegraphics[width=0.8\textwidth]{graph/graph_details_cholesky_idchire.pdf}
+  \end{figure}
+  Meilleure taille de bloc pour chaque cas, distribution des blocs de données cyclique.
 \end{frame}
 
 \begin{frame}
@@ -1002,44 +1025,23 @@ Deux supports exécutifs grand public :
 \end{frame}
 
 \begin{frame}
-  \frametitle{Premières conclusions}
-  \begin{exampleblock}{Améliorations}
+  \frametitle{Bilan de l'extension}
+
+  \begin{block}{Impact sur les performances}
+    Algèbre linéaire~:
     \begin{itemize}
-      \item Différence visible dès l'utilisation de plusieurs noeuds NUMA
-      \item Impact significatif pour les tailles de blocs importantes
-    \end{itemize}
-  \end{exampleblock}
-
-  \begin{alertblock}{Limites}
-    \begin{itemize}
-      \item Peu d'intérêt pour les petites tailles de bloc.
-      \item Machine "favorable" : 24 noeuds NUMA, avec un facteur NUMA important.
-    \end{itemize}
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Comparaison des supports exécutif}
-  Évaluation sur deux tailles choisies
-  \includegraphics[width=0.9\textwidth]{graph/graph_all_cholesky_brunch.pdf}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Conclusions}
-
-  \begin{block}{Différence de machine}
-    \begin{itemize}
-      \item Comportement similaire
-      \item Impact absolu moindre (du à la topologie)
+      \item Différence significative (\textasciitilde 10\%) dès plusieurs nœuds NUMA
+      \item Intuitions sur les situations favorables~:
+      \begin{itemize}
+	\item le parallélisme est présent
+	\item le jeu de données sort du L3
+      \end{itemize}
     \end{itemize}
   \end{block}
 
-  \uncover<2>{
-    \begin{block}{Intuition générale}
-      %Affinité assez simple à mettre en place,
-      rentable lorsque les dataset manipulés par les tâches sortent du L3.
-    \end{block}
-  }
+  \begin{block}{Quid des autres applications}
+    Sur des applications itératives (Jacobi)~: performances des tâches comparables aux boucles.
+  \end{block}
 \end{frame}
 
 
@@ -1055,7 +1057,11 @@ Deux supports exécutifs grand public :
   \begin{itemize}
     \item Développer dans un support exécutif réel à un coût.
 
-      Simulation => expérimentations et développement rapides
+      En simulation~:
+      \begin{itemize}
+	\item développement plus simple
+	\item expérimentations plus rapides
+      \end{itemize}
 
     \item Améliorer les décisions
 
@@ -1064,6 +1070,10 @@ Deux supports exécutifs grand public :
     \item Utilisation des caractéristiques des tâches
 
       Positionnement du support exécutif par rapport aux performances attendues.
+
+    \item Simuler les programmes sur de nouvelles architectures
+
+      Complexité~: modélisation
   \end{itemize}
 
 
@@ -1074,13 +1084,13 @@ Deux supports exécutifs grand public :
   \begin{itemize}
     \item Données
 
-      Blocs de taille fixe, associés à un noeud (\emph{first-touch})
+      Blocs de taille fixe, associés à un nœud (\emph{first-touch})
 
     \item Tâches
 
-      Décomposées en un ensemble d'action de trois types \verb/read/, \verb/write/, \verb/compute/
+      Décomposées en plusieurs actions de trois types \verb/read/, \verb/write/, \verb/compute/
 
-    \item Modèle d'exécution
+    \item Moteur exécutif
 
       Vol de travail
   \end{itemize}
@@ -1090,7 +1100,7 @@ Deux supports exécutifs grand public :
 \begin{frame}[fragile]
   \frametitle{Modélisation}
 
-  Modèle de coût basique :
+  Modèle de coût global :
 
   \begin{itemize}
     \item Une tâche (\verb/read/+\verb/write/+\verb/compute/) = un coût unique
@@ -1116,14 +1126,14 @@ Deux supports exécutifs grand public :
   \end{block}
 
   \begin{block}{Coûts des tâches}
+    Objectif : borner l'exécution réelle.
     \begin{itemize}
-      \item Maximum : meilleure performance observée de la tâche
-      \item Distant : moins bonne performance distante observée
-      \item Deux niveaux : utilisation du contexte d'exécution pour choisir le coût adapté
+      \item Maximum : meilleure performance observée via CarToN
+      \item Distant : pire performance distante observée
+      \item Deux niveaux + Affinité : utilisation du contexte d'exécution pour choisir le coût adapté
     \end{itemize}
   \end{block}
 
-  Objectif : essayer de borner l'exécution réelle.
 \end{frame}
 
 
@@ -1131,12 +1141,7 @@ Deux supports exécutifs grand public :
   \frametitle{Évaluation}
   Matrice N=32768, BS=512 (~45000 tâches)
   \begin{figure}
-    \only<1>{%
-      \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire_0.pdf}%
-    }%
-    \only<2>{%
-      \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire.pdf}%
-    }%
+    \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire.pdf}%
   \end{figure}
 
 
@@ -1147,10 +1152,10 @@ Deux supports exécutifs grand public :
   Matrice N=8192, BS=256 (~6000 tâches)
   \begin{figure}
     \only<1>{%
-      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire_0.pdf}%
+      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire.pdf}%
     }%
     \only<2>{%
-      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire.pdf}%
+      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire_ajuste.pdf}%
     }%
   \end{figure}
 
@@ -1160,12 +1165,12 @@ Deux supports exécutifs grand public :
 
 
 \begin{frame}
-  \frametitle{Discussions}
+  \frametitle{Bilan}
 
   \begin{block}{Conclusion des premières expériences}
     \begin{itemize}
-      \item Résultat assez réaliste compte tenu de l'existant
-      \item Bémol sur les cas à "faible" parallélisme
+      \item Résultats assez réalistes vis à vis des tentatives existantes (Stanisic et al.)
+      \item Limite sur les cas à "faible" parallélisme
     \end{itemize}
   \end{block}
   \begin{block}{Perspectives}
@@ -1211,6 +1216,13 @@ Deux supports exécutifs grand public :
 \end{frame}
 
 \begin{frame}
+  \frametitle{Jacobi}
+
+  TODO
+
+\end{frame}
+
+\begin{frame}
   \frametitle{backup1}
 
   miss L3
@@ -1220,7 +1232,14 @@ Deux supports exécutifs grand public :
 \begin{frame}
   \frametitle{backup2}
 
-  requete de vol/coeur
+  requete de vol/cœur
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Cholesky avec barre d'erreur}
+
+  \includegraphics[width=0.9\textwidth]{graph/graph_all_cholesky_idchire.pdf}
 
 \end{frame}
 
@@ -1349,7 +1368,6 @@ Placement aléatoire de chacune des opérandes, taille 224.
       %\item Comment les améliorer ?
       %\item Distance des expériences vis à vis de la théorie ?
     %\end{itemize}
-    
   %\end{block}
 %\end{frame}
 
@@ -1391,8 +1409,8 @@ Placement aléatoire de chacune des opérandes, taille 224.
 
 %\begin{frame}
   %\frametitle{Prédiction}
-  %% courbe bleue : critical path, revisité via perf max par coeur
-  %% courbe rouge : upper bound, revisité via perf max par coeur
+  %% courbe bleue : critical path, revisité via perf max par cœur
+  %% courbe rouge : upper bound, revisité via perf max par cœur
   %\begin{center}
     %\includegraphics[width=0.7\textwidth]{./graph/julien_upperbounds_v2.pdf}
   %\end{center}
@@ -1450,8 +1468,8 @@ Placement aléatoire de chacune des opérandes, taille 224.
 %\begin{minipage}[t]{0.48\linewidth}
   %\begin{block}{"Support exécutif"}
     %\begin{itemize}
-      %\item Un thread par coeur (pinned)
-      %\item Noyaux empilés par coeur
+      %\item Un thread par cœur (pinned)
+      %\item Noyaux empilés par cœur
       %\item Synchronisation si besoin
       %\item Relève des indicateurs avant/après
     %\end{itemize}
@@ -1507,14 +1525,14 @@ Placement aléatoire de chacune des opérandes, taille 224.
   %actions:
     %- kernel: init_blas_bloc
       %sync: false
-      %params: 
+      %params:
       %- a
       %- block_size
       %core: 0
       %repeat: 1
     %- kernel: dgemm
       %sync: false
-      %params: 
+      %params:
       %- a
       %- b
       %- c
@@ -1569,7 +1587,7 @@ Placement aléatoire de chacune des opérandes, taille 224.
 
 %\end{frame}
 %\begin{frame}[fragile]
-%\frametitle{What information does it have?}
+%\frametitle{What information dœs it have?}
 
 
         %\begin{lstlisting}
@@ -1834,7 +1852,7 @@ Placement aléatoire de chacune des opérandes, taille 224.
   %%hors RAM -> 340 GFLOPS
   %%6284 - 5866 -> 418
   %% soit environ 80 GFLOPS d'écart -> la DRAM !
-  
+
   %\frametitle{Consommation de la DRAM sur Cholesky (idkat)}
   %\footnotesize Matrice : N=32k, BS=512
   %\begin{center}
@@ -1843,7 +1861,7 @@ Placement aléatoire de chacune des opérandes, taille 224.
 %\end{frame}
 
 %\begin{frame}
-  
+
   %\frametitle{Profil énergétique de LU (N=32k, BS=512)}
   %\begin{center}
     %\includegraphics[width=0.8\textwidth]{graph/Rplot.pdf}
