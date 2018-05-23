@@ -439,13 +439,13 @@ for (int k = 0; k < N_BLOCS; k++) {
 
 
 \begin{frame}
-  \frametitle{Cholesky : performances brutes (8192, 224)}
+  \frametitle{Cholesky : performances brutes (32768, 512)}
 
   Évolution de la performance (Gflops) en fonction du nombre de cœurs.\\
   Exécution via libKOMP sur une machine à 192 cœurs.
 
 \begin{figure}
-  \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_8192_224.pdf}
+  \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_32768_512.pdf}
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
@@ -460,11 +460,11 @@ for (int k = 0; k < N_BLOCS; k++) {
 
 Aperçu d'un diagramme de Gantt sur 64 threads
 \begin{figure}
-  \includegraphics[width=\textwidth]{graph/gantt_8192_224.pdf}
+  \includegraphics[width=\textwidth]{graph/gantt_32768_512.pdf}
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
-    Bonne utilisation des ressources, "trous" dûs à l'absence de tâches à différents moments de la vie de l'application.
+    Bonne utilisation des ressources, "trous" dûs à la forme du graph sur la fin de l'exécution.
   \end{block}
 }
 
@@ -534,7 +534,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{frame}
 
 \begin{frame}
-  \frametitle{Récapitulatif}
+  \frametitle{Bilan}
 
   \begin{block}{Observations (outils "classiques")}
     \begin{itemize}
@@ -544,15 +544,16 @@ Aperçu d'un diagramme de Gantt sur 64 threads
     \end{itemize}
     => Mise en évidence d'un problème
   \end{block}
+\end{frame}
 
-  \begin{block}{Questions en suspens}
-    \begin{itemize}
-      \item Comment identifier les facteurs responsables ?
-      \item Comment chiffrer l'impact de ces facteurs ?
-      \item Comment diminuer l'impact de ces facteurs ?
-      \item Peut on prévoir les performances ?
-    \end{itemize}
-  \end{block}
+\begin{frame}
+  \frametitle{Problématiques}
+  \begin{itemize}
+    \item Comment identifier les facteurs responsables ?
+    \item Comment chiffrer l'impact de ces facteurs ?
+    \item Comment diminuer l'impact de ces facteurs ?
+    \item Peut on prévoir les performances ?
+  \end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -892,7 +893,7 @@ Rappel : application représentée sous forme de DAG
 \end{block}
 
 
-\begin{block}{Définition de la clause}
+\begin{block}{Définition (discutée dans le standard)}
   \begin{lstlisting}[numbers=none, basicstyle=\scriptsize]
   affinity([node | thread | data]: expr[, strict])
   \end{lstlisting}
