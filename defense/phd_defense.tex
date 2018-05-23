@@ -83,6 +83,11 @@
 
 \newcommand\ProcessThreeDashes{\llap{\color{cyan}\mdseries-{-}-}}
 
+\usepackage{transparent}
+\lstdefinestyle{transparency}{
+  moredelim=**[is][\transparent{0.5}]{@}{@},
+}
+
 \lstset{
 	tabsize=4,
 %	frame=single,
@@ -102,6 +107,7 @@
 	numbers=left,
 	numberstyle=\tiny,
 	numbersep=5pt,
+	moredelim=**[is][\color{red}]{@}{@},
 % OMP define
 emph={\#,pragma, for, taskwait, omp, task, depend, affinity, firstprivate, shared}, emphstyle=\color{RoyalBlue}\bfseries,
 emph={[2]in,inout,out,cw,node,thread,data, actions,watchers}, emphstyle={[2]\color{BrickRed}\bfseries},
@@ -234,32 +240,30 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 \end{frame}
 
 \begin{frame}
-\frametitle{Analogie avec l'ordinateur}
+  \frametitle{Analogie avec l'ordinateur}
   \begin{figure}
     \only<1>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie.pdf}%
+      \includegraphics[width=0.8\textwidth]{graph/anim-peag/peage-analogie.pdf}%
     }%
     \only<2>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie1.pdf}%
+      \includegraphics[width=0.8\textwidth]{graph/anim-peag/peage-analogie1.pdf}%
     }%
     \only<3>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie2.pdf}%
+      \includegraphics[width=0.8\textwidth]{graph/anim-peag/peage-analogie2.pdf}%
     }%
     \only<4>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie3.pdf}%
+      \includegraphics[width=0.8\textwidth]{graph/anim-peag/peage-analogie3.pdf}%
     }%
     \only<5>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie4.pdf}%
+      \includegraphics[width=0.8\textwidth]{graph/anim-peag/peage-analogie4.pdf}%
     }%
     \only<6>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie5.pdf}%
+      \includegraphics[width=0.8\textwidth]{graph/anim-peag/peage-analogie5.pdf}%
     }%
-    \only<7>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie6.pdf}%
-    }%
-    \only<8>{%
-      \includegraphics[width=0.9\textwidth]{graph/anim-peag/peage-analogie7.pdf}%
-    }%
+  \end{figure}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{graph/anim-peag/peage-analogie-legend.pdf}%
   \end{figure}
 \end{frame}
 
@@ -337,8 +341,25 @@ for (int k = 0; k < N_BLOCS; k++) {
   \end{lstlisting}
 \end{onlyenv}
   \begin{onlyenv}<2>
-  \begin{lstlisting}[language=c]
-#define N_BLOCS 3
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));@
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }
+
+  @//...
+}@
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<3>
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
 for (int k = 0; k < N_BLOCS; k++) {
   #pragma omp task depend(inout:A(k,k))
   POTRF(A(k, k));
@@ -347,15 +368,21 @@ for (int k = 0; k < N_BLOCS; k++) {
     #pragma omp task depend(in:A(k,k))
                      depend(inout:A(m,k))
     TRSM(A(k, k), A(m, k));
-  }
+  }@
 
-  //...
-}
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    @//...
+  }
+}@
   \end{lstlisting}
 \end{onlyenv}
-  \begin{onlyenv}<3>
-  \begin{lstlisting}[language=c]
-#define N_BLOCS 3
+  \begin{onlyenv}<4>
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
 for (int k = 0; k < N_BLOCS; k++) {
   #pragma omp task depend(inout:A(k,k))
   POTRF(A(k, k));
@@ -369,19 +396,104 @@ for (int k = 0; k < N_BLOCS; k++) {
   for (int m = k+1; m < N_BLOCS; m++) {
     #pragma omp task depend(in:A(m,k))
                      depend(inout:A(k,k))
-    SYRK(A(m, k), A(k, k));
+    SYRK(A(m, k), A(k, k));@
 
-    //...
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(m,k), A(n,k))
+                       depend(inout:A(m,n))
+      GEMM(A(n, k), A(m, k), A(m, n));
+    }@
   }
-}
+}@
   \end{lstlisting}
 \end{onlyenv}
-  \begin{onlyenv}<4->
-  \begin{lstlisting}[language=c]
-#define N_BLOCS 3
+  \begin{onlyenv}<5>
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {@
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));
+
+  @for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(m,k), A(n,k))
+                       depend(inout:A(m,n))
+      GEMM(A(n, k), A(m, k), A(m, n));
+    }
+  }
+}@
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<6>
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));@
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }@
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(m,k), A(n,k))
+                       depend(inout:A(m,n))
+      GEMM(A(n, k), A(m, k), A(m, n));
+    }
+  }
+}@
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<7>
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
 for (int k = 0; k < N_BLOCS; k++) {
   #pragma omp task depend(inout:A(k,k))
   POTRF(A(k, k));
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }@
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    @for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(m,k), A(n,k))
+                       depend(inout:A(m,n))
+      GEMM(A(n, k), A(m, k), A(m, n));
+    }
+  }
+}@
+  \end{lstlisting}
+\end{onlyenv}
+  \begin{onlyenv}<8>
+  \begin{lstlisting}[style=transparency]
+@#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {@
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));@
 
   for (int m = k+1; m < N_BLOCS; m++) {
     #pragma omp task depend(in:A(k,k))
@@ -400,7 +512,7 @@ for (int k = 0; k < N_BLOCS; k++) {
       GEMM(A(n, k), A(m, k), A(m, n));
     }
   }
-}
+}@
   \end{lstlisting}
 \end{onlyenv}
 \end{minipage}
