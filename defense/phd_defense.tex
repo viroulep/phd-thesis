@@ -541,7 +541,7 @@ for (int k = 0; k < N_BLOCS; k++) {@
     \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-7.pdf}%
   }%
   \only<8>{%
-    \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-8.pdf}%
+    \includegraphics[width=0.9\textwidth]{graph/cholesky-dag-3-data.pdf}%
   }%
 \end{figure}
 \end{minipage}
@@ -576,7 +576,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
-    Bonne utilisation des ressources, "trous" dûs à la forme du graph sur la fin de l'exécution.
+    Bonne utilisation des ressources, "trous" dûs à la forme du DAG sur la fin de l'exécution.
   \end{block}
 }
 
@@ -1394,7 +1394,7 @@ Sélection d'une queue pour le vol
 
   \begin{block}{Bilan des premières expériences}
     \begin{itemize}
-      \item Résultats assez réalistes vis à vis des tentatives existantes (Stanisic et al.)
+      \item Résultats assez réalistes vis à vis des tentatives existantes (Stanisic et al. dans SimGrid)
       \item Limite sur les cas à "faible" parallélisme
     \end{itemize}
   \end{block}
@@ -1454,14 +1454,31 @@ Sélection d'une queue pour le vol
 
 \begin{frame}
   \frametitle{Perspectives de la thèse}
+  \begin{block}{CarToN}
+    \begin{itemize}
+      \item Se rapprocher des outils d'autotuning
+      \item Étendre la définition des scénarios
+    \end{itemize}
+  \end{block}
 
-  \begin{itemize}
-    \item Amélioration/Rafinement de la simulation
+  \begin{block}{Support exécutif}
+    Meilleure collaboration compilateur/support exécutif
+    \begin{itemize}
+      \item informations supplémentaires (tailles des données)
+    \end{itemize}
+    Tâches à grain plus fin pour éviter la perte de scalabilité
+    \begin{itemize}
+      \item surcoût de création
+      \item création parallèle
+    \end{itemize}
+  \end{block}
 
-    \item Meilleure collaboration entre le compilateur et le support exécutif
-
-    \item Application à d'autres matériels (GPU, matériel à venir)
-  \end{itemize}
+  \begin{block}{Simulation}
+    \begin{itemize}
+      \item Améliorer la modélisation (plus fine)
+      \item Thèse Avalon/STORM, simulation de programmes OpenMP
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 \begin{frame}
