@@ -583,15 +583,36 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{frame}
 
 \begin{frame}
-\frametitle{Cholesky : comportement des différents types de tâches}
-\begin{figure}
-  \includegraphics[width=0.8\textwidth]{graph/graph_distrib_overview_8192_224.pdf}
-\end{figure}
-\uncover<2> {
-  \begin{block}{Conclusions}
-    Nombre de threads qui augmente $=>$ augmentation du temps moyen d'une tâche et de la variabilité.
-  \end{block}
-}
+  \frametitle{Cholesky : comportement des différents types de tâches}
+  \begin{figure}
+    \only<1> {%
+      \includegraphics[width=0.8\textwidth]{graph/anim-distrib/graph_anim_distrib.pdf}%
+    }%
+    \only<2> {%
+      \includegraphics[width=0.8\textwidth]{graph/anim-distrib/graph_anim_distrib_1.pdf}%
+    }%
+    \only<3> {%
+      \includegraphics[width=0.8\textwidth]{graph/anim-distrib/graph_anim_distrib_2.pdf}%
+    }%
+    \only<4> {%
+      \includegraphics[width=0.8\textwidth]{graph/anim-distrib/graph_anim_distrib_3.pdf}%
+    }%
+    \only<5> {%
+      \includegraphics[width=0.8\textwidth]{graph/anim-distrib/graph_anim_distrib_4.pdf}%
+    }%
+    \only<6> {%
+      \includegraphics[width=0.8\textwidth]{graph/graph_distrib_overview.pdf}%
+    }%
+
+  \end{figure}
+  \only<1-5> {
+    Distribution des performances de chaque \potrf
+  }
+  \only<6> {
+    \begin{block}{Conclusions}
+      Nombre de threads qui augmente $=>$ diminution de la performance moyenne, augmentation de la variabilité.
+    \end{block}
+  }
 \end{frame}
 
 
@@ -659,31 +680,46 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{frame}
 
 \begin{frame}
-  \frametitle{Problématiques}
-  \begin{itemize}
-    \item Comment identifier les facteurs responsables ?
-    \item Comment chiffrer l'impact de ces facteurs ?
-    \item Comment diminuer l'impact de ces facteurs ?
-    \item Peut on prévoir les performances ?
-  \end{itemize}
-\end{frame}
-
-\begin{frame}
   \frametitle{Méthodologie pour l'amélioration d'une application}
-  \includegraphics[width=0.8\textwidth]{graph/big_picture.pdf}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Plan}
-  \only<1,4> {%
-    \includegraphics[width=0.8\textwidth]{graph/big_picture-part1.pdf}%
-  }%
-  \only<2> {%
-    \includegraphics[width=0.8\textwidth]{graph/big_picture-part1-2.pdf}%
-  }%
-  \only<3> {%
-    \includegraphics[width=0.8\textwidth]{graph/big_picture-part1-3.pdf}%
-  }%
+  \begin{minipage}[t]{0.36\linewidth}
+    \begin{block}{Problématiques}
+      \begin{itemize}
+	\uncover<2->{
+	  \item Identifier les facteurs responsables
+	  \item Chiffrer leur impact
+	}
+	\only<3-4>{
+	  \item Diminuer l'impact de ces facteurs
+	}
+	\only<4>{
+	  \item Peut on prévoir les performances ?
+	}
+	\only<5>{
+	  \transparent{0.5}{
+	  \item Diminuer l'impact de ces facteurs
+	  \item Peut on prévoir les performances ?
+	  }
+	}
+      \end{itemize}
+    \end{block}
+  \end{minipage}
+      \hfill
+  \begin{minipage}[t]{0.60\linewidth}
+    \begin{figure}
+      \only<1> {%
+	\includegraphics[width=\textwidth]{graph/big_picture.pdf}%
+      }%
+      \only<2,5> {%
+	\includegraphics[width=\textwidth]{graph/big_picture-part1.pdf}%
+      }%
+      \only<3> {%
+	\includegraphics[width=\textwidth]{graph/big_picture-part1-2.pdf}%
+      }%
+      \only<4> {%
+	\includegraphics[width=\textwidth]{graph/big_picture-part1-3.pdf}%
+      }%
+    \end{figure}
+  \end{minipage}
 \end{frame}
 
 \begin{frame}
@@ -742,7 +778,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
   \end{block}
 
   \begin{block}{Éléments de base}
-    Un "scénario" décrivant :
+    Un \textbf{scénario} décrivant :
     \begin{itemize}
       \item Données (ex: matrice A, B)
       \item Actions (ex: B=A+B)
@@ -752,7 +788,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Exemple de scénario : exécution de N \gemm indépendants}
+\frametitle{Exemple : exécution de N \gemm indépendants}
 
 \hspace{0.1cm}
 \begin{minipage}[t]{0.38\linewidth}
@@ -852,7 +888,7 @@ Performance en fonction du nombre d'exécutions concurrentes (données locales)
 Taille des matrices manipulées : 256x256
 \begin{figure}
   \centering
-  \includegraphics[width=0.8\textwidth]{graph/kernel_256_local_idchire.pdf}
+  \includegraphics[width=0.85\textwidth]{graph/kernel_256_local_idchire.pdf}
 \end{figure}
 
 \end{frame}
@@ -860,11 +896,11 @@ Taille des matrices manipulées : 256x256
 \begin{frame}
 \frametitle{Application aux noyaux de Cholesky}
 
-Impact de la localité pour \gemm, en fonction de la taille des données manipulées et du nombre d'exécutions concurrentes.
+Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions concurrentes.
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.9\textwidth]{graph/kernel_dgemm_remote_idchire.pdf}
+  \includegraphics[width=0.95\textwidth]{graph/kernel_comp_locality_gemm_512.pdf}
 \end{figure}
 
 
@@ -872,27 +908,20 @@ Impact de la localité pour \gemm, en fonction de la taille des données manipul
 
 
 \begin{frame}
-\frametitle{Application aux noyaux de Cholesky}
-
-Impact de la topologie (expérience similaire sur brunch).
-
-\begin{figure}
-  \centering
-  \includegraphics[width=0.9\textwidth]{graph/kernel_dgemm_remote_brunch.pdf}
-\end{figure}
-
-
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Conclusion}
-  \begin{block}{Remarques}
+  \frametitle{Bilan}
+  \begin{block}{Caractérisation des noyaux de l'application}
     Triple effet sur les performances :
     \begin{itemize}
       \item Baisse linéaire des perfs. (Corrélée aux caches miss L3)
       \item Différence local vs distant.
       \item Différence d'impact de la localité en fonction du jeu de données (ne tient pas dans le L3 pour 512).
+    \end{itemize}
+  \end{block}
+
+  \begin{block}{Utilisation de l'outil}
+    \begin{itemize}
+      \item Observations impossibles sans lui
+      \item Flexible (caractérisation d'applications, du matériel)
     \end{itemize}
   \end{block}
 
@@ -922,13 +951,82 @@ Identification de sources de variation de performances
 \end{frame}
 
 \begin{frame}
-  \frametitle{Plan}
-  \includegraphics[width=0.8\textwidth]{graph/big_picture-part2.pdf}
+  \frametitle{Méthodologie pour l'amélioration d'une application}
+  \begin{minipage}[t]{0.36\linewidth}
+    \begin{block}{Problématiques}
+      \begin{itemize}
+	{
+	  \transparent{0.5}
+	  \item Identifier les facteurs responsables
+	  \item Chiffrer leur impact
+	}
+	\item Diminuer l'impact de ces facteurs
+	{
+	  \transparent{0.5}
+	  \item Peut on prévoir les performances ?
+	}
+      \end{itemize}
+    \end{block}
+  \end{minipage}
+      \hfill
+  \begin{minipage}[t]{0.60\linewidth}
+    \begin{figure}
+      \includegraphics[width=\textwidth]{graph/big_picture-part2.pdf}%
+    \end{figure}
+  \end{minipage}
 \end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Rappel}
+
+Application représentée sous forme de DAG
+
+  \begin{minipage}[t]{0.46\linewidth}
+  \begin{lstlisting}
+#define N_BLOCS 3
+for (int k = 0; k < N_BLOCS; k++) {
+  #pragma omp task depend(inout:A(k,k))
+  POTRF(A(k, k));
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(k,k))
+                     depend(inout:A(m,k))
+    TRSM(A(k, k), A(m, k));
+  }
+
+  for (int m = k+1; m < N_BLOCS; m++) {
+    #pragma omp task depend(in:A(m,k))
+                     depend(inout:A(k,k))
+    SYRK(A(m, k), A(k, k));
+
+    for (int n = k+1; n < m; n++) {
+      #pragma omp task depend(in:A(m,k), A(n,k))
+                       depend(inout:A(m,n))
+      GEMM(A(n, k), A(m, k), A(m, n));
+    }
+  }
+}
+  \end{lstlisting}
+  \end{minipage}
+  \begin{minipage}[t]{0.46\linewidth}
+    \vspace{-0.3cm}
+    \begin{figure}
+      \includegraphics[width=0.9\textwidth]{graph/anim-dag/anim-8.pdf}%
+    \end{figure}
+  \end{minipage}
+  %\begin{figure}
+    %\includegraphics[width=0.4\textwidth]{graph/cholesky-dag-5.pdf}
+  %\end{figure}
+
+\end{frame}
+
 
 
 \begin{frame}
   \frametitle{Travaux existants}
+  \begin{exampleblock}{Objectif}
+    Améliorer la localité des données au cours de l'exécution
+  \end{exampleblock}
   \begin{block}{Groupement des calculs}
     Olivier et al., Clet-Ortega et al., Pilla et al.
     \begin{itemize}
@@ -937,7 +1035,14 @@ Identification de sources de variation de performances
     \end{itemize}
   \end{block}
 
-  \begin{block}{Distribution des données, et placement des calculs}
+  \begin{block}{
+    \only<1>{%
+      Distribution des données, et placement des calculs%
+    }%
+    \only<2>{%
+      \textbf{Distribution des données, et placement des calculs}%
+    }%
+  }
     HPF ;  StarPU, XKaapi (hétérogène) ; X10, Kaapi (distribué)
     %\begin{itemize}
       %\item HPF. Distribution de la \emph{possession} d'une donnée (OCR).
@@ -958,31 +1063,20 @@ Identification de sources de variation de performances
 \end{frame}
 
 
-\begin{frame}
-\frametitle{Fonctionnement}
-
-Rappel : application représentée sous forme de DAG
-
-\begin{figure}
-  \includegraphics[width=0.4\textwidth]{graph/cholesky-dag-5.pdf}
-\end{figure}
-
-\end{frame}
-
-
 
 \begin{frame}[fragile]
-\frametitle{Approches pour l'amélioration de la localité}
+\frametitle{OpenMP : approches pour l'amélioration de la localité}
 
-  \begin{block}{En amont}
+  \begin{block}{Dans le langage}
+    Une dépendance $\neq$ utilisation d'une donnée
     \begin{itemize}
-      \item Extension OpenMP pour le programmeur :
+      \item Extension nécessaire pour le programmeur :
 
         \verb/affinity/ entre une tâche et ses données.
     \end{itemize}
   \end{block}
 
-  \begin{block}{Pour le support exécutif}
+  \begin{block}{Dans le support exécutif}
     \begin{itemize}
       \item Vision hiérarchique de la machine
       \item Ordonnancement prenant en compte la localité des données (données fournies par le programmeur, informations dans les dépendances)
@@ -1124,7 +1218,7 @@ Sélection d'une queue pour le vol
 
 \begin{frame}
   \frametitle{Comparaison des supports exécutif}
-  Cholesky, en fonction de la taille de matrice, sur idchire
+  Pic performance de Cholesky, en fonction de la taille de matrice, sur idchire
   \begin{figure}
     \includegraphics[width=0.8\textwidth]{graph/graph_details_cholesky_idchire.pdf}
   \end{figure}
@@ -1159,8 +1253,26 @@ Sélection d'une queue pour le vol
 
 
 \begin{frame}
-  \frametitle{Plan}
-  \includegraphics[width=0.8\textwidth]{graph/big_picture-part3.pdf}
+  \frametitle{Méthodologie pour l'amélioration d'une application}
+  \begin{minipage}[t]{0.36\linewidth}
+    \begin{block}{Problématiques}
+      \begin{itemize}
+	{
+	  \transparent{0.5}
+	  \item Identifier les facteurs responsables
+	  \item Chiffrer leur impact
+	  \item Diminuer l'impact de ces facteurs
+	}
+	\item Peut on prévoir les performances ?
+      \end{itemize}
+    \end{block}
+  \end{minipage}
+      \hfill
+  \begin{minipage}[t]{0.60\linewidth}
+    \begin{figure}
+      \includegraphics[width=\textwidth]{graph/big_picture-part3.pdf}%
+    \end{figure}
+  \end{minipage}
 \end{frame}
 
 
@@ -1280,7 +1392,7 @@ Sélection d'une queue pour le vol
 \begin{frame}
   \frametitle{Bilan}
 
-  \begin{block}{Conclusion des premières expériences}
+  \begin{block}{Bilan des premières expériences}
     \begin{itemize}
       \item Résultats assez réalistes vis à vis des tentatives existantes (Stanisic et al.)
       \item Limite sur les cas à "faible" parallélisme
@@ -1298,7 +1410,38 @@ Sélection d'une queue pour le vol
 \begin{frame}
   \frametitle{Synthèse}
 
-    \includegraphics[width=\textwidth]{graph/big_picture.pdf}
+  \begin{minipage}[t]{0.36\linewidth}
+    \begin{block}{Problématiques}
+      \begin{itemize}
+	\only<2->{
+	  \item Caractérisation
+	}
+	\uncover<3->{
+	  \item Amélioration
+	}
+	\uncover<4->{
+	  \item Modélisation
+	}
+      \end{itemize}
+    \end{block}
+  \end{minipage}
+      \hfill
+  \begin{minipage}[t]{0.60\linewidth}
+    \begin{figure}
+      \only<1> {%
+	\includegraphics[width=\textwidth]{graph/big_picture.pdf}%
+      }%
+      \only<2> {%
+	\includegraphics[width=\textwidth]{graph/big_picture-synt-1.pdf}%
+      }%
+      \only<3> {%
+	\includegraphics[width=\textwidth]{graph/big_picture-synt-2.pdf}%
+      }%
+      \only<4> {%
+	\includegraphics[width=\textwidth]{graph/big_picture-synt-3.pdf}%
+      }%
+    \end{figure}
+  \end{minipage}
   %\begin{block}{Processus complet pour une application}
     %\begin{itemize}
       %\item Observations générales et détaillées de l'application
