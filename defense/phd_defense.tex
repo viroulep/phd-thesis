@@ -205,7 +205,7 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
   \end{figure}
 
 
-  Modélisation de phénomènes physiques => opération sur des matrices.
+  Modélisation de phénomènes physiques => algèbre linéaire.
 \end{frame}
 
 \begin{frame}
@@ -318,7 +318,7 @@ Description des opérations et de leur ordre :
 
 Exprimée dans un langage par flot de données, et représentation de l'application sous forme de graphe :
 \begin{figure}
-  \includegraphics[width=0.4\textwidth]{graph/cholesky-dag-5.pdf}
+  \includegraphics[width=0.45\textwidth]{graph/cholesky-dag-5.pdf}
 \end{figure}
 
 
@@ -554,14 +554,14 @@ for (int k = 0; k < N_BLOCS; k++) {@
   \frametitle{Cholesky : performances brutes (32768, 512)}
 
   Évolution de la performance (Gflops) en fonction du nombre de cœurs.\\
-  Exécution via libKOMP sur une machine à 192 cœurs.
+  Exécution via libGOMP sur une machine à 192 cœurs.
 
 \begin{figure}
   \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_32768_512.pdf}
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
-    Peu de conclusion à tirer : bon speedup jusqu'à ~70 cœurs, puis plateau potentiellement dû au parallélisme limité.
+    Peu de conclusion à tirer : le speedup a l'air bon, la question est~: peut-on faire mieux ?
   \end{block}
 }
 
@@ -576,7 +576,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
-    Bonne utilisation des ressources, "trous" dûs à la forme du DAG sur la fin de l'exécution.
+    Bonne utilisation des ressources, "trous" dûs au parallélisme limité sur la fin de l'exécution.
   \end{block}
 }
 
@@ -635,8 +635,8 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 	\item Fréquence : governor \textit{performance}
       }
       \uncover<4>{
-	\item Vectorisation : dépendante du compilateur, fixe.
-	\item \textbf{Localité des données : clé du problème.}
+	\item Vectorisation : dépendante du compilateur, ou du programme.
+	\item \textbf{Localité des données : levier.}
       }
     \end{itemize}
   \end{block}
@@ -685,19 +685,22 @@ Aperçu d'un diagramme de Gantt sur 64 threads
     \begin{block}{Problématiques}
       \begin{itemize}
 	\uncover<2->{
-	  \item Identifier les facteurs responsables
-	  \item Chiffrer leur impact
+	  \item Caractérisation
+	  %\item Identifier les facteurs responsables
+	  %\item Chiffrer leur impact
 	}
 	\only<3-4>{
-	  \item Diminuer l'impact de ces facteurs
+	  \item Validation
+	  %\item Diminuer l'impact de ces facteurs
 	}
 	\only<4>{
-	  \item Peut on prévoir les performances ?
+	  %\item Peut on prévoir les performances ?
+	  \item Modélisation
 	}
 	\only<5>{
 	  \transparent{0.5}{
-	  \item Diminuer l'impact de ces facteurs
-	  \item Peut on prévoir les performances ?
+	  \item Validation
+	  \item Modélisation
 	  }
 	}
       \end{itemize}
@@ -780,8 +783,10 @@ Aperçu d'un diagramme de Gantt sur 64 threads
   \begin{block}{Éléments de base}
     Un \textbf{scénario} décrivant :
     \begin{itemize}
-      \item Données (ex: matrice A, B)
-      \item Actions (ex: B=A+B)
+      \item Données (ex: matrice A, B), et leur placement mémoire
+      \item Actions (ex: B=A+B), et leur placement sur les cœurs
+
+	+ boucles
       \item Paramètres à observer (ex: flops, cache miss, ...)
     \end{itemize}
   \end{block}
@@ -800,15 +805,15 @@ data:
     value: 256
   a<i>:
     i: [0, N, 1]
-    mapping: i
+    mapon: core<i>
     type: double*
   b<i>:
     i: [0, N, 1]
-    mapping: i
+    mapon: core<i>
     type: double*
   c<i>:
     i: [0, N, 1]
-    mapping: i
+    mapon: core<i>
     type: double*
   \end{lstlisting}
 \begin{uncoverenv}<3->
@@ -883,26 +888,29 @@ actions:
 \begin{frame}
 \frametitle{Application aux noyaux de Cholesky}
 
-Performance en fonction du nombre d'exécutions concurrentes (données locales)
+Performance en fonction du nombre d'exécutions concurrentes
 
-Taille des matrices manipulées : 256x256
+Données locales, taille des matrices : 256x256
 \begin{figure}
   \centering
   \includegraphics[width=0.85\textwidth]{graph/kernel_256_local_idchire.pdf}
 \end{figure}
+
+\textbf{Baisse de performances, malgré l'indépendance des données}
 
 \end{frame}
 
 \begin{frame}
 \frametitle{Application aux noyaux de Cholesky}
 
-Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions concurrentes.
+Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions concurrentes
 
 \begin{figure}
   \centering
-  \includegraphics[width=0.95\textwidth]{graph/kernel_comp_locality_gemm_512.pdf}
+  \includegraphics[width=0.85\textwidth]{graph/kernel_comp_locality_gemm_512.pdf}
 \end{figure}
 
+\textbf{Perte de performance majeure avec les données distantes}
 
 \end{frame}
 
@@ -910,18 +918,19 @@ Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions
 \begin{frame}
   \frametitle{Bilan}
   \begin{block}{Caractérisation des noyaux de l'application}
-    Triple effet sur les performances :
+    Double effet sur les performances :
     \begin{itemize}
-      \item Baisse linéaire des perfs. (Corrélée aux caches miss L3)
-      \item Différence local vs distant.
-      \item Différence d'impact de la localité en fonction du jeu de données (ne tient pas dans le L3 pour 512).
+      \item Baisse des performances. (Corrélée aux caches miss L3)
+      \item Différence local vs distant en fonction du jeu de données
+
+	(ne tient pas dans le L3 pour 512).
     \end{itemize}
   \end{block}
 
   \begin{block}{Utilisation de l'outil}
     \begin{itemize}
       \item Observations impossibles sans lui
-      \item Flexible (caractérisation d'applications, du matériel)
+      \item Large plage de scénario possible
     \end{itemize}
   \end{block}
 
@@ -935,18 +944,19 @@ Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions
 \frametitle{Synthèse}
 
 
-Données conséquentes sur les noyaux et leur comportement
-
-\begin{itemize}
-  \item possibilité de modéliser la performance attendue de l'application globale (simulation)
-\end{itemize}
-
 Identification de sources de variation de performances
 
 \begin{itemize}
   \item Défauts de cache (liés aux Blas et au noyau)
   \item Placement des données : favoriser le rapprochement des tâches et des données dans le support exécutif
 \end{itemize}
+
+Beaucoup d'informations sur les noyaux et leur comportement
+
+\begin{itemize}
+  \item possibilité de modéliser la performance attendue de l'application globale
+\end{itemize}
+
 
 \end{frame}
 
@@ -957,13 +967,12 @@ Identification de sources de variation de performances
       \begin{itemize}
 	{
 	  \transparent{0.5}
-	  \item Identifier les facteurs responsables
-	  \item Chiffrer leur impact
+	  \item Caractérisation
 	}
-	\item Diminuer l'impact de ces facteurs
+	\item Validation
 	{
 	  \transparent{0.5}
-	  \item Peut on prévoir les performances ?
+	  \item Modélisation
 	}
       \end{itemize}
     \end{block}
@@ -1023,9 +1032,12 @@ for (int k = 0; k < N_BLOCS; k++) {
 
 
 \begin{frame}
-  \frametitle{Travaux existants}
-  \begin{exampleblock}{Objectif}
-    Améliorer la localité des données au cours de l'exécution
+  \frametitle{Objectif}
+  \begin{exampleblock}{Améliorer la localité des données}
+    \begin{itemize}
+      \item Expression dans le programme
+      \item à l'exécution
+    \end{itemize}
   \end{exampleblock}
   \begin{block}{Groupement des calculs}
     Olivier et al., Clet-Ortega et al., Pilla et al.
@@ -1099,7 +1111,7 @@ for (int k = 0; k < N_BLOCS; k++) {
 \end{block}
 
 
-\begin{block}{Définition (discutée dans le standard)}
+\begin{block}{Définition}
   \begin{lstlisting}[numbers=none, basicstyle=\scriptsize]
   affinity([node | thread | data]: expr[, strict])
   \end{lstlisting}
@@ -1110,6 +1122,8 @@ for (int k = 0; k < N_BLOCS; k++) {
     \item \texttt{data} -> adresse mémoire
   \end{itemize}
   \texttt{strict}~: la tâche \textbf{doit} s'exécuter sur la ressource.
+
+  \texttt{thread}, \texttt{node}~: discutés dans le standard.
 \end{block}
 
 
@@ -1159,6 +1173,9 @@ Sélection d'une queue pour le placement d'une tâche prête
 Sélection d'une queue pour le vol
 }
 \begin{figure}
+  \only<1> {%
+    \includegraphics[width=0.57\textwidth]{graph/push_strategy.pdf}%
+  }%
   \only<2> {%
     \includegraphics[width=0.6\textwidth]{graph/steal_strategies_anim_1.pdf}%
   }%
@@ -1191,7 +1208,7 @@ Sélection d'une queue pour le vol
     \begin{itemize}
       \item Livré avec GCC
       \item Pas de vision hiérarchique de la machine
-      \item Queue centralisé, algorithme glouton
+      \item Queue centralisé
     \end{itemize}
   \end{block}
 
@@ -1199,7 +1216,7 @@ Sélection d'une queue pour le vol
     \begin{itemize}
       \item Livré avec Clang (Intel)
       \item Pas de vision hiérarchique de la machine
-      \item 1 queue par cœur, sélection aléatoire, placement local
+      \item 1 queue par cœur, sélection aléatoire, vol de travail
     \end{itemize}
   \end{block}
 
@@ -1241,13 +1258,14 @@ Sélection d'une queue pour le vol
       \item Intuitions sur les situations favorables~:
       \begin{itemize}
 	\item le parallélisme est présent
-	\item le jeu de données sort du L3
+	\item le jeu de données sort du L3 (validation de l'observation via CarToN)
       \end{itemize}
     \end{itemize}
   \end{block}
 
   \begin{block}{Quid des autres applications}
     Sur des applications itératives (Jacobi)~: performances des tâches comparables aux boucles.
+    %TODO mettre le graph
   \end{block}
 \end{frame}
 
@@ -1259,11 +1277,10 @@ Sélection d'une queue pour le vol
       \begin{itemize}
 	{
 	  \transparent{0.5}
-	  \item Identifier les facteurs responsables
-	  \item Chiffrer leur impact
-	  \item Diminuer l'impact de ces facteurs
+	  \item Caractérisation
+	  \item Validation
 	}
-	\item Peut on prévoir les performances ?
+	\item Modélisation
       \end{itemize}
     \end{block}
   \end{minipage}
@@ -1280,7 +1297,7 @@ Sélection d'une queue pour le vol
   \frametitle{Motivation pour la simulation}
 
   \begin{itemize}
-    \item Développer dans un support exécutif réel à un coût.
+    \item Développer dans un support exécutif réel à un coût
 
       En simulation~:
       \begin{itemize}
@@ -1318,6 +1335,10 @@ Sélection d'une queue pour le vol
     \item Moteur exécutif
 
       Vol de travail
+
+    \item Modèle de performances
+
+      Architecture (\verb/read/, \verb/write/), Tâche/Calcul
   \end{itemize}
 
 \end{frame}
@@ -1328,7 +1349,7 @@ Sélection d'une queue pour le vol
   Modèle de coût global :
 
   \begin{itemize}
-    \item Une tâche (\verb/read/+\verb/write/+\verb/compute/) = un coût unique
+    \item Une tâche (\verb/read/+\verb/compute/+\verb/write/) = un coût unique
   \end{itemize}
 
   Coûts déterminés par les données de CarToN, en fonction du contexte d'exécution
@@ -1366,9 +1387,10 @@ Sélection d'une queue pour le vol
   \frametitle{Évaluation}
   Matrice N=32768, BS=512 (~45000 tâches)
   \begin{figure}
-    \includegraphics[width=\textwidth]{graph/simu_affinity_runtime_idchire.pdf}%
+    \includegraphics[width=0.9\textwidth]{graph/simu_affinity_runtime_idchire.pdf}%
   \end{figure}
 
+  \textbf{Modèle DeuxNiveaux/Affinity fidèle, erreur max: \textasciitilde6\%}
 
 \end{frame}
 
@@ -1376,12 +1398,18 @@ Sélection d'une queue pour le vol
   \frametitle{Évaluation}
   Matrice N=8192, BS=256 (~6000 tâches)
   \begin{figure}
-    \only<1>{%
-      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire.pdf}%
-    }%
-    \only<2>{%
-      \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire_ajuste.pdf}%
-    }%
+    \includegraphics[width=0.9\textwidth]{graph/simu_affinity_8k_runtime_idchire.pdf}%
+  \end{figure}
+
+  \textbf{Modèle fidèle jusqu'à ~50 coeurs, puis décrochage}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Problème de modélisation des coûts}
+  Matrice N=8192, BS=256 (~6000 tâches), ajustement du modèle
+  \begin{figure}
+    \includegraphics[width=\textwidth]{graph/simu_affinity_8k_runtime_idchire_ajuste.pdf}%
   \end{figure}
 
 
@@ -1389,26 +1417,35 @@ Sélection d'une queue pour le vol
 
 
 
-\begin{frame}
-  \frametitle{Bilan}
+\begin{frame}[fragile]
+  \frametitle{Bilan du simulateur}
 
   \begin{block}{Bilan des premières expériences}
     \begin{itemize}
-      \item Résultats assez réalistes vis à vis des tentatives existantes (Stanisic et al. dans SimGrid)
+      \item Résultats assez réalistes vis à vis des tentatives existantes
+      \begin{itemize}
+	\item Premier travaux en mémoire partagée dans SimGrid, Stanisic et al.
+      \end{itemize}
       \item Limite sur les cas à "faible" parallélisme
+      \begin{itemize}
+	  \item mais problème de modèle identifié
+      \end{itemize}
     \end{itemize}
   \end{block}
   \begin{block}{Perspectives}
     \begin{itemize}
-      \item Utilisation de coûts plus précis
-      \item Modélisation de la machine (caches, bande passante)
+      \item Modélisation plus précise
+      \begin{itemize}
+	\item de la machine
+	\item du découpage \verb/read/, \verb/compute/, \verb/write/
+      \end{itemize}
       \item Amélioration des distributions de données
     \end{itemize}
   \end{block}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Synthèse}
+  \frametitle{Conclusion}
 
   \begin{minipage}[t]{0.36\linewidth}
     \begin{block}{Problématiques}
@@ -1417,7 +1454,7 @@ Sélection d'une queue pour le vol
 	  \item Caractérisation
 	}
 	\uncover<3->{
-	  \item Amélioration
+	  \item Validation
 	}
 	\uncover<4->{
 	  \item Modélisation
@@ -1456,7 +1493,7 @@ Sélection d'une queue pour le vol
   \frametitle{Perspectives de la thèse}
   \begin{block}{CarToN}
     \begin{itemize}
-      \item Se rapprocher des outils d'autotuning
+      \item Rapprochement autotuning pour trouver les meilleurs/pire cas
       \item Étendre la définition des scénarios
     \end{itemize}
   \end{block}
@@ -1468,7 +1505,6 @@ Sélection d'une queue pour le vol
     \end{itemize}
     Tâches à grain plus fin pour éviter la perte de scalabilité
     \begin{itemize}
-      \item surcoût de création
       \item création parallèle
     \end{itemize}
   \end{block}
@@ -1491,7 +1527,7 @@ Sélection d'une queue pour le vol
 \begin{frame}
   \frametitle{Jacobi}
 
-  TODO
+  \includegraphics[width=0.9\textwidth]{graph/jacobi_scale_iomp_komp.pdf}
 
 \end{frame}
 
