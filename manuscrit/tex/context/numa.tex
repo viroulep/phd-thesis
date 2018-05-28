@@ -104,7 +104,7 @@ Lorsqu'il s'agit de cibler des architectures NUMA, on va tout particulièrement 
 Afin de donner un ordre d'idée des latences et bandes passantes sur les différents processeurs, le tableau~\ref{tab:synthese-processeurs} récapitule les chiffres en fonction de la génération du processeur.
 Nous avons fait ces mesures à l'aide de l'outil LMbench~\cite{McVoy1996}. Pour la latence, les débits considérés sont ceux du benchmark |lat_mem_rd| avec un accès aléatoire à la mémoire.
 Pour la bande passante les temps considérés sont ceux du benchmark |bw_mem|, en utilisant un équivalent de |memcpy|.
-La majorité des processeurs dotés d'un cache dispose également d'un composant matériel - le \emph{prefetcher} - dont le but est de charger en avance des données dans le cache en fonction des accès déjà effectués aux données.
+La majorité des processeurs dotés d'un cache dispose également d'un composant matériel - le \emph{prefetcher} - dont le but est de charger en avance des données dans le cache en fonction des accès aux données déjà effectués.
 Pour la latence, tout effet potentiel de ce composant est annulé par l'utilisation de \emph{pointer chasing} (l'adresse de la case suivante à charger est située dans la case courante), ce qui n'est pas le cas pour la bande passante.
 
 Comme nous pouvons le voir sur ces chiffres, le coût d'accès à la mémoire principale est bien plus grand que l'accès des différents caches, et l'accès à la mémoire distante est tout simplement prohibitif.
@@ -135,7 +135,7 @@ Le concept de vectorisation est l'action d'appliquer une même instruction sur p
 Ce type d'instructions est appelé SIMD, pour \emph{Single Instruction Multiple Data}~\cite{Flynn1966}.
 La vectorisation permet au processeur d'optimiser la décomposition de l'instruction en micro opérations et donc l'utilisation du pipeline des différentes Unité Arithmétique et Logique (UAL)~\cite{Muller1989}.
 
-Des extensions au jeu d'instructions x86 ont été créées afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus larges que le type le plus large en C (|long long|, 64 bits).
+Des extensions au jeu d'instructions x86 ont été créées afin de pouvoir opérer sur des éléments plus larges que 64 bits, et la plupart des architectures des processeurs récents utilisent des registres plus larges que le type le plus large en C (|long long|).
 La première d'entre elles, SSE (\emph{Streaming SIMD Extensions}), a été introduite par Intel dès 1999 et a évolué régulièrement, agrandissant progressivement la taille des registres jusqu'à l'extension AVX-512, permettant d'effectuer des instructions sur des registres de 512 bits.
 
 La plupart des processeurs actuels (depuis les Sandy Bridge d'Intel, et les Bulldozer d'AMD, en 2011) supportent au moins l'extension AVX avec des registres de 128 bits.
@@ -159,7 +159,7 @@ L'hyperthreading est généralement une option que l'on peut désactiver dans le
 \subsection{Passage à l'échelle supérieure : interconnexion des processeurs}\label{sec:context:numa:interconnect}
 
 L'une des parties majeures d'une machine NUMA est le système d'interconnexion entre les différents nœuds.
-C'est cette partie qui va déterminer à quel point cela va être couteux d'accéder à la mémoire située sur un nœud distant, et donc à quel point l'aspect NUMA de la machine va impacter les performances d'une application.
+C'est cette partie qui détermine le coût d'accès à la mémoire située sur un nœud distant, et donc l'influence de l'aspect NUMA de la machine sur les performances d'une application.
 Dans la majorité des cas, ce système d'interconnexion est \emph{cache-coherent}, c'est à dire que la cohérence de cache est assurée entre les différents nœuds par le matériel, et n'est pas la responsabilité du programmeur ou du support exécutif.
 L'impact sur les performances peut être lié à la fois au protocole de cohérence de cache utilisé, ainsi qu'à la topologie de l'interconnexion des nœuds.
 
@@ -187,7 +187,7 @@ Cet ensemble d'états de base forme le protocole \emph{MSI}, qui a ensuite été
 \end{description}
 
 Intel Quick Path Interconnect~\cite{Ziakas2010} (QPI) est le système d'interconnexion utilisé dans les machines d'expérimentation que nous avons utilisées, et qui sont décrites dans la section~\ref{sec:contribs:machines}.
-Il implémente le protocole MESIF. Du à l'introduction de l'état \emph{F}, ce protocole est avantageux lorsque la latence de cache à cache est bien plus faible que la latence d'accès à la mémoire principale.
+Il implémente le protocole MESIF. Dû à l'introduction de l'état \emph{F}, ce protocole est avantageux lorsque la latence de cache à cache est bien plus faible que la latence d'accès à la mémoire principale.
 AMD HyperTransport~\cite{Keltcher2003} est le système d'interconnexion utilisé dans les machines à base de processeurs AMD, et implémente le protocole MOESI.
 
 Pour implémenter ces protocoles, il existe deux types de mécanismes :
@@ -208,7 +208,7 @@ Le QPI peut fonctionner avec deux modes de \emph{snooping} :
 \end{description}
 
 Le mode \emph{source snooping} a une latence plus faible que le mode \emph{home snooping}, mais passe moins bien à l'échelle.
-C'est donc ce dernier qui est le plus adapté à un environnement NUMA, puisqu'il limite le nombre de requêtes envoyés sur le bus mémoire, et économise donc de la bande passante.
+C'est donc ce dernier qui est le plus adapté à un environnement NUMA, puisqu'il limite le nombre de requêtes envoyées sur le bus mémoire, et économise donc de la bande passante.
 
 % NOTE : j'ai pas pu obtenir de réponse sur le mode d'idchire.
 

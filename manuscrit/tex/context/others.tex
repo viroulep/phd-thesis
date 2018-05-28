@@ -1,7 +1,7 @@
 \section{Modèles de programmation à base de tâches}\label{sec:context:others}
 
-Il existe de nombreux modèles de programmation à base de tâches, et dans le cadre de cette thèse nous nous sommes restreint à appliquer nos idées dans OpenMP.
-Les concepts de base sont les même que dans les autres modèles de programmation, et sont détaillés ci dessous.
+Il existe de nombreux modèles de programmation à base de tâches, et dans le cadre de cette thèse nous nous sommes restreints à appliquer nos idées dans OpenMP.
+Les concepts de base sont les mêmes que dans les autres modèles de programmation, et sont détaillés ci dessous.
 
 \subsection{L'unité de base : la tâche}
 
@@ -76,7 +76,7 @@ void foo()
 }
 \end{lstlisting}
 
-C'est effectivement ce qu'il faut écrire dans certains modèles de programmation, comme on le verra dans la section~\ref{sec:context:others:examples}.
+Ce morceau de code est similaire à ce qu'il est nécessaire d'écrire dans certains modèle de programmation, comme on le verra dans la section~\ref{sec:context:others:examples}.
 
 
 \subsubsection{Gestion}
@@ -100,7 +100,7 @@ Lors de son initialisation, le support exécutif va \textbf{créer et attacher} 
 Ces threads vont se voir attribuer différents attributs, comme par exemple une structure de données contenant des tâches.
 Ils seront des <<travailleurs>> permanents pour le support exécutif, qui leur donnera des tâches à exécuter au fur et à mesure.
 
-Les threads sont donc les même tout au long de l'exécution de l'application, ce qui évite les coûts liés à la création ou à la destruction de threads. 
+Les threads sont donc les mêmes tout au long de l'exécution de l'application, ce qui évite les coûts liés à la création ou à la destruction de threads.
 
 
 \subsection{Moyens de synchronisation}
@@ -176,7 +176,7 @@ Cet exemple de code se traduit en un graphe de tâches direct et acyclique (\emp
 \end{figure}
 
 Exprimer son code avec des dépendances de données plutôt qu'avec des synchronisations globales permet de définir des synchronisations plus fines entre les différentes tâche, que le support exécutif peut utiliser pour minimiser le temps d'inactivité des ressources.
-En effet, en utilisant des dépendances de données une tâche devient prête dès lors que ses données en lecture sont prêtes, ce qui, contrairement à une approche par synchronisation globale, est robuste à un déséquilibre de charge entre les tâches.
+En effet, en utilisant des dépendances de données une tâche devient prête dès lors que ses données en lecture sont prêtes, ce qui, contrairement à une approche par synchronisation globale, est robuste à un déséquilibre de charge pour quelques raisons que ce soit.
 
 
 \subsection{Quelques exemples de modèles de programmation}\label{sec:context:others:examples}
@@ -319,9 +319,9 @@ Les tâches sont soumises au support exécutif via des fonctions mises à dispos
 Hpx~\cite{Kaiser2014} est un modèle de programmation construit sur le modèle \emph{Partitioned Global Address Space}~\cite{PGAS}.
 Il s'agit également d'une API C++, où les primitives de création de tâches prennent en paramètre un pointeur de fonction et une liste d'arguments à lui passer.
 
-X10~\cite{Charles2005} est un langage basé sur Java et étendu implémenter un modèle PGAS.
-Les opérations sur les tâches (création, synchronisation) se fait de manière similaire à Cilk, à l'aide de mots clés ajoutés dans le langage.
-Il supporte une synchronisation fine des tâches à travers la notion de \emph{futures}~: le résultat d'une tâche peut être encapsulé dans un objet \emph{future}, sur lequel d'autres tâches peuvent se placer en attente.
+X10~\cite{Charles2005} est un langage basé sur Java utilisant un modèle PGAS.
+Les opérations sur les tâches (création, synchronisation) se font de manière similaire à Cilk, à l'aide de mots clés ajoutés dans le langage.
+Le langage X10 supporte une synchronisation fine des tâches à travers la notion de \emph{futures}~: le résultat d'une tâche peut être encapsulé dans un objet \emph{future}, sur lequel d'autres tâches peuvent se placer en attente.
 
 
 \subsection{Quantité de travail et granularité}\label{sec:context:others:granularity}
