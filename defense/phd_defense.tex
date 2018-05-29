@@ -129,6 +129,8 @@ emph={[9]GEMM}, emphstyle={[9]\color{ForestGreen}\bfseries},
 \beamertemplatenavigationsymbolsempty
 \usepackage{appendixnumberbeamer}
 
+\usepackage{pifont}
+
 \title[Soutenance de thèse]{Étude et amélioration de l'exploitation des architectures NUMA à travers des supports exécutifs
   \vspace{-25pt}
 }
@@ -205,7 +207,7 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
   \end{figure}
 
 
-  Modélisation de phénomènes physiques => algèbre linéaire.
+  Modélisation de phénomènes physiques \ding{222} algèbre linéaire.
 \end{frame}
 
 \begin{frame}
@@ -270,7 +272,7 @@ François Broquedis, Thierry Gautier, Fabrice Rastello}
 \begin{frame}
 \frametitle{Une application omniprésente : Cholesky}
 
-Factorisation d'une matrice symétrique positive définie $A$ :
+Factorisation d'une matrice symétrique définie positive $A$ :
 $$ A = L*L^T$$
 
 \begin{itemize}
@@ -563,9 +565,9 @@ for (int k = 0; k < N_BLOCS; k++) {@
 
 
 \begin{frame}
-  \frametitle{Cholesky : performances brutes (32768, 512)}
+  \frametitle{Cholesky : performances brutes (N=32768, BS=512)}
 
-  Évolution de la performance (Gflops) en fonction du nombre de cœurs.\\
+  Évolution de la performance (GFlops) en fonction du nombre de cœurs.\\
   Exécution via libGOMP sur une machine à 192 cœurs.
 
 \begin{figure}
@@ -573,7 +575,7 @@ for (int k = 0; k < N_BLOCS; k++) {@
 \end{figure}
 \uncover<2> {
   \begin{block}{Conclusions}
-    Peu de conclusion à tirer : le speedup a l'air bon, la question est~: peut-on faire mieux ?
+    Peu de conclusion à tirer : le speedup a l'air bon. La question est~: peut-on faire mieux ?
   \end{block}
 }
 
@@ -622,7 +624,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
   }
   \only<6> {
     \begin{block}{Conclusions}
-      Nombre de threads qui augmente $=>$ diminution de la performance moyenne, augmentation de la variabilité.
+      Nombre de threads qui augmente \ding{222} diminution de la performance moyenne, augmentation de la variabilité.
     \end{block}
   }
 \end{frame}
@@ -713,10 +715,10 @@ Aperçu d'un diagramme de Gantt sur 64 threads
     D'un point de vue support exécutif :
     \begin{itemize}
       \uncover<2->{
-	\item Algorithme : donné en entrée
+	\item Algorithme : fourni en entrée
       }
       \uncover<3->{
-	\item Fréquence : governor \textit{performance}
+	\item Fréquence : \textit{performance} governor
       }
       \uncover<4>{
 	\item Vectorisation : dépendante du compilateur, ou du programme.
@@ -777,7 +779,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
     \item exécution de portions de code arbitraire
     \item connaissance et contrôle sur le placement des données manipulées
     \item interactions entre différentes portions de codes (coéxécution)
-    \item rejeu et observation
+    \item reproductibilité et observation
   \end{itemize}
 
   Ressources existantes~:
@@ -812,7 +814,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
       \item Actions (ex: B=A+B), et leur placement sur les cœurs
 
 	+ boucles
-      \item Paramètres à observer (ex: flops, cache miss, ...)
+      \item Paramètres à observer (ex: Flops, cache miss, ...)
     \end{itemize}
   \end{block}
 \end{frame}
@@ -980,7 +982,7 @@ Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions
 Identification de sources de variation de performances
 
 \begin{itemize}
-  \item Défauts de cache (liés aux Blas et au noyau)
+  \item Défauts de cache (liés aux BLAS)
   \item Placement des données : favoriser le rapprochement des tâches et des données dans le support exécutif
 \end{itemize}
 
@@ -1270,6 +1272,7 @@ Sélection d'une queue pour le vol
   \frametitle{Comparaison des supports exécutif}
   Pic de performance de Cholesky, en fonction de la taille de matrice, sur idchire
   \begin{figure}
+    \centering
     \includegraphics[width=0.8\textwidth]{graph/graph_details_cholesky_idchire.pdf}
   \end{figure}
   Meilleure taille de bloc pour chaque cas, distribution des blocs de données cyclique.
@@ -1278,7 +1281,10 @@ Sélection d'une queue pour le vol
 \begin{frame}
   \frametitle{Comparaison des supports exécutif}
   Évaluation sur deux tailles choisies
-  \includegraphics[width=0.9\textwidth]{graph/graph_all_cholesky_idchire.pdf}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{graph/graph_all_cholesky_idchire.pdf}
+  \end{figure}
 \end{frame}
 
 \begin{frame}
@@ -1339,12 +1345,14 @@ Sélection d'une queue pour le vol
   \frametitle{Motivation pour la simulation}
 
   \begin{itemize}
-    \item Développer dans un support exécutif réel à un coût
+    \item Développer dans un support exécutif réel a un coût
 
       En simulation~:
       \begin{itemize}
 	\item développement plus simple
 	\item expérimentations plus rapides
+	\item reproductible
+	\item instrumentation transparente
       \end{itemize}
 
     \item Améliorer les décisions
