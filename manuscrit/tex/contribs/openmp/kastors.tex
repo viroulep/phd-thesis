@@ -260,11 +260,6 @@ Cela a pu confirmer que les supports exécutifs pouvaient gérer les synchronisa
   \includegraphics[width=\textwidth]{jacobi_scale_noaff}
   \caption{Comparaison des performances de Jacobi sur idchire, avec une taille de matrice de 49152 et une taille de bloc de 2048}\label{fig:contribs:openmp:kastors:jacobi-motiv}
 \end{figure}
-\begin{todo}
-  description pourquoi différence de perf
-
-  il y a pas d'affinité dans ces courbes, explication probable : distribution initiale en carton pour libomp...
-\end{todo}
 
 D'autres part, certaines de nos expériences ont permis de mettre en évidence d'autres limitations des tâches OpenMP.
 La figure~\ref{fig:contribs:openmp:kastors:jacobi-motiv} regroupe une comparaison de l'application de jacobi, en fonction de la version implémentée (à base de boucles ou de tâches avec dépendances) et du support exécutif, effectuée sur idchire.
