@@ -318,7 +318,7 @@ Description des opérations et de leur ordre :
 \begin{frame}
 \frametitle{Une application omniprésente : Cholesky}
 
-Exprimée dans un langage par flot de données, et représentation de l'application sous forme de graphe :
+Représentation de l'application sous forme de graphe :
 \begin{figure}
   \includegraphics[width=0.45\textwidth]{graph/cholesky-dag-5.pdf}
 \end{figure}
@@ -554,13 +554,8 @@ for (int k = 0; k < N_BLOCS; k++) {@
 \begin{frame}
   \frametitle{Évaluation d'une application}
 
-  \begin{block}{Observations (outils "classiques")}
-    \begin{itemize}
-      \item Performances brutes
-      \item Utilisation des ressources (Gantt)
-      \item Analyse statistique
-    \end{itemize}
-  \end{block}
+  \centering
+  Quid des performances ?
 \end{frame}
 
 
@@ -570,15 +565,17 @@ for (int k = 0; k < N_BLOCS; k++) {@
   Évolution de la performance (GFlops) en fonction du nombre de cœurs.\\
   Exécution via libGOMP sur une machine à 192 cœurs.
 
-\begin{figure}
-  \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_32768_512.pdf}
-\end{figure}
-\uncover<2> {
+  \begin{figure}
+    \only<1>{%
+      \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_32768_512.pdf}%
+    }
+    \only<2>{%
+      \includegraphics[width=\textwidth]{graph/graph_evolution_cholesky_32768_512_1.pdf}%
+    }%
+  \end{figure}
   \begin{block}{Conclusions}
     Peu de conclusion à tirer : le speedup a l'air bon. La question est~: peut-on faire mieux ?
   \end{block}
-}
-
 \end{frame}
 
 \begin{frame}
@@ -790,7 +787,7 @@ Aperçu d'un diagramme de Gantt sur 64 threads
 
     \item Utilisant du code utilisateur arbitraire
 
-      BOAST : autotuning de noyaux applicatifs.
+      Autotuning de noyaux applicatifs.
   \end{itemize}
 
   \textbf{Pas d'outil existant répondant à notre besoin précis !}
@@ -1440,7 +1437,7 @@ Sélection d'une queue pour le vol
     \includegraphics[width=0.9\textwidth]{graph/simu_affinity_runtime_idchire.pdf}%
   \end{figure}
 
-  \textbf{Modèle DeuxNiveaux/Affinity fidèle, erreur max: \textasciitilde6\%}
+  \textbf{Modèle DeuxNiveaux/Affinity fidèle, erreur max vs libKOMP: \textasciitilde6\%}
 
 \end{frame}
 
@@ -1451,7 +1448,7 @@ Sélection d'une queue pour le vol
     \includegraphics[width=0.9\textwidth]{graph/simu_affinity_8k_runtime_idchire.pdf}%
   \end{figure}
 
-  \textbf{Modèle fidèle jusqu'à ~50 coeurs, puis décrochage}
+  \textbf{Modèle fidèle jusqu'à ~64 coeurs, puis décrochage}
 
 \end{frame}
 
@@ -1472,10 +1469,7 @@ Sélection d'une queue pour le vol
 
   \begin{block}{Bilan des premières expériences}
     \begin{itemize}
-      \item Résultats assez réalistes vis à vis des tentatives existantes
-      \begin{itemize}
-	\item Premier travaux en mémoire partagée dans SimGrid, Stanisic et al.
-      \end{itemize}
+      \item Résultats assez réalistes
       \item Limite sur les cas à "faible" parallélisme
       \begin{itemize}
 	  \item mais problème de modèle identifié
@@ -1528,7 +1522,6 @@ Sélection d'une queue pour le vol
   \begin{block}{CarToN}
     \begin{itemize}
       \item Rapprochement autotuning pour trouver les meilleurs/pires cas
-      \item Étendre la définition des scénarios
     \end{itemize}
   \end{block}
 
@@ -1546,7 +1539,8 @@ Sélection d'une queue pour le vol
   \begin{block}{Simulation}
     \begin{itemize}
       \item Améliorer la modélisation (plus fine)
-      \item Thèse Inria Avalon/STORM, simulation de programmes OpenMP
+      \item Portage dans SimGrid
+      \item Thèse IPL HAC SPECIS, simulation de programmes OpenMP
     \end{itemize}
   \end{block}
 \end{frame}
