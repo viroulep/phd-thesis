@@ -308,7 +308,15 @@ Description des opérations et de leur ordre :
 \hfill%
 \begin{minipage}[t]{0.54\linewidth}
   \begin{figure}
-    \includegraphics[width=\textwidth]{graph/cholesky-rank-update.pdf}
+    \only<1>{%
+      \includegraphics[width=\textwidth]{graph/anim-update/cholesky-rank-update-1.pdf}%
+    }%
+    \only<2>{%
+      \includegraphics[width=\textwidth]{graph/anim-update/cholesky-rank-update-2.pdf}%
+    }%
+    \only<3>{%
+      \includegraphics[width=\textwidth]{graph/anim-update/cholesky-rank-update.pdf}%
+    }%
   \end{figure}
 \end{minipage}
 
@@ -331,57 +339,6 @@ Représentation de l'application sous forme de graphe :
 
 \begin{minipage}[t]{0.52\linewidth}
   \vspace{0.3cm}
-  \begin{onlyenv}<1>
-  \begin{lstlisting}[language=c]
-#define N_BLOCS 3
-for (int k = 0; k < N_BLOCS; k++) {
-  #pragma omp task depend(inout:A(k,k))
-  POTRF(A(k, k));
-
-  //...
-}
-  \end{lstlisting}
-\end{onlyenv}
-  \begin{onlyenv}<2>
-  \begin{lstlisting}[style=transparency]
-@#define N_BLOCS 3
-for (int k = 0; k < N_BLOCS; k++) {
-  #pragma omp task depend(inout:A(k,k))
-  POTRF(A(k, k));@
-
-  for (int m = k+1; m < N_BLOCS; m++) {
-    #pragma omp task depend(in:A(k,k))
-                     depend(inout:A(m,k))
-    TRSM(A(k, k), A(m, k));
-  }
-
-  @//...
-}@
-  \end{lstlisting}
-\end{onlyenv}
-  \begin{onlyenv}<3>
-  \begin{lstlisting}[style=transparency]
-@#define N_BLOCS 3
-for (int k = 0; k < N_BLOCS; k++) {
-  #pragma omp task depend(inout:A(k,k))
-  POTRF(A(k, k));
-
-  for (int m = k+1; m < N_BLOCS; m++) {
-    #pragma omp task depend(in:A(k,k))
-                     depend(inout:A(m,k))
-    TRSM(A(k, k), A(m, k));
-  }@
-
-  for (int m = k+1; m < N_BLOCS; m++) {
-    #pragma omp task depend(in:A(m,k))
-                     depend(inout:A(k,k))
-    SYRK(A(m, k), A(k, k));
-
-    @//...
-  }
-}@
-  \end{lstlisting}
-\end{onlyenv}
   \begin{onlyenv}<4>
   \begin{lstlisting}[style=transparency]
 @#define N_BLOCS 3
@@ -409,7 +366,7 @@ for (int k = 0; k < N_BLOCS; k++) {
 }@
   \end{lstlisting}
 \end{onlyenv}
-  \begin{onlyenv}<5>
+  \begin{onlyenv}<1,5>
   \begin{lstlisting}[style=transparency]
 @#define N_BLOCS 3
 for (int k = 0; k < N_BLOCS; k++) {@
@@ -436,7 +393,7 @@ for (int k = 0; k < N_BLOCS; k++) {@
 }@
   \end{lstlisting}
 \end{onlyenv}
-  \begin{onlyenv}<6>
+  \begin{onlyenv}<2,6>
   \begin{lstlisting}[style=transparency]
 @#define N_BLOCS 3
 for (int k = 0; k < N_BLOCS; k++) {
@@ -463,7 +420,7 @@ for (int k = 0; k < N_BLOCS; k++) {
 }@
   \end{lstlisting}
 \end{onlyenv}
-  \begin{onlyenv}<7>
+  \begin{onlyenv}<3,7>
   \begin{lstlisting}[style=transparency]
 @#define N_BLOCS 3
 for (int k = 0; k < N_BLOCS; k++) {
@@ -1502,7 +1459,6 @@ Sélection d'une queue pour le vol
   \end{minipage}
       \hfill
   \begin{minipage}[t]{0.60\linewidth}
-    %TODO image manuscrit
     \begin{figure}
       \includegraphics[width=\textwidth]{graph/big_picture.pdf}%
     \end{figure}
@@ -1548,8 +1504,11 @@ Sélection d'une queue pour le vol
 \begin{frame}
   \frametitle{Questions}
 
-  Questions
+  \centering Questions
 
+  \begin{figure}
+    \includegraphics[width=0.6\textwidth]{graph/big_picture.pdf}%
+  \end{figure}
 \end{frame}
 
 \appendix
