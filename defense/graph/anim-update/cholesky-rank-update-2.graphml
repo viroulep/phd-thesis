@@ -281,7 +281,7 @@
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="71.0" width="71.0" x="389.0" y="402.0"/>
-          <y:Fill color="#999999" transparent="false"/>
+          <y:Fill hasColor="false" transparent="false"/>
           <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="33.5" y="33.5">
             <y:LabelModel>
