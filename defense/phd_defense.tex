@@ -845,7 +845,6 @@ actions:
   \frametitle{Matériel}
 
   \begin{block}{idchire (2012)}
-    Machine LIG
     \begin{itemize}
       \item Intel Xeon E5-4640 @ 2.4 GHz, Sandy Bridge
       \item 24 nœuds NUMA, 8 cœurs par nœud, 192 cœurs.
@@ -854,7 +853,7 @@ actions:
   \end{block}
 
   \begin{block}{brunch (2016)}
-    Machine LIP-ENS de Lyon, plus récente, et topologie plus simple :
+    Topologie plus simple :
     \begin{itemize}
       \item Intel Xeon E7-8890 v4 @ 2.2 GHz, Broadwell
       \item 4 nœuds NUMA, 24 cœurs par nœud, 96 cœurs
@@ -932,18 +931,18 @@ Impact de la localité pour \gemm (512x512), en fonction du nombre d'exécutions
 \begin{frame}
 \frametitle{Synthèse}
 
+Beaucoup d'informations sur les noyaux et leur comportement
+
+\begin{itemize}
+  \item possibilité de modéliser la performance attendue de l'application globale
+\end{itemize}
+
 
 Identification de sources de variation de performances
 
 \begin{itemize}
   \item Défauts de cache (liés aux BLAS)
   \item Placement des données : favoriser le rapprochement des tâches et des données dans le support exécutif
-\end{itemize}
-
-Beaucoup d'informations sur les noyaux et leur comportement
-
-\begin{itemize}
-  \item possibilité de modéliser la performance attendue de l'application globale
 \end{itemize}
 
 
